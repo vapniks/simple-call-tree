@@ -77,7 +77,7 @@
 
 ;;; TODO
 ;;
-;; 
+;; Stuff
 ;;
 
 ;;; Require
@@ -106,7 +106,10 @@ This variable is used by the `simple-call-tree-jump-to-function-at-point' functi
         buffer-read-only nil)
   ;; Set keymap
   (define-key simple-call-tree-mode-map (kbd "<tab>") 'outline-cycle)
-;  (define-key simple-call-tree-mode-map (kbd "<backtab>") 'simple-call-tree-move-prev)
+  (define-key simple-call-tree-mode-map (kbd "<return>") 'simple-call-tree-find-function-at-point)
+  (define-key simple-call-tree-mode-map (kbd "j") 'simple-call-tree-jump-to-function-at-point)
+  (define-key simple-call-tree-mode-map (kbd "n") 'simple-call-tree-move-next)
+  (define-key simple-call-tree-mode-map (kbd "p") 'simple-call-tree-move-prev)
   (use-local-map simple-call-tree-mode-map)
   (outline-minor-mode 1))
 
@@ -119,21 +122,25 @@ This variable is used by the `simple-call-tree-jump-to-function-at-point' functi
 (defun simple-call-tree-list-callers-and-functions nil
   "List callers and functions in `simple-call-tree-alist'."
   (interactive)
-  (let ((list simple-call-tree-alist)
-        (map1 (make-sparse-keymap))
-        (map2 (make-sparse-keymap)))
-    (define-key map1 (kbd "<return>") 'simple-call-tree-find-function-at-point)
-    (define-key map2 (kbd "<return>") 'simple-call-tree-jump-to-function-at-point)
+  (let ((list simple-call-tree-alist))
     (switch-to-buffer (get-buffer-create "*Simple Call Tree*"))
     (if (not (equal major-mode 'simple-call-tree-mode)) (simple-call-tree-mode))
     (erase-buffer)
     (dolist (entry list)
-      (let ((callees (mapcar (lambda (func) (propertize func 'keymap map2 'mouse-face 'highlight))
+      (let ((callees (mapcar (lambda (func)
+                               (propertize func
+                                           'font-lock-face (list :inherit 'outline-2
+                                                                 :underline t)
+                                           'mouse-face 'highlight))
                              (cdr entry))))
-        (insert "* " (propertize (car entry) 'keymap map1 'mouse-face 'highlight) "\n")
+        (insert "* " (propertize (car entry)
+                                 'font-lock-face (list :inherit 'outline-1
+                                                       :underline t)
+                                 'mouse-face 'highlight) "\n")
         (unless (not callees)
           (dolist (callee callees)
-            (insert "** " callee "\n")))))))
+            (insert "** " callee "\n"))))))
+  (setq buffer-read-only t))
 
 (defun simple-call-tree-display-function-at-point nil
   "Show the function at point."
@@ -154,7 +161,7 @@ This variable is used by the `simple-call-tree-jump-to-function-at-point' functi
     (with-current-buffer "*Simple Call Tree*"
       (goto-char (point-min))
       (re-search-forward (concat "^" (regexp-opt (list (concat "* " fnstr)))))
-      (case (or arg simple-call-tree-recenter)
+      (case (or arg simple-call-tree-default-recenter)
         (top (recenter 0))
         (middle (recenter))
         (bottom (recenter -1))
@@ -163,13 +170,14 @@ This variable is used by the `simple-call-tree-jump-to-function-at-point' functi
 (defun simple-call-tree-move-next nil
   "Move cursor to the next function."
   (interactive)
-  (re-search-forward "\\(^\\| \\)[^: ]" nil t))
+  (re-search-forward "^\\*+ " nil t))
 
 (defun simple-call-tree-move-prev nil
   "Move cursor to the next function."
   (interactive)
-  (re-search-backward "\\(^\\| \\)[^: ]" nil t)
-  (forward-char 1))
+  (re-search-backward "^\\*+" nil t)
+  (previous-line 1)
+  (re-search-forward "\\*+ "))
 
 
 (provide 'simple-call-tree-ext)
