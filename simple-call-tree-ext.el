@@ -106,42 +106,46 @@ This variable is used by the `simple-call-tree-jump-to-function-at-point' functi
         buffer-read-only nil)
   ;; Set keymap
   (define-key simple-call-tree-mode-map (kbd "<tab>") 'outline-cycle)
-  (define-key simple-call-tree-mode-map (kbd "<return>") 'simple-call-tree-find-function-at-point)
+  (define-key simple-call-tree-mode-map (kbd "<return>") 'simple-call-tree-display-function-at-point)
   (define-key simple-call-tree-mode-map (kbd "j") 'simple-call-tree-jump-to-function-at-point)
   (define-key simple-call-tree-mode-map (kbd "n") 'simple-call-tree-move-next)
   (define-key simple-call-tree-mode-map (kbd "p") 'simple-call-tree-move-prev)
   (use-local-map simple-call-tree-mode-map)
   (outline-minor-mode 1))
 
-(defun simple-call-tree-display-buffer nil
+(defun* simple-call-tree-display-buffer (&optional (depth 2))
   "Display call tree for current buffer."
-  (interactive)
-  (simple-call-tree-analyze)
-  (simple-call-tree-list-callers-and-functions))
+  (interactive "P")
+  (let ((maxdepth (if current-prefix-arg (prefix-numeric-value depth)
+                    (or depth 2))))
+    (simple-call-tree-analyze)
+    (simple-call-tree-list-callers-and-functions maxdepth)))
 
-(defun simple-call-tree-list-callers-and-functions nil
+(defun* simple-call-tree-list-callers-and-functions (&optional (maxdepth 2))
   "List callers and functions in `simple-call-tree-alist'."
-  (interactive)
-  (let ((list simple-call-tree-alist))
-    (switch-to-buffer (get-buffer-create "*Simple Call Tree*"))
-    (if (not (equal major-mode 'simple-call-tree-mode)) (simple-call-tree-mode))
-    (erase-buffer)
-    (dolist (entry list)
-      (let ((callees (mapcar (lambda (func)
-                               (propertize func
-                                           'font-lock-face (list :inherit 'outline-2
-                                                                 :underline t)
-                                           'mouse-face 'highlight))
-                             (cdr entry))))
-        (insert "* " (propertize (car entry)
-                                 'font-lock-face (list :inherit 'outline-1
-                                                       :underline t)
-                                 'mouse-face 'highlight) "\n")
-        (unless (not callees)
-          (dolist (callee callees)
-            (insert "** " callee "\n"))))))
+  (switch-to-buffer (get-buffer-create "*Simple Call Tree*"))
+  (if (not (equal major-mode 'simple-call-tree-mode)) (simple-call-tree-mode))
+  (erase-buffer)
+  (dolist (item simple-call-tree-alist)
+    (simple-call-tree-list-callees-recursively (car item) maxdepth))
   (setq buffer-read-only t))
 
+(defun* simple-call-tree-list-callees-recursively (fname &optional (maxdepth 3) (curdepth 1))
+  "Insert a call tree for the function named FNAME, to depth MAXDEPTH.
+FNAME must be the car of one of the elements of `simple-call-tree-alist'.
+The optional arguments MAXDEPTH and CURDEPTH specify the maximum and current depth of the tree respectively.
+This is a recursive function, and you should not need to set CURDEPTH."
+  (let* ((callees (cdr (assoc fname simple-call-tree-alist)))
+         (stars (make-string curdepth 42))
+         (face (intern-soft (concat "outline-"
+                                    (number-to-string (1+ (mod (1- curdepth) 8)))))))
+    (insert stars " " (propertize fname
+                                  'font-lock-face (list :inherit face :underline t)
+                                  'mouse-face 'highlight) "\n")
+    (if (< curdepth maxdepth)
+        (dolist (callee callees)
+          (simple-call-tree-list-callees-recursively callee maxdepth (1+ curdepth))))))
+  
 (defun simple-call-tree-display-function-at-point nil
   "Show the function at point."
   (interactive)
