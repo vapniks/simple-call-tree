@@ -196,16 +196,14 @@ name."
 (defun simple-call-tree-invert (alist)
   "Invert ALIST."
   (let (result)
-    (mapc (lambda (entry)
-	    (mapc (lambda (func)
-		    (let ((elem (assoc func result)))
-		      (if elem
-			  (setcdr elem (cons (car entry)
-					     (cdr elem)))
-			(setq result (cons (list func (car entry))
-					   result)))))
-		  (cdr entry)))
-	  simple-call-tree-alist)
+    (dolist (item simple-call-tree-alist)
+      (let ((caller (car item))
+            (callees (cdr item)))
+        (dolist (callee callees)
+          (let ((elem (assoc callee result)))
+            (if elem
+                (setcdr elem (cons caller (cdr elem)))
+              (setq result (cons (list callee caller) result)))))))
     result))
 
 ;;; New functions (not in simple-call-tree.el)
