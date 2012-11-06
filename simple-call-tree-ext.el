@@ -99,6 +99,13 @@ This variable is used by the `simple-call-tree-jump-to-function-at-point' functi
                  (const :tag "Middle" middle)
                  (const :tag "Bottom" bottom)))
 
+;; Saves a little typing
+(defmacro whilelast (&rest forms)
+  `(while (progn ,@forms)))
+
+(defmacro whilenotlast (&rest forms)
+  `(while (progn (not ,@forms))))
+
 (define-derived-mode simple-call-tree-mode outline-mode "Simple Call Tree"
   "The major-mode for the one-key menu buffer."
   :group 'simple-call-tree
@@ -113,13 +120,148 @@ This variable is used by the `simple-call-tree-jump-to-function-at-point' functi
   (use-local-map simple-call-tree-mode-map)
   (outline-minor-mode 1))
 
-(defun* simple-call-tree-display-buffer (&optional (depth 2))
+(defvar simple-call-tree-alist nil
+  "Alist of functions and the functions they call.")
+
+(defvar simple-call-tree-locations nil
+  "Alist of functions and their locations within their respective buffers.
+The car of each element is a function name, and the cdr is a cons cell in the form (BUF . LINENUM)
+where BUF is a buffer name and LINENUM is the line number of the function.")
+
+(defun simple-call-tree-next-func (posvar &optional test endp)
+  "Find the next function in the current buffer after position POSVAR, and return its name.
+POSVAR should be a symbol which evaluates to a position in the current buffer. If a function is found
+its value will be changed to the position in the current buffer just before the function name unless
+ENDP is non-nil in which case it will be set to the position just after the function name.
+If optional function TEST is given, it must return non-nil when called with one parameter, the starting
+position of the function name."
+  (let ((start (eval posvar)) end)
+    (while (and (not (and (eq (get-text-property start 'face)
+                              'font-lock-function-name-face)
+                          (or (not (functionp test))
+                              (funcall test start))))
+                (setq start (next-single-property-change start 'face))))
+    (unless (not start)
+      (setq end (next-single-property-change start 'face))
+      (unless endp (set posvar start))
+      (unless (not end)
+        (buffer-substring-no-properties start end)
+        (if endp (set posvar end))))))
+
+(defun simple-call-tree-add (start end alist)
+  "Add tokes between START and END to ALIST.
+ALIST is a list with a string identifying the function in its car,
+and the list of functions it calls in the cdr."
+  (dolist (entry simple-call-tree-alist)
+    (goto-char start)
+    (catch 'done
+      (while (search-forward (car entry) end t)
+	(let ((faces (get-text-property (point) 'face)))
+	  (unless (listp faces)
+	    (setq faces (list faces)))
+	  (unless (or (memq 'font-lock-comment-face faces)
+		      (memq 'font-lock-string-face faces))
+	    (setcdr alist (cons (car entry)
+				(cdr alist)))
+	    (throw 'done t)))))))
+
+;; Following function code is lifted from simple-call-tree.el,
+;; and tweeked slightly so we can analyze multiple files together.
+(defun simple-call-tree-analyze (&optional test)
+  "Analyze the current buffer.
+The result is stored in `simple-call-tree-alist'.
+If optional function TEST is given, it must return non-nil when
+called with one parameter, the starting position of the function
+name."
+  (interactive)
+;  (setq simple-call-tree-alist nil)
+  (font-lock-default-fontify-buffer)
+   (let ((pos (point-min))
+         (count 0)
+         nextfunc max oldpos item olditem)
+     ;; First add all the functions defined in the current buffer to simple-call-tree-alist.
+    (while (setq nextfunc (simple-call-tree-next-func 'pos test t))
+      (setq count (1+ count))
+      (message "Identifying functions...%d" count)
+      (setq simple-call-tree-alist (cons (list nextfunc) simple-call-tree-alist)))
+    ;; Set variables in preparation for next part.
+    (setq pos (point-min)
+          max count
+          count 0
+          oldpos pos
+          olditem '("*Start*") ;; dummy value required for 1st iteration of following loop
+          item)
+      (save-excursion
+        ;; Loop through functions, adding called functions to associated items in simple-call-tree-alist.
+        (while (setq nextfunc (simple-call-tree-next-func 'pos test))
+          (setq item (assoc nextfunc simple-call-tree-alist))
+          (setq count (1+ count))
+          (message "Identifying functions called...%d/%d" count max)
+          (simple-call-tree-add oldpos pos olditem)
+          (setq oldpos pos olditem item))
+        ;; Final function needs to be dealt with separately using a different method for finding its end.
+        (goto-char oldpos)
+        (end-of-defun)
+        (simple-call-tree-add oldpos (point) olditem)
+        (message "simple-call-tree done"))))
+
+(defun simple-call-tree-analyze-perl ()
+  "Call `simple-call-tree-analyze-perl' for CPerl code."
+  (interactive)
+  (simple-call-tree-analyze (lambda (pos)
+		       (goto-char pos)
+		       (beginning-of-line)
+		       (looking-at "sub"))))
+
+(defun simple-call-tree-invert (alist)
+  "Invert ALIST."
+  (let (result)
+    (mapc (lambda (entry)
+	    (mapc (lambda (func)
+		    (let ((elem (assoc func result)))
+		      (if elem
+			  (setcdr elem (cons (car entry)
+					     (cdr elem)))
+			(setq result (cons (list func (car entry))
+					   result)))))
+		  (cdr entry)))
+	  simple-call-tree-alist)
+    result))
+
+;; New functions (not in simple-call-tree.el)
+
+(defun* simple-call-tree-display-buffer (&optional depth files)
   "Display call tree for current buffer."
   (interactive "P")
   (let ((maxdepth (if current-prefix-arg (prefix-numeric-value depth)
-                    (or depth 2))))
-    (simple-call-tree-analyze)
+                    (or depth
+                        (floor (abs (read-number "Maximum depth to display: "))))))
+        buffers)
+    (or current-prefix-arg files
+        (if (y-or-n-p "Include other files?")
+            (whilenotlast (setq file (read-file-name "File: " nil "SENTINEL"))
+                          (add-to-list 'files file)
+                          (string= file "SENTINEL"))))
+    (setq buffers (if (or current-prefix-arg (not files)) (list (current-buffer))
+                    (loop for file in files
+                          collect (find-file file))))
+    (setq simple-call-tree-alist nil)
+    (dolist (buf buffers)
+      (with-current-buffer buf
+        (simple-call-tree-analyze)))
     (simple-call-tree-list-callers-and-functions maxdepth)))
+
+
+
+(defun* simple-call-tree-current-function (&optional (func (which-function)))
+  "Display call tree for function FUNC in current buffer"
+  (interactive)
+  (let ((func2 (if current-prefix-arg
+                   (completing-read "Function: " (remove-if-not 'functionp obarray))
+                 func))
+        (file (symbol-file func 'defun)))
+    (if file
+  )
 
 (defun* simple-call-tree-list-callers-and-functions (&optional (maxdepth 2))
   "List callers and functions in `simple-call-tree-alist'."
@@ -137,8 +279,7 @@ The optional arguments MAXDEPTH and CURDEPTH specify the maximum and current dep
 This is a recursive function, and you should not need to set CURDEPTH."
   (let* ((callees (cdr (assoc fname simple-call-tree-alist)))
          (stars (make-string curdepth 42))
-         (face (intern-soft (concat "outline-"
-                                    (number-to-string (1+ (mod (1- curdepth) 8)))))))
+         (face (intern-soft (concat "outline-%d" (1+ (mod (1- curdepth) 8))))))
     (insert stars " " (propertize fname
                                   'font-lock-face (list :inherit face :underline t)
                                   'mouse-face 'highlight) "\n")
