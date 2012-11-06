@@ -147,43 +147,50 @@ and the list of functions it calls in the cdr."
 				(cdr alist)))
 	    (throw 'done t)))))))
 
-(defun simple-call-tree-analyze (&optional test)
-  "Analyze the current buffer.
+(defun* simple-call-tree-analyze (&optional test (buffers (list (current-buffer))))
+  "Analyze the current buffer, or the buffers in list BUFFERS.
 The result is stored in `simple-call-tree-alist'.
 If optional function TEST is given, it must return non-nil when
 called with one parameter, the starting position of the function
-name."
+name.
+Optional arg BUFFERS is a list of buffers to analyze together.
+By default it is set to a list containing the current buffer."
   (interactive)
-;  (setq simple-call-tree-alist nil)
-  (font-lock-default-fontify-buffer)
-   (let ((pos (point-min))
-         (count 0)
-         nextfunc max oldpos item olditem)
-     ;; First add all the functions defined in the current buffer to simple-call-tree-alist.
-    (while (setq nextfunc (simple-call-tree-next-func 'pos test))
-      (setq count (1+ count))
-      (message "Identifying functions...%d" count)
-      (setq simple-call-tree-alist (cons (list nextfunc) simple-call-tree-alist)))
-    ;; Set variables in preparation for next part.
-    (setq pos (point-min)
-          max count
-          count 0
-          oldpos pos
-          olditem '("*Start*") ;; dummy value required for 1st iteration of following loop
-          item)
-      (save-excursion
-        ;; Loop through functions, adding called functions to associated items in simple-call-tree-alist.
+  (setq simple-call-tree-alist nil)
+  ;; First add all the functions defined in the buffers to simple-call-tree-alist.
+  (let ((pos (point-min))
+        oldpos count nextfunc max item olditem)
+    (dolist (buf buffers)
+      (with-current-buffer buf
+        (font-lock-default-fontify-buffer)
+        (setq pos (point-min)
+              count 0)
         (while (setq nextfunc (simple-call-tree-next-func 'pos test))
-          (setq item (assoc nextfunc simple-call-tree-alist))
           (setq count (1+ count))
-          (message "Identifying functions called...%d/%d" count max)
-          (simple-call-tree-add oldpos (- pos (length nextfunc)) olditem)
-          (setq oldpos pos olditem item))
-        ;; Final function needs to be dealt with separately using a different method for finding its end.
-        (goto-char oldpos)
-        (end-of-defun)
-        (simple-call-tree-add oldpos (point) olditem)
-        (message "simple-call-tree done"))))
+          (message "Identifying functions...%d" count)
+          (setq simple-call-tree-alist (cons (list nextfunc) simple-call-tree-alist)))))
+    ;; Set variables in preparation for next part.
+    (dolist (buf buffers)
+      (with-current-buffer buf
+        (setq pos (point-min)
+              max count
+              count 0
+              oldpos pos
+              olditem '("*Start*") ;; dummy value required for 1st iteration of following loop
+              item nextfunc)
+        (save-excursion
+          ;; Loop through functions, adding called functions to associated items in simple-call-tree-alist.
+          (while (setq nextfunc (simple-call-tree-next-func 'pos test))
+            (setq item (assoc nextfunc simple-call-tree-alist)
+                  count (1+ count))
+            (message "Identifying functions called...%d/%d" count max)
+            (simple-call-tree-add oldpos (- pos (length nextfunc)) olditem)
+            (setq oldpos pos olditem item))
+          ;; Final function needs to be dealt with separately using a different method for finding its end.
+          (goto-char oldpos)
+          (end-of-defun)
+          (simple-call-tree-add oldpos (point) olditem)))))
+  (message "simple-call-tree done"))
 
 (defun simple-call-tree-analyze-perl ()
   "Call `simple-call-tree-analyze-perl' for CPerl code."
@@ -238,13 +245,13 @@ position of the function name."
             (whilenotlast (setq file (read-file-name "File: " nil "SENTINEL"))
                           (add-to-list 'files file)
                           (string= file "SENTINEL"))))
-    (setq buffers (if (or current-prefix-arg (not files)) (list (current-buffer))
-                    (loop for file in files
-                          collect (find-file file))))
-    (setq simple-call-tree-alist nil)
-    (dolist (buf buffers)
-      (with-current-buffer buf
-        (simple-call-tree-analyze)))
+    (save-excursion
+      (setq buffers (if (or current-prefix-arg (not files)) (list (current-buffer))
+                      (cons (current-buffer)
+                            (loop for file in files
+                                  unless (string= file "SENTINEL")
+                                  collect (find-file file))))))
+    (simple-call-tree-analyze nil buffers)
     (simple-call-tree-list-callers-and-functions maxdepth)))
 
 ;; (defun* simple-call-tree-current-function (&optional (func (which-function)))
