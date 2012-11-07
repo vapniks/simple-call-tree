@@ -294,28 +294,33 @@ By default FUNCLIST is set to `simple-call-tree-alist'."
   (if (not (equal major-mode 'simple-call-tree-mode)) (simple-call-tree-mode))
   (setq buffer-read-only nil)
   (erase-buffer)
-  (dolist (item funclist)
-    (simple-call-tree-list-callees-recursively (car item) maxdepth 1 funclist))
-  (setq simple-call-tree-current-maxdepth maxdepth
-        simple-call-tree-inverted-bufferp (not (equal funclist simple-call-tree-alist))
-        buffer-read-only t))
+  (let ((inverted (not (equal funclist simple-call-tree-alist))))
+    (dolist (item funclist)
+      (simple-call-tree-list-callees-recursively (car item) maxdepth 1 funclist inverted))
+    (setq simple-call-tree-current-maxdepth maxdepth
+          simple-call-tree-inverted-bufferp inverted
+          buffer-read-only t)))
 
 (defun* simple-call-tree-list-callees-recursively (fname &optional (maxdepth 3)
                                                          (curdepth 1)
-                                                         (funclist simple-call-tree-alist))
+                                                         (funclist simple-call-tree-alist)
+                                                         (inverted (not (equal funclist simple-call-tree-alist))))
   "Insert a call tree for the function named FNAME, to depth MAXDEPTH.
 FNAME must be the car of one of the elements of FUNCLIST which is set to `simple-call-tree-alist' by default.
 The optional arguments MAXDEPTH and CURDEPTH specify the maximum and current depth of the tree respectively.
 This is a recursive function, and you should not need to set CURDEPTH."
   (let* ((callees (cdr (assoc fname funclist)))
          (stars (make-string curdepth 42))
+         (arrowtail (make-string curdepth 45))
+         (arrow (if inverted (if (> curdepth 1) (concat " <" arrowtail " ") " ")
+                  (if (> curdepth 1) (concat " " arrowtail "> ") " ")))
          (face (intern-soft (format "outline-%d" (1+ (mod (1- curdepth) 8))))))
-    (insert stars " " (propertize fname
-                                  'font-lock-face (list :inherit face :underline t)
-                                  'mouse-face 'highlight) "\n")
+    (insert stars arrow (propertize fname
+                                    'font-lock-face (list :inherit face :underline t)
+                                    'mouse-face 'highlight) "\n")
     (if (< curdepth maxdepth)
         (dolist (callee callees)
-          (simple-call-tree-list-callees-recursively callee maxdepth (1+ curdepth) funclist)))))
+          (simple-call-tree-list-callees-recursively callee maxdepth (1+ curdepth) funclist inverted)))))
 
 ;;; Major-mode commands bound to keys
 
