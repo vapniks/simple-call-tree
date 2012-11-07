@@ -128,6 +128,14 @@ This variable is used by the `simple-call-tree-jump-to-function-at-point' functi
 The car of each element is a function name, and the cdr is a cons cell in the form (BUF . LINENUM)
 where BUF is a buffer name and LINENUM is the line number of the function.")
 
+(defvar simple-call-tree-inverted-bufferp nil
+  "Indicates if the *Simple Call Tree* buffer is currently inverted or not.
+If non-nil then children correspond to callers of parents in the outline tree.
+Otherwise it's the other way around.")
+
+(defvar simple-call-tree-current-maxdepth nil
+  "The current maximum depth of the tree in the *Simple Call Tree* buffer.")
+
 ;;; Functions from simple-call-tree.el (some are rewritten)
 
 (defun simple-call-tree-add (start end alist)
@@ -201,7 +209,7 @@ By default it is set to a list containing the current buffer."
 		       (looking-at "sub"))))
 
 (defun simple-call-tree-invert (alist)
-  "Invert ALIST."
+  "Invert ALIST and return the result."
   (let (result)
     (dolist (item simple-call-tree-alist)
       (let ((caller (car item))
@@ -264,21 +272,27 @@ position of the function name."
 ;;     (if file
 ;;   )
 
-(defun* simple-call-tree-list-callers-and-functions (&optional (maxdepth 2))
-  "List callers and functions in `simple-call-tree-alist'."
+(defun* simple-call-tree-list-callers-and-functions (&optional (maxdepth 2)
+                                                               (funclist simple-call-tree-alist))
+  "List callers and functions in FUNCLIST to depth MAXDEPTH.
+By default FUNCLIST is set to `simple-call-tree-alist'."
   (switch-to-buffer (get-buffer-create "*Simple Call Tree*"))
   (if (not (equal major-mode 'simple-call-tree-mode)) (simple-call-tree-mode))
+  (setq buffer-read-only nil)
   (erase-buffer)
-  (dolist (item simple-call-tree-alist)
-    (simple-call-tree-list-callees-recursively (car item) maxdepth))
+  (dolist (item funclist)
+    (simple-call-tree-list-callees-recursively (car item) maxdepth 1 funclist))
+  (setq simple-call-tree-current-maxdepth maxdepth)
   (setq buffer-read-only t))
 
-(defun* simple-call-tree-list-callees-recursively (fname &optional (maxdepth 3) (curdepth 1))
+(defun* simple-call-tree-list-callees-recursively (fname &optional (maxdepth 3)
+                                                         (curdepth 1)
+                                                         (funclist simple-call-tree-alist))
   "Insert a call tree for the function named FNAME, to depth MAXDEPTH.
-FNAME must be the car of one of the elements of `simple-call-tree-alist'.
+FNAME must be the car of one of the elements of FUNCLIST which is set to `simple-call-tree-alist' by default.
 The optional arguments MAXDEPTH and CURDEPTH specify the maximum and current depth of the tree respectively.
 This is a recursive function, and you should not need to set CURDEPTH."
-  (let* ((callees (cdr (assoc fname simple-call-tree-alist)))
+  (let* ((callees (cdr (assoc fname funclist)))
          (stars (make-string curdepth 42))
          (face (intern-soft (format "outline-%d" (1+ (mod (1- curdepth) 8))))))
     (insert stars " " (propertize fname
@@ -286,9 +300,21 @@ This is a recursive function, and you should not need to set CURDEPTH."
                                   'mouse-face 'highlight) "\n")
     (if (< curdepth maxdepth)
         (dolist (callee callees)
-          (simple-call-tree-list-callees-recursively callee maxdepth (1+ curdepth))))))
+          (simple-call-tree-list-callees-recursively callee maxdepth (1+ curdepth) funclist)))))
 
 ;;; Major-mode commands bound to keys
+
+(defun simple-call-tree-invert-buffer (&optional maxdepth)
+  "Invert the tree in *Simple Call Tree* buffer."
+  (interactive "P")
+  (let ((funclist (if simple-call-tree-inverted-bufferp
+                      simple-call-tree-alist
+                    (simple-call-tree-invert simple-call-tree-alist)))
+        (depth (if current-prefix-arg (prefix-numeric-value maxdepth)
+                 simple-call-tree-current-maxdepth)))
+    (simple-call-tree-list-callers-and-functions depth funclist)
+    (setq simple-call-tree-inverted-bufferp (not simple-call-tree-inverted-bufferp)
+          simple-call-tree-current-maxdepth depth)))
 
 (defun simple-call-tree-display-function-at-point nil
   "Show the function at point."
