@@ -118,6 +118,18 @@ This variable is used by the `simple-call-tree-jump-to-function-at-point' functi
   (define-key simple-call-tree-mode-map (kbd "n") 'simple-call-tree-move-next)
   (define-key simple-call-tree-mode-map (kbd "p") 'simple-call-tree-move-prev)
   (use-local-map simple-call-tree-mode-map)
+  (setq mode-line-format
+        (append
+         (subseq mode-line-format 0
+                 (1+ (position 'mode-line-buffer-identification
+                               mode-line-format)))
+         (list '(:eval (format (if simple-call-tree-inverted-bufferp
+                                   " Inverted, maxdepth=%d "
+                                 " maxdepth=%d ")
+                               simple-call-tree-current-maxdepth)))
+         (subseq mode-line-format
+                 (+ 2 (position 'mode-line-buffer-identification
+                                mode-line-format)))))
   (outline-minor-mode 1))
 
 (defvar simple-call-tree-alist nil
@@ -282,8 +294,9 @@ By default FUNCLIST is set to `simple-call-tree-alist'."
   (erase-buffer)
   (dolist (item funclist)
     (simple-call-tree-list-callees-recursively (car item) maxdepth 1 funclist))
-  (setq simple-call-tree-current-maxdepth maxdepth)
-  (setq buffer-read-only t))
+  (setq simple-call-tree-current-maxdepth maxdepth
+        simple-call-tree-inverted-bufferp (not (equal funclist simple-call-tree-alist))
+        buffer-read-only t))
 
 (defun* simple-call-tree-list-callees-recursively (fname &optional (maxdepth 3)
                                                          (curdepth 1)
@@ -313,8 +326,7 @@ This is a recursive function, and you should not need to set CURDEPTH."
         (depth (if current-prefix-arg (prefix-numeric-value maxdepth)
                  simple-call-tree-current-maxdepth)))
     (simple-call-tree-list-callers-and-functions depth funclist)
-    (setq simple-call-tree-inverted-bufferp (not simple-call-tree-inverted-bufferp)
-          simple-call-tree-current-maxdepth depth)))
+    (setq simple-call-tree-current-maxdepth depth)))
 
 (defun simple-call-tree-display-function-at-point nil
   "Show the function at point."
