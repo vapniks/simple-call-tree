@@ -117,6 +117,8 @@ This variable is used by the `simple-call-tree-jump-to-function-at-point' functi
   (define-key simple-call-tree-mode-map (kbd "j") 'simple-call-tree-jump-to-function-at-point)
   (define-key simple-call-tree-mode-map (kbd "n") 'simple-call-tree-move-next)
   (define-key simple-call-tree-mode-map (kbd "p") 'simple-call-tree-move-prev)
+  (define-key simple-call-tree-mode-map (kbd "i") 'simple-call-tree-invert-buffer)
+  (define-key simple-call-tree-mode-map (kbd "d") 'simple-call-tree-change-maxdepth)
   (use-local-map simple-call-tree-mode-map)
   (setq mode-line-format
         (append
@@ -325,6 +327,17 @@ This is a recursive function, and you should not need to set CURDEPTH."
                     (simple-call-tree-invert simple-call-tree-alist)))
         (depth (if current-prefix-arg (prefix-numeric-value maxdepth)
                  simple-call-tree-current-maxdepth)))
+    (simple-call-tree-list-callers-and-functions depth funclist)
+    (setq simple-call-tree-current-maxdepth depth)))
+
+(defun simple-call-tree-change-maxdepth (maxdepth)
+  "Alter the maximum tree depth in the *Simple Call Tree* buffer."
+  (interactive "P")
+  (let ((depth (if current-prefix-arg (prefix-numeric-value current-prefix-arg)
+                 (floor (abs (read-number "Maximum depth to display: " 2)))))
+        (funclist (if simple-call-tree-inverted-bufferp
+                      (simple-call-tree-invert simple-call-tree-alist)
+                    simple-call-tree-alist)))
     (simple-call-tree-list-callers-and-functions depth funclist)
     (setq simple-call-tree-current-maxdepth depth)))
 
