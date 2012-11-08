@@ -352,11 +352,17 @@ This is a recursive function, and you should not need to set CURDEPTH."
     (simple-call-tree-list-callers-and-functions depth funclist)
     (setq simple-call-tree-current-maxdepth depth)))
 
+(defun simple-call-tree-get-function-at-point nil
+  "Return the name of the function nearest point in the *Simple Call Tree* buffer."
+  (with-current-buffer "*Simple Call Tree*"
+    (let* ((symb (symbol-nearest-point))
+           (fn (or (and (fboundp symb) symb) (function-called-at-point))))
+      (symbol-name fn))))
+
 (defun simple-call-tree-display-function-at-point nil
   "Show the function at point."
   (interactive)
-  (let* ((symb (symbol-nearest-point))
-         (fn (or (and (fboundp symb) symb) (function-called-at-point)))
+  (let* ((fn (intern-soft (simple-call-tree-get-function-at-point)))
          (find-function-recenter-line 1))
     (delete-other-windows)
     (find-function-do-it fn nil 'display-buffer)
@@ -365,9 +371,7 @@ This is a recursive function, and you should not need to set CURDEPTH."
 (defun simple-call-tree-jump-to-function-at-point (arg)
   "Move cursor to the line corresponding to the function at point"
   (interactive "P")
-  (let* ((symb (symbol-nearest-point))
-         (fn (or (and (fboundp symb) symb) (function-called-at-point)))
-         (fnstr (symbol-name fn))
+  (let* ((fnstr (simple-call-tree-get-function-at-point))
          (narrowedp (simple-call-tree-buffer-narrowed-p)))
     (widen)
     (with-current-buffer "*Simple Call Tree*"
