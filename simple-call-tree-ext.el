@@ -389,12 +389,15 @@ This is a recursive function, and you should not need to set CURDEPTH."
   "Narrow *Simple Call Tree* buffer to subtree at point."
   (interactive)
   (with-current-buffer "*Simple Call Tree*"
-    (if (looking-at "^\\* ")
-        (re-search-forward "^\\* ")
-      (re-search-backward "^\\* "))
-    (outline-mark-subtree)
-    (narrow-to-region (region-beginning) (region-end))
-    (let (select-active-regions) (deactivate-mark))))
+    (if (or (/= (point-min) 1)
+            (/= (point-max) (1+ (buffer-size))))
+        (widen)
+      (if (looking-at "^\\* ")
+          (re-search-forward "^\\* ")
+        (re-search-backward "^\\* "))
+      (outline-mark-subtree)
+      (narrow-to-region (region-beginning) (region-end))
+      (let (select-active-regions) (deactivate-mark)))))
 
 (provide 'simple-call-tree-ext)
 
