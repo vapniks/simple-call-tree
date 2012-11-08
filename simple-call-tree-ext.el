@@ -363,15 +363,18 @@ This is a recursive function, and you should not need to set CURDEPTH."
   (interactive "P")
   (let* ((symb (symbol-nearest-point))
          (fn (or (and (fboundp symb) symb) (function-called-at-point)))
-         (fnstr (symbol-name fn)))
+         (fnstr (symbol-name fn))
+         (narrowedp (simple-call-tree-buffer-narrowed-p)))
+    (widen)
     (with-current-buffer "*Simple Call Tree*"
       (goto-char (point-min))
       (re-search-forward (concat "^" (regexp-opt (list (concat "* " fnstr)))))
-      (case (or arg simple-call-tree-default-recenter)
-        (top (recenter 0))
-        (middle (recenter))
-        (bottom (recenter -1))
-        (t (recenter arg))))))
+      (if narrowedp (simple-call-tree-narrow-to-subtree)
+        (case (or arg simple-call-tree-default-recenter)
+          (top (recenter 0))
+          (middle (recenter))
+          (bottom (recenter -1))
+          (t (recenter arg)))))))
 
 (defun simple-call-tree-move-next nil
   "Move cursor to the next function."
@@ -385,12 +388,17 @@ This is a recursive function, and you should not need to set CURDEPTH."
   (outline-previous-visible-heading 1)
   (goto-char (next-single-property-change (point) 'face)))
 
+(defun simple-call-tree-buffer-narrowed-p nil
+  "Return non-nil if buffer BUF is narrowed. BUF defaults to the current buffer."
+  (with-current-buffer "*Simple Call Tree*"
+    (or (/= (point-min) 1)
+        (/= (point-max) (1+ (buffer-size))))))
+
 (defun simple-call-tree-narrow-to-subtree nil
   "Narrow *Simple Call Tree* buffer to subtree at point."
   (interactive)
   (with-current-buffer "*Simple Call Tree*"
-    (if (or (/= (point-min) 1)
-            (/= (point-max) (1+ (buffer-size))))
+    (if (simple-call-tree-buffer-narrowed-p)
         (widen)
       (if (looking-at "^\\* ")
           (re-search-forward "^\\* ")
