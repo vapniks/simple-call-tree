@@ -112,6 +112,7 @@ This variable is used by the `simple-call-tree-jump-to-function-at-point' functi
   (setq simple-call-tree-mode-map (make-keymap)
         buffer-read-only nil)
   ;; Set keymap
+  (define-key simple-call-tree-mode-map (kbd "q") 'bury-buffer)
   (define-key simple-call-tree-mode-map (kbd "<tab>") 'outline-cycle)
   (define-key simple-call-tree-mode-map (kbd "<return>") 'simple-call-tree-display-function-at-point)
   (define-key simple-call-tree-mode-map (kbd "j") 'simple-call-tree-jump-to-function-at-point)
