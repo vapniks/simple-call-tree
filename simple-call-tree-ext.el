@@ -115,8 +115,11 @@ This variable is used by the `simple-call-tree-jump-to-function-at-point' functi
   (define-key simple-call-tree-mode-map (kbd "<tab>") 'outline-cycle)
   (define-key simple-call-tree-mode-map (kbd "<return>") 'simple-call-tree-display-function-at-point)
   (define-key simple-call-tree-mode-map (kbd "j") 'simple-call-tree-jump-to-function-at-point)
+  (define-key simple-call-tree-mode-map (kbd "u") 'simple-call-tree-move-up)
   (define-key simple-call-tree-mode-map (kbd "n") 'simple-call-tree-move-next)
   (define-key simple-call-tree-mode-map (kbd "p") 'simple-call-tree-move-prev)
+  (define-key simple-call-tree-mode-map (kbd "f") 'simple-call-tree-move-next-samelevel)
+  (define-key simple-call-tree-mode-map (kbd "b") 'simple-call-tree-move-prev-samelevel)
   (define-key simple-call-tree-mode-map (kbd "i") 'simple-call-tree-invert-buffer)
   (define-key simple-call-tree-mode-map (kbd "d") 'simple-call-tree-change-maxdepth)
   (define-key simple-call-tree-mode-map (kbd "/") 'simple-call-tree-narrow-to-subtree)
@@ -376,6 +379,12 @@ This is a recursive function, and you should not need to set CURDEPTH."
           (bottom (recenter -1))
           (t (recenter arg)))))))
 
+(defun simple-call-tree-move-up nil
+  "Move cursor to the parent of this function."
+  (interactive)
+  (outline-up-heading 1)
+  (goto-char (next-single-property-change (point) 'face)))
+
 (defun simple-call-tree-move-next nil
   "Move cursor to the next function."
   (interactive)
@@ -383,9 +392,21 @@ This is a recursive function, and you should not need to set CURDEPTH."
   (goto-char (next-single-property-change (point) 'face)))  
 
 (defun simple-call-tree-move-prev nil
-  "Move cursor to the next function."
+  "Move cursor to the previous function."
   (interactive)
   (outline-previous-visible-heading 1)
+  (goto-char (next-single-property-change (point) 'face)))
+
+(defun simple-call-tree-move-next-samelevel nil
+  "Move cursor to the next function at the same level as the current one."
+  (interactive)
+  (outline-forward-same-level 1)
+  (goto-char (next-single-property-change (point) 'face)))
+
+(defun simple-call-tree-move-prev-samelevel nil
+  "Move cursor to the previous function at the same level as the current one."  
+  (interactive)
+  (outline-backward-same-level 1)
   (goto-char (next-single-property-change (point) 'face)))
 
 (defun simple-call-tree-buffer-narrowed-p nil
