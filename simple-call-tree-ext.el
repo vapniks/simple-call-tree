@@ -114,7 +114,7 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
   ;; Set keymap
   (define-key simple-call-tree-mode-map (kbd "q") 'bury-buffer)
   (define-key simple-call-tree-mode-map (kbd "<tab>") 'outline-cycle)
-  (define-key simple-call-tree-mode-map (kbd "<return>") 'simple-call-tree-display-function-at-point)
+  (define-key simple-call-tree-mode-map (kbd "<return>") 'simple-call-tree-display-function)
   (define-key simple-call-tree-mode-map (kbd "j") 'simple-call-tree-jump-to-function)
   (define-key simple-call-tree-mode-map (kbd "u") 'simple-call-tree-move-up)
   (define-key simple-call-tree-mode-map (kbd "n") 'simple-call-tree-move-next)
@@ -363,7 +363,7 @@ This is a recursive function, and you should not need to set CURDEPTH."
            (fn (or (and (fboundp symb) symb) (function-called-at-point))))
       (symbol-name fn))))
 
-(defun simple-call-tree-display-function-at-point nil
+(defun simple-call-tree-display-function nil
   "Show the function at point."
   (interactive)
   (let* ((fn (intern-soft (simple-call-tree-get-function-at-point)))
