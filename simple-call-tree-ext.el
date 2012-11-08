@@ -363,17 +363,24 @@ This is a recursive function, and you should not need to set CURDEPTH."
            (fn (or (and (fboundp symb) symb) (function-called-at-point))))
       (symbol-name fn))))
 
-(defun simple-call-tree-display-function nil
-  "Show the function at point."
-  (interactive)
-  (let* ((fn (intern-soft (simple-call-tree-get-function-at-point)))
+(defun simple-call-tree-display-function (fnstr)
+  "Display the source code for function with name FNSTR.
+When called interactively FNSTR will be set to the function name under point,
+or if called with a prefix arg it will be prompted for."
+  (interactive (list (if current-prefix-arg
+                         (ido-completing-read "Jump to function: "
+                                              (mapcar 'car simple-call-tree-alist))
+                       (simple-call-tree-get-function-at-point))))
+  (let* ((fn (intern-soft fnstr))
          (find-function-recenter-line 1))
     (delete-other-windows)
     (find-function-do-it fn nil 'display-buffer)
     (set-mark-command 1)))
 
 (defun simple-call-tree-jump-to-function (fnstr)
-  "Move cursor to the line corresponding to the function at point"
+  "Move cursor to the line corresponding to the function with name FNSTR.
+When called interactively FNSTR will be set to the function name under point,
+or if called with a prefix arg it will be prompted for."  
   (interactive (list (if current-prefix-arg
                          (ido-completing-read "Jump to function: "
                                               (mapcar 'car simple-call-tree-alist))
