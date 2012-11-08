@@ -93,7 +93,7 @@
 (defcustom simple-call-tree-default-recenter 'middle
   "How to recenter the window after moving to another function in the \"*Simple Call Tree*\" buffer.
 Can be one of the following symbols: 'top 'middle 'bottom.
-This variable is used by the `simple-call-tree-jump-to-function-at-point' function when no prefix arg is given."
+This variable is used by the `simple-call-tree-jump-to-function' function when no prefix arg is given."
   :group 'simple-call-tree
   :type '(choice (const :tag "Top" top)
                  (const :tag "Middle" middle)
@@ -115,7 +115,7 @@ This variable is used by the `simple-call-tree-jump-to-function-at-point' functi
   (define-key simple-call-tree-mode-map (kbd "q") 'bury-buffer)
   (define-key simple-call-tree-mode-map (kbd "<tab>") 'outline-cycle)
   (define-key simple-call-tree-mode-map (kbd "<return>") 'simple-call-tree-display-function-at-point)
-  (define-key simple-call-tree-mode-map (kbd "j") 'simple-call-tree-jump-to-function-at-point)
+  (define-key simple-call-tree-mode-map (kbd "j") 'simple-call-tree-jump-to-function)
   (define-key simple-call-tree-mode-map (kbd "u") 'simple-call-tree-move-up)
   (define-key simple-call-tree-mode-map (kbd "n") 'simple-call-tree-move-next)
   (define-key simple-call-tree-mode-map (kbd "p") 'simple-call-tree-move-prev)
@@ -341,7 +341,7 @@ This is a recursive function, and you should not need to set CURDEPTH."
         (thisfunc (simple-call-tree-get-function-at-point))
         (narrowedp (simple-call-tree-buffer-narrowed-p)))
     (simple-call-tree-list-callers-and-functions depth funclist)
-    (simple-call-tree-jump-to-function-at-point thisfunc)
+    (simple-call-tree-jump-to-function thisfunc)
     (if narrowedp (simple-call-tree-narrow-to-subtree))
     (setq simple-call-tree-current-maxdepth depth)))
 
@@ -372,9 +372,12 @@ This is a recursive function, and you should not need to set CURDEPTH."
     (find-function-do-it fn nil 'display-buffer)
     (set-mark-command 1)))
 
-(defun simple-call-tree-jump-to-function-at-point (fnstr)
+(defun simple-call-tree-jump-to-function (fnstr)
   "Move cursor to the line corresponding to the function at point"
-  (interactive (list (simple-call-tree-get-function-at-point)))
+  (interactive (list (if current-prefix-arg
+                         (ido-completing-read "Jump to function: "
+                                              (mapcar 'car simple-call-tree-alist))
+                       (simple-call-tree-get-function-at-point))))
   (let* ((narrowedp (simple-call-tree-buffer-narrowed-p)))
     (widen)
     (with-current-buffer "*Simple Call Tree*"
