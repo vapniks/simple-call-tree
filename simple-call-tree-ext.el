@@ -376,14 +376,14 @@ This is a recursive function, and you should not need to set CURDEPTH."
 (defun simple-call-tree-move-next nil
   "Move cursor to the next function."
   (interactive)
-  (re-search-forward "^\\*+ " nil t))
+  (outline-next-visible-heading 1)
+  (goto-char (next-single-property-change (point) 'face)))  
 
 (defun simple-call-tree-move-prev nil
   "Move cursor to the next function."
   (interactive)
-  (re-search-backward "^\\*+" nil t)
-  (previous-line 1)
-  (re-search-forward "\\*+ "))
+  (outline-previous-visible-heading 1)
+  (goto-char (next-single-property-change (point) 'face)))
 
 (defun simple-call-tree-narrow-to-subtree nil
   "Narrow *Simple Call Tree* buffer to subtree at point."
