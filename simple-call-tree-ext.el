@@ -119,6 +119,8 @@ This variable is used by the `simple-call-tree-jump-to-function-at-point' functi
   (define-key simple-call-tree-mode-map (kbd "p") 'simple-call-tree-move-prev)
   (define-key simple-call-tree-mode-map (kbd "i") 'simple-call-tree-invert-buffer)
   (define-key simple-call-tree-mode-map (kbd "d") 'simple-call-tree-change-maxdepth)
+  (define-key simple-call-tree-mode-map (kbd "/") 'simple-call-tree-narrow-to-subtree)
+  (define-key simple-call-tree-mode-map (kbd "w") 'widen)
   (use-local-map simple-call-tree-mode-map)
   (setq mode-line-format
         (append
@@ -383,6 +385,16 @@ This is a recursive function, and you should not need to set CURDEPTH."
   (previous-line 1)
   (re-search-forward "\\*+ "))
 
+(defun simple-call-tree-narrow-to-subtree nil
+  "Narrow *Simple Call Tree* buffer to subtree at point."
+  (interactive)
+  (with-current-buffer "*Simple Call Tree*"
+    (if (looking-at "^\\* ")
+        (re-search-forward "^\\* ")
+      (re-search-backward "^\\* "))
+    (outline-mark-subtree)
+    (narrow-to-region (region-beginning) (region-end))
+    (let (select-active-regions) (deactivate-mark))))
 
 (provide 'simple-call-tree-ext)
 
