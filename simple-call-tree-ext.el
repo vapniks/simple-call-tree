@@ -337,8 +337,12 @@ This is a recursive function, and you should not need to set CURDEPTH."
                       simple-call-tree-alist
                     (simple-call-tree-invert simple-call-tree-alist)))
         (depth (if current-prefix-arg (prefix-numeric-value maxdepth)
-                 simple-call-tree-current-maxdepth)))
+                 simple-call-tree-current-maxdepth))
+        (thisfunc (simple-call-tree-get-function-at-point))
+        (narrowedp (simple-call-tree-buffer-narrowed-p)))
     (simple-call-tree-list-callers-and-functions depth funclist)
+    (simple-call-tree-jump-to-function-at-point thisfunc)
+    (if narrowedp (simple-call-tree-narrow-to-subtree))
     (setq simple-call-tree-current-maxdepth depth)))
 
 (defun simple-call-tree-change-maxdepth (maxdepth)
@@ -368,17 +372,16 @@ This is a recursive function, and you should not need to set CURDEPTH."
     (find-function-do-it fn nil 'display-buffer)
     (set-mark-command 1)))
 
-(defun simple-call-tree-jump-to-function-at-point (arg)
+(defun simple-call-tree-jump-to-function-at-point (fnstr)
   "Move cursor to the line corresponding to the function at point"
-  (interactive "P")
-  (let* ((fnstr (simple-call-tree-get-function-at-point))
-         (narrowedp (simple-call-tree-buffer-narrowed-p)))
+  (interactive (list (simple-call-tree-get-function-at-point)))
+  (let* ((narrowedp (simple-call-tree-buffer-narrowed-p)))
     (widen)
     (with-current-buffer "*Simple Call Tree*"
       (goto-char (point-min))
       (re-search-forward (concat "^" (regexp-opt (list (concat "* " fnstr)))))
       (if narrowedp (simple-call-tree-narrow-to-subtree)
-        (case (or arg simple-call-tree-default-recenter)
+        (case simple-call-tree-default-recenter
           (top (recenter 0))
           (middle (recenter))
           (bottom (recenter -1))
