@@ -77,7 +77,9 @@
 
 ;;; TODO
 ;;
-;; Stuff
+;; Rewrite simple-call-tree-display-function and simple-call-tree-goto-function to use
+;; the markers in simple-call-tree-locations.
+;; Follow mode, using fm.el
 ;;
 
 ;;; Require
@@ -289,15 +291,17 @@ position of the function name."
     (simple-call-tree-analyze nil buffers)
     (simple-call-tree-list-callers-and-functions maxdepth)))
 
-;; (defun* simple-call-tree-current-function (&optional (func (which-function)))
-;;   "Display call tree for function FUNC in current buffer"
-;;   (interactive)
-;;   (let ((func2 (if current-prefix-arg
-;;                    (completing-read "Function: " (remove-if-not 'functionp obarray))
-;;                  func))
-;;         (file (symbol-file func 'defun)))
-;;     (if file
-;;   )
+(defun* simple-call-tree-current-function (func)
+  "Display call tree for function FUNC in current buffer"
+  (interactive (list (if current-prefix-arg
+                         (simple-call-tree-get-function-at-point)
+                       (which-function))))
+  (if (assoc func simple-call-tree-alist)
+      (if (get-buffer "*Simple Call Tree*")
+          (switch-to-buffer "*Simple Call Tree*")
+        (simple-call-tree-list-callers-and-functions))
+    (simple-call-tree-display-buffer))
+  (simple-call-tree-jump-to-function func))
 
 (defun* simple-call-tree-list-callers-and-functions (&optional (maxdepth 2)
                                                                (funclist simple-call-tree-alist))
@@ -363,9 +367,9 @@ This is a recursive function, and you should not need to set CURDEPTH."
     (simple-call-tree-list-callers-and-functions depth funclist)
     (setq simple-call-tree-current-maxdepth depth)))
 
-(defun simple-call-tree-get-function-at-point nil
+(defun simple-call-tree-get-function-at-point (&optional (buf "*Simple Call Tree*"))
   "Return the name of the function nearest point in the *Simple Call Tree* buffer."
-  (with-current-buffer "*Simple Call Tree*"
+  (with-current-buffer buf
     (let* ((symb (symbol-nearest-point))
            (fn (or (and (fboundp symb) symb) (function-called-at-point))))
       (symbol-name fn))))
