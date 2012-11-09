@@ -114,7 +114,10 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
   ;; Set keymap
   (define-key simple-call-tree-mode-map (kbd "q") 'bury-buffer)
   (define-key simple-call-tree-mode-map (kbd "<tab>") 'outline-cycle)
-  (define-key simple-call-tree-mode-map (kbd "<return>") 'simple-call-tree-display-function)
+  (define-key simple-call-tree-mode-map (kbd "SPC") 'simple-call-tree-display-function)
+  (define-key simple-call-tree-mode-map (kbd "C-o") 'simple-call-tree-display-function)
+  (define-key simple-call-tree-mode-map (kbd "<return>") 'simple-call-tree-goto-function)
+  (define-key simple-call-tree-mode-map (kbd "o") 'simple-call-tree-goto-function)
   (define-key simple-call-tree-mode-map (kbd "j") 'simple-call-tree-jump-to-function)
   (define-key simple-call-tree-mode-map (kbd "u") 'simple-call-tree-move-up)
   (define-key simple-call-tree-mode-map (kbd "n") 'simple-call-tree-move-next)
@@ -375,6 +378,19 @@ or if called with a prefix arg it will be prompted for."
          (find-function-recenter-line 1))
     (delete-other-windows)
     (find-function-do-it fn nil 'display-buffer)
+    (set-mark-command 1)))
+
+(defun simple-call-tree-goto-function (fnstr)
+  "Display the source code for function with name FNSTR.
+When called interactively FNSTR will be set to the function name under point,
+or if called with a prefix arg it will be prompted for."
+  (interactive (list (if current-prefix-arg
+                         (ido-completing-read "Jump to function: "
+                                              (mapcar 'car simple-call-tree-alist))
+                       (simple-call-tree-get-function-at-point))))
+  (let* ((fn (intern-soft fnstr)))
+    (delete-other-windows)
+    (find-function-do-it fn nil 'switch-to-buffer)
     (set-mark-command 1)))
 
 (defun simple-call-tree-jump-to-function (fnstr)
