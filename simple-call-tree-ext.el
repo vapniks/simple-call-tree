@@ -128,7 +128,7 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
   (define-key simple-call-tree-mode-map (kbd "b") 'simple-call-tree-move-prev-samelevel)
   (define-key simple-call-tree-mode-map (kbd "i") 'simple-call-tree-invert-buffer)
   (define-key simple-call-tree-mode-map (kbd "d") 'simple-call-tree-change-maxdepth)
-  (define-key simple-call-tree-mode-map (kbd "/") 'simple-call-tree-narrow-to-subtree)
+  (define-key simple-call-tree-mode-map (kbd "/") 'simple-call-tree-toggle-narrowing)
   (define-key simple-call-tree-mode-map (kbd "w") 'widen)
   (use-local-map simple-call-tree-mode-map)
   (setq mode-line-format
@@ -314,7 +314,7 @@ for which files to build the tree from."
     (simple-call-tree-display-buffer))
   (simple-call-tree-jump-to-function func)
   (unless (simple-call-tree-buffer-narrowed-p)
-    (simple-call-tree-narrow-to-subtree)))
+    (simple-call-tree-toggle-narrowing)))
 
 (defun* simple-call-tree-list-callers-and-functions (&optional (maxdepth 2)
                                                                (funclist simple-call-tree-alist))
@@ -366,7 +366,7 @@ This is a recursive function, and you should not need to set CURDEPTH."
         (narrowedp (simple-call-tree-buffer-narrowed-p)))
     (simple-call-tree-list-callers-and-functions depth funclist)
     (simple-call-tree-jump-to-function thisfunc)
-    (if narrowedp (simple-call-tree-narrow-to-subtree))
+    (if narrowedp (simple-call-tree-toggle-narrowing))
     (setq simple-call-tree-current-maxdepth depth)))
 
 (defun simple-call-tree-change-maxdepth (maxdepth)
@@ -434,7 +434,7 @@ or if called with a prefix arg it will be prompted for."
     (with-current-buffer "*Simple Call Tree*"
       (goto-char (point-min))
       (re-search-forward (concat "^" (regexp-opt (list (concat "* " fnstr)))))
-      (if narrowedp (simple-call-tree-narrow-to-subtree)
+      (if narrowedp (simple-call-tree-toggle-narrowing)
         (case simple-call-tree-default-recenter
           (top (recenter 0))
           (middle (recenter))
@@ -477,11 +477,19 @@ or if called with a prefix arg it will be prompted for."
     (or (/= (point-min) 1)
         (/= (point-max) (1+ (buffer-size))))))
 
-(defun simple-call-tree-narrow-to-subtree nil
-  "Narrow *Simple Call Tree* buffer to subtree at point."
-  (interactive)
+;; Change this so that it takes an optional arg to set the state, and toggles by default.
+;; Also change name.
+(defun simple-call-tree-toggle-narrowing (&optional state)
+  "Toggle narrowing of *Simple Call Tree* buffer.
+If optional arg STATE is > 0, or if called interactively with a positive prefix arg,
+then widen the buffer. If STATE is < 0 or if called interactively with a negative
+prefix arg then narrow the buffer.
+Otherwise toggle the buffer between narrow and wide state.
+When narrowed, the buffer will be narrowed to the subtree at point."
+  (interactive "P")
   (with-current-buffer "*Simple Call Tree*"
-    (if (simple-call-tree-buffer-narrowed-p)
+    (if (or (and state (> (prefix-numeric-value state) 0))
+            (and (not state) (simple-call-tree-buffer-narrowed-p)))
         (widen)
       (if (looking-at "^\\* ")
           (re-search-forward "^\\* ")
