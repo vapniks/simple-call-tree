@@ -83,7 +83,7 @@
 ;;
 
 ;;; Require
-(require 'simple-call-tree)
+(require 'thingatpt)
 (require 'outline-magic)
 ;;; Code:
 
@@ -271,7 +271,11 @@ position of the function name."
         (buffer-substring-no-properties start end)))))
 
 (defun* simple-call-tree-display-buffer (&optional depth files)
-  "Display call tree for current buffer."
+  "Display call tree for current buffer.
+If optional args DEPTH and FILES are supplied they specify the depth of the tree,
+and the files to search for functions to display in the tree.
+When called interactively DEPTH will be set to the prefix arg if supplied, or be
+prompted for, and only functions in the current buffer will be used."
   (interactive "P")
   (let ((maxdepth (if current-prefix-arg (prefix-numeric-value depth)
                     (or depth
@@ -292,16 +296,25 @@ position of the function name."
     (simple-call-tree-list-callers-and-functions maxdepth)))
 
 (defun* simple-call-tree-current-function (func)
-  "Display call tree for function FUNC in current buffer"
+  "Display call tree for function FUNC.
+If called interactively FUNC will be set to the symbol nearest point,
+unless a prefix arg is used in which case the function returned by `which-function'
+will be used.
+Note: `which-function' may give incorrect results if `imenu' has not been used in
+the current buffer.
+If a call tree containing FUNC has not already been created then the user is prompted
+for which files to build the tree from."
   (interactive (list (if current-prefix-arg
-                         (simple-call-tree-get-function-at-point)
-                       (which-function))))
+                         (which-function)
+                       (simple-call-tree-get-function-at-point (current-buffer)))))
   (if (assoc func simple-call-tree-alist)
       (if (get-buffer "*Simple Call Tree*")
           (switch-to-buffer "*Simple Call Tree*")
         (simple-call-tree-list-callers-and-functions))
     (simple-call-tree-display-buffer))
-  (simple-call-tree-jump-to-function func))
+  (simple-call-tree-jump-to-function func)
+  (unless (simple-call-tree-buffer-narrowed-p)
+    (simple-call-tree-narrow-to-subtree)))
 
 (defun* simple-call-tree-list-callers-and-functions (&optional (maxdepth 2)
                                                                (funclist simple-call-tree-alist))
@@ -367,11 +380,18 @@ This is a recursive function, and you should not need to set CURDEPTH."
     (simple-call-tree-list-callers-and-functions depth funclist)
     (setq simple-call-tree-current-maxdepth depth)))
 
-(defun simple-call-tree-get-function-at-point (&optional (buf "*Simple Call Tree*"))
-  "Return the name of the function nearest point in the *Simple Call Tree* buffer."
+(defun* simple-call-tree-get-function-at-point (&optional (buf "*Simple Call Tree*"))
+  "Return the name of the function nearest point in the *Simple Call Tree* buffer.
+If optional arg BUF is supplied then use BUF instead of the *Simple Call Tree* buffer."
   (with-current-buffer buf
-    (let* ((symb (symbol-nearest-point))
-           (fn (or (and (fboundp symb) symb) (function-called-at-point))))
+    (if (and (equal buf "*Simple Call Tree*")
+             (looking-at "[-<> *]* [^*-<> ]"))
+        (goto-char (next-single-property-change (point) 'face)))
+    (let* ((symb (if (functionp 'symbol-nearest-point)
+                     (symbol-nearest-point)
+                   (symbol-at-point)))
+           (fn (or (and (fboundp symb) symb)
+                   (function-called-at-point))))
       (symbol-name fn))))
 
 (defun simple-call-tree-display-function (fnstr)
