@@ -148,8 +148,8 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
 
 (defvar simple-call-tree-locations nil
   "Alist of functions and their locations within their respective buffers.
-The car of each element is a function name, and the cdr is a cons cell in the form (BUF . LINENUM)
-where BUF is a buffer name and LINENUM is the line number of the function.")
+The car of each element is a function name, and the cdr is a marker indicating the position
+of the functions definition.")
 
 (defvar simple-call-tree-inverted-bufferp nil
   "Indicates if the *Simple Call Tree* buffer is currently inverted or not.
@@ -187,7 +187,8 @@ name.
 Optional arg BUFFERS is a list of buffers to analyze together.
 By default it is set to a list containing the current buffer."
   (interactive)
-  (setq simple-call-tree-alist nil)
+  (setq simple-call-tree-alist nil
+        simple-call-tree-locations nil)
   ;; First add all the functions defined in the buffers to simple-call-tree-alist.
   (let ((pos (point-min))
         oldpos count nextfunc max item olditem)
@@ -196,10 +197,13 @@ By default it is set to a list containing the current buffer."
         (font-lock-default-fontify-buffer)
         (setq pos (point-min)
               count 0)
-        (while (setq nextfunc (simple-call-tree-next-func 'pos test))
-          (setq count (1+ count))
-          (message "Identifying functions...%d" count)
-          (setq simple-call-tree-alist (cons (list nextfunc) simple-call-tree-alist)))))
+        (save-excursion
+          (while (setq nextfunc (simple-call-tree-next-func 'pos test))
+            (goto-char pos)
+            (setq simple-call-tree-alist (cons (list nextfunc) simple-call-tree-alist)
+                  simple-call-tree-locations (cons (cons nextfunc (point-marker)) simple-call-tree-locations)
+                  count (1+ count))
+            (message "Identifying functions...%d" count)))))
     ;; Set variables in preparation for next part.
     (dolist (buf buffers)
       (with-current-buffer buf
