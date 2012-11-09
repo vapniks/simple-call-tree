@@ -295,7 +295,7 @@ prompted for, and only functions in the current buffer will be used."
     (simple-call-tree-analyze nil buffers)
     (simple-call-tree-list-callers-and-functions maxdepth)))
 
-(defun* simple-call-tree-current-function (func)
+(defun* simple-call-tree-current-function (func &optional wide)
   "Display call tree for function FUNC.
 If called interactively FUNC will be set to the symbol nearest point,
 unless a prefix arg is used in which case the function returned by `which-function'
@@ -303,7 +303,10 @@ will be used.
 Note: `which-function' may give incorrect results if `imenu' has not been used in
 the current buffer.
 If a call tree containing FUNC has not already been created then the user is prompted
-for which files to build the tree from."
+for which files to build the tree from.
+
+If optional arg WIDE is non-nil then the *Simple Call Tree* buffer will be widened,
+otherwise it will be narrowed around FUNC."
   (interactive (list (if current-prefix-arg
                          (which-function)
                        (simple-call-tree-get-function-at-point (current-buffer)))))
@@ -313,8 +316,8 @@ for which files to build the tree from."
         (simple-call-tree-list-callers-and-functions))
     (simple-call-tree-display-buffer))
   (simple-call-tree-jump-to-function func)
-  (unless (simple-call-tree-buffer-narrowed-p)
-    (simple-call-tree-toggle-narrowing)))
+  (if wide (simple-call-tree-toggle-narrowing 1)
+    (simple-call-tree-toggle-narrowing -1)))
 
 (defun* simple-call-tree-list-callers-and-functions (&optional (maxdepth 2)
                                                                (funclist simple-call-tree-alist))
