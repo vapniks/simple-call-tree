@@ -260,7 +260,7 @@ By default it is set to a list containing the current buffer."
 If optional arg BUF is supplied then use BUF instead of the *Simple Call Tree* buffer."
   (with-current-buffer buf
     (if (and (equal buf "*Simple Call Tree*")
-             (looking-at "[|-<>]* [^|-<> ]"))
+             (looking-at "[-|<>]* [^|<> -]"))
         (goto-char (next-single-property-change (point) 'face)))
     (let* ((symb (if (functionp 'symbol-nearest-point)
                      (symbol-nearest-point)
@@ -442,7 +442,7 @@ or if called with a prefix arg it will be prompted for."
 When called interactively FNSTR will be set to the function name under point,
 or if called with a prefix arg it will be prompted for."
   (interactive (list (if current-prefix-arg
-                         (ido-completing-read "Jump to function: "
+                         (ido-completing-read "Visit function: "
                                               (mapcar 'car simple-call-tree-alist))
                        (simple-call-tree-get-function-at-point))))
   (let* ((funmark (cdr (assoc fnstr simple-call-tree-locations-alist)))
