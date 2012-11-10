@@ -402,14 +402,16 @@ If optional arg BUF is supplied then use BUF instead of the *Simple Call Tree* b
 When called interactively FNSTR will be set to the function name under point,
 or if called with a prefix arg it will be prompted for."
   (interactive (list (if current-prefix-arg
-                         (ido-completing-read "Jump to function: "
+                         (ido-completing-read "Display function: "
                                               (mapcar 'car simple-call-tree-alist))
                        (simple-call-tree-get-function-at-point))))
-  (let* ((fn (intern-soft fnstr))
-         (find-function-recenter-line 1))
-    (delete-other-windows)
-    (find-function-do-it fn nil 'display-buffer)
-    (set-mark-command 1)))
+  (let* ((funmark (cdr (assoc fnstr simple-call-tree-locations)))
+         (buf (marker-buffer funmark))
+         (pos (marker-position funmark)))
+    (display-buffer buf)
+    (with-selected-window (get-buffer-window buf)
+      (goto-char pos)
+      (recenter 1))))
 
 (defun simple-call-tree-goto-function (fnstr)
   "Display the source code for function with name FNSTR.
@@ -419,10 +421,12 @@ or if called with a prefix arg it will be prompted for."
                          (ido-completing-read "Jump to function: "
                                               (mapcar 'car simple-call-tree-alist))
                        (simple-call-tree-get-function-at-point))))
-  (let* ((fn (intern-soft fnstr)))
-    (delete-other-windows)
-    (find-function-do-it fn nil 'switch-to-buffer)
-    (set-mark-command 1)))
+  (let* ((funmark (cdr (assoc fnstr simple-call-tree-locations)))
+         (buf (marker-buffer funmark))
+         (pos (marker-position funmark)))
+    (switch-to-buffer buf)
+    (goto-char pos)
+    (recenter 1)))
 
 (defun simple-call-tree-jump-to-function (fnstr)
   "Move cursor to the line corresponding to the function with name FNSTR.
