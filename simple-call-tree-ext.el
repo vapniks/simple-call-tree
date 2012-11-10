@@ -376,8 +376,8 @@ This is a recursive function, and you should not need to set CURDEPTH."
   "Return the outline level of the function at point."
   (with-current-buffer "*Simple Call Tree*"
     (save-excursion
-      (move-beginning-of-line 1)
-      (re-search-forward outline-regexp)
+;      (move-beginning-of-line 1)
+;      (re-search-forward outline-regexp)
       (let ((len (length (match-string 1))))
         (if (= len 0) 1 len)))))
 
