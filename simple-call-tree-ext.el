@@ -381,6 +381,16 @@ This is a recursive function, and you should not need to set CURDEPTH."
       (let ((len (length (match-string 1))))
         (if (= len 0) 1 len)))))
 
+(defun simple-call-tree-get-parent nil
+  "Return the name of the parent of the function at point according to the current tree.
+If there is no parent, return nil."
+  (with-current-buffer "*Simple Call Tree*"
+    (save-excursion
+      (if (condition-case var
+              (simple-call-tree-move-up)
+            (error nil))
+          (simple-call-tree-get-function-at-point)))))
+  
 ;;; Major-mode commands bound to keys
 
 (defun simple-call-tree-quit nil
@@ -508,8 +518,6 @@ or if called with a prefix arg it will be prompted for."
     (or (/= (point-min) 1)
         (/= (point-max) (1+ (buffer-size))))))
 
-;; Change this so that it takes an optional arg to set the state, and toggles by default.
-;; Also change name.
 (defun simple-call-tree-toggle-narrowing (&optional state)
   "Toggle narrowing of *Simple Call Tree* buffer.
 If optional arg STATE is > 0, or if called interactively with a positive prefix arg,
