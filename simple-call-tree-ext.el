@@ -254,6 +254,20 @@ By default it is set to a list containing the current buffer."
 
 ;;; New functions (not in simple-call-tree.el)
 
+(defun* simple-call-tree-get-function-at-point (&optional (buf "*Simple Call Tree*"))
+  "Return the name of the function nearest point in the *Simple Call Tree* buffer.
+If optional arg BUF is supplied then use BUF instead of the *Simple Call Tree* buffer."
+  (with-current-buffer buf
+    (if (and (equal buf "*Simple Call Tree*")
+             (looking-at "[|-<>]* [^|-<> ]"))
+        (goto-char (next-single-property-change (point) 'face)))
+    (let* ((symb (if (functionp 'symbol-nearest-point)
+                     (symbol-nearest-point)
+                   (symbol-at-point)))
+           (fn (or (and (fboundp symb) symb)
+                   (function-called-at-point))))
+      (symbol-name fn))))
+
 (defun simple-call-tree-next-func (posvar &optional test)
   "Find the next function in the current buffer after position POSVAR, and return its name.
 POSVAR should be a symbol which evaluates to a position in the current buffer. If a function is found
@@ -380,23 +394,11 @@ This is a recursive function, and you should not need to set CURDEPTH."
                   (floor (abs (read-number "Maximum depth to display: " 2)))))
          (funclist (if simple-call-tree-inverted-bufferp
                        (simple-call-tree-invert simple-call-tree-alist)
-                     simple-call-tree-alist)))
+                     simple-call-tree-alist))
+         (narrowedp (simple-call-tree-buffer-narrowed-p)))
+;         (outline-level))
     (simple-call-tree-list-callers-and-functions depth funclist)
     (setq simple-call-tree-current-maxdepth depth)))
-
-(defun* simple-call-tree-get-function-at-point (&optional (buf "*Simple Call Tree*"))
-  "Return the name of the function nearest point in the *Simple Call Tree* buffer.
-If optional arg BUF is supplied then use BUF instead of the *Simple Call Tree* buffer."
-  (with-current-buffer buf
-    (if (and (equal buf "*Simple Call Tree*")
-             (looking-at "[|-<>]* [^|-<> ]"))
-        (goto-char (next-single-property-change (point) 'face)))
-    (let* ((symb (if (functionp 'symbol-nearest-point)
-                     (symbol-nearest-point)
-                   (symbol-at-point)))
-           (fn (or (and (fboundp symb) symb)
-                   (function-called-at-point))))
-      (symbol-name fn))))
 
 (defun simple-call-tree-view-function (fnstr)
   "Display the source code for function with name FNSTR.
@@ -480,7 +482,7 @@ or if called with a prefix arg it will be prompted for."
   (goto-char (next-single-property-change (point) 'face)))
 
 (defun simple-call-tree-buffer-narrowed-p nil
-  "Return non-nil if buffer BUF is narrowed. BUF defaults to the current buffer."
+  "Return non-nil if *Simple Call Tree* buffer is narrowed."
   (with-current-buffer "*Simple Call Tree*"
     (or (/= (point-min) 1)
         (/= (point-max) (1+ (buffer-size))))))
