@@ -77,8 +77,8 @@
 
 ;;; TODO
 ;;
-;; Rewrite simple-call-tree-display-function and simple-call-tree-goto-function to use
-;; the markers in simple-call-tree-locations.
+;; Rewrite simple-call-tree-view-function and simple-call-tree-visit-function to use
+;; the markers in simple-call-tree-locations-alist.
 ;; Follow mode, using fm.el
 ;;
 
@@ -116,10 +116,10 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
   ;; Set keymap
   (define-key simple-call-tree-mode-map (kbd "q") 'bury-buffer)
   (define-key simple-call-tree-mode-map (kbd "<tab>") 'outline-cycle)
-  (define-key simple-call-tree-mode-map (kbd "SPC") 'simple-call-tree-display-function)
-  (define-key simple-call-tree-mode-map (kbd "C-o") 'simple-call-tree-display-function)
-  (define-key simple-call-tree-mode-map (kbd "<return>") 'simple-call-tree-goto-function)
-  (define-key simple-call-tree-mode-map (kbd "o") 'simple-call-tree-goto-function)
+  (define-key simple-call-tree-mode-map (kbd "SPC") 'simple-call-tree-view-function)
+  (define-key simple-call-tree-mode-map (kbd "C-o") 'simple-call-tree-view-function)
+  (define-key simple-call-tree-mode-map (kbd "<return>") 'simple-call-tree-visit-function)
+  (define-key simple-call-tree-mode-map (kbd "o") 'simple-call-tree-visit-function)
   (define-key simple-call-tree-mode-map (kbd "j") 'simple-call-tree-jump-to-function)
   (define-key simple-call-tree-mode-map (kbd "u") 'simple-call-tree-move-up)
   (define-key simple-call-tree-mode-map (kbd "n") 'simple-call-tree-move-next)
@@ -148,7 +148,7 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
 (defvar simple-call-tree-alist nil
   "Alist of functions and the functions they call.")
 
-(defvar simple-call-tree-locations nil
+(defvar simple-call-tree-locations-alist nil
   "Alist of functions and their locations within their respective buffers.
 The car of each element is a function name, and the cdr is a marker indicating the position
 of the functions definition.")
@@ -190,7 +190,7 @@ Optional arg BUFFERS is a list of buffers to analyze together.
 By default it is set to a list containing the current buffer."
   (interactive)
   (setq simple-call-tree-alist nil
-        simple-call-tree-locations nil)
+        simple-call-tree-locations-alist nil)
   ;; First add all the functions defined in the buffers to simple-call-tree-alist.
   (let ((pos (point-min))
         oldpos count nextfunc max item olditem)
@@ -203,7 +203,7 @@ By default it is set to a list containing the current buffer."
           (while (setq nextfunc (simple-call-tree-next-func 'pos test))
             (goto-char pos)
             (setq simple-call-tree-alist (cons (list nextfunc) simple-call-tree-alist)
-                  simple-call-tree-locations (cons (cons nextfunc (point-marker)) simple-call-tree-locations)
+                  simple-call-tree-locations-alist (cons (cons nextfunc (point-marker)) simple-call-tree-locations-alist)
                   count (1+ count))
             (message "Identifying functions...%d" count)))))
     ;; Set variables in preparation for next part.
@@ -397,7 +397,7 @@ If optional arg BUF is supplied then use BUF instead of the *Simple Call Tree* b
                    (function-called-at-point))))
       (symbol-name fn))))
 
-(defun simple-call-tree-display-function (fnstr)
+(defun simple-call-tree-view-function (fnstr)
   "Display the source code for function with name FNSTR.
 When called interactively FNSTR will be set to the function name under point,
 or if called with a prefix arg it will be prompted for."
@@ -405,7 +405,7 @@ or if called with a prefix arg it will be prompted for."
                          (ido-completing-read "Display function: "
                                               (mapcar 'car simple-call-tree-alist))
                        (simple-call-tree-get-function-at-point))))
-  (let* ((funmark (cdr (assoc fnstr simple-call-tree-locations)))
+  (let* ((funmark (cdr (assoc fnstr simple-call-tree-locations-alist)))
          (buf (marker-buffer funmark))
          (pos (marker-position funmark)))
     (display-buffer buf)
@@ -413,7 +413,7 @@ or if called with a prefix arg it will be prompted for."
       (goto-char pos)
       (recenter 1))))
 
-(defun simple-call-tree-goto-function (fnstr)
+(defun simple-call-tree-visit-function (fnstr)
   "Display the source code for function with name FNSTR.
 When called interactively FNSTR will be set to the function name under point,
 or if called with a prefix arg it will be prompted for."
@@ -421,7 +421,7 @@ or if called with a prefix arg it will be prompted for."
                          (ido-completing-read "Jump to function: "
                                               (mapcar 'car simple-call-tree-alist))
                        (simple-call-tree-get-function-at-point))))
-  (let* ((funmark (cdr (assoc fnstr simple-call-tree-locations)))
+  (let* ((funmark (cdr (assoc fnstr simple-call-tree-locations-alist)))
          (buf (marker-buffer funmark))
          (pos (marker-position funmark)))
     (switch-to-buffer buf)
