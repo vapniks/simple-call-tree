@@ -114,7 +114,7 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
   (setq simple-call-tree-mode-map (make-keymap)
         buffer-read-only nil)
   ;; Set keymap
-  (define-key simple-call-tree-mode-map (kbd "q") 'bury-buffer)
+  (define-key simple-call-tree-mode-map (kbd "q") 'simple-call-tree-quit)
   (define-key simple-call-tree-mode-map (kbd "<tab>") 'outline-cycle)
   (define-key simple-call-tree-mode-map (kbd "SPC") 'simple-call-tree-view-function)
   (define-key simple-call-tree-mode-map (kbd "C-o") 'simple-call-tree-view-function)
@@ -382,6 +382,16 @@ This is a recursive function, and you should not need to set CURDEPTH."
         (if (= len 0) 1 len)))))
 
 ;;; Major-mode commands bound to keys
+
+(defun simple-call-tree-quit nil
+  "Quit the *Simple Call Tree* buffer."
+  (interactive)
+  (let ((win (get-buffer-window "*Simple Call Tree*")))
+    (if win (with-selected-window win
+              (if fm-working (fm-toggle))
+              (if (> (length (window-list)) 1)
+                  (delete-window)
+                (bury-buffer))))))
 
 (defun simple-call-tree-invert-buffer (&optional maxdepth)
   "Invert the tree in *Simple Call Tree* buffer."
