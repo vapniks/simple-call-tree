@@ -144,7 +144,8 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
                  (+ 2 (position 'mode-line-buffer-identification
                                 mode-line-format)))))
   (outline-minor-mode 1)
-  (setq outline-regexp "|[-<>]* "))
+  (setq outline-regexp "|\\([-<>]*\\) "
+        outline-level 'simple-call-tree-outline-level))
 
 (defvar simple-call-tree-alist nil
   "Alist of functions and the functions they call.")
@@ -295,7 +296,7 @@ prompted for, and only functions in the current buffer will be used."
   (interactive "P")
   (let ((maxdepth (if current-prefix-arg (prefix-numeric-value depth)
                     (or depth
-                        (floor (abs (read-number "Maximum depth to display: " 1))))))
+                        (floor (abs (read-number "Maximum depth to display: " 2))))))
         buffers)
     (or current-prefix-arg files
         (if (y-or-n-p "Include other files?")
@@ -335,7 +336,7 @@ otherwise it will be narrowed around FUNC."
   (if wide (simple-call-tree-toggle-narrowing 1)
     (simple-call-tree-toggle-narrowing -1)))
 
-(defun* simple-call-tree-list-callers-and-functions (&optional (maxdepth 1)
+(defun* simple-call-tree-list-callers-and-functions (&optional (maxdepth 2)
                                                                (funclist simple-call-tree-alist))
   "List callers and functions in FUNCLIST to depth MAXDEPTH.
 By default FUNCLIST is set to `simple-call-tree-alist'."
@@ -343,15 +344,16 @@ By default FUNCLIST is set to `simple-call-tree-alist'."
   (if (not (equal major-mode 'simple-call-tree-mode)) (simple-call-tree-mode))
   (setq buffer-read-only nil)
   (erase-buffer)
-  (let ((inverted (not (equal funclist simple-call-tree-alist))))
+  (let ((inverted (not (equal funclist simple-call-tree-alist)))
+        (maxdepth (max maxdepth 1)))
     (dolist (item funclist)
-      (simple-call-tree-list-callees-recursively (car item) maxdepth 0 funclist inverted))
-    (setq simple-call-tree-current-maxdepth maxdepth
+      (simple-call-tree-list-callees-recursively (car item) maxdepth 1 funclist inverted))
+    (setq simple-call-tree-current-maxdepth (max maxdepth 1)
           simple-call-tree-inverted-bufferp inverted
           buffer-read-only t)))
 
-(defun* simple-call-tree-list-callees-recursively (fname &optional (maxdepth 1)
-                                                         (curdepth 0)
+(defun* simple-call-tree-list-callees-recursively (fname &optional (maxdepth 2)
+                                                         (curdepth 1)
                                                          (funclist simple-call-tree-alist)
                                                          (inverted (not (equal funclist simple-call-tree-alist))))
   "Insert a call tree for the function named FNAME, to depth MAXDEPTH.
@@ -359,16 +361,25 @@ FNAME must be the car of one of the elements of FUNCLIST which is set to `simple
 The optional arguments MAXDEPTH and CURDEPTH specify the maximum and current depth of the tree respectively.
 This is a recursive function, and you should not need to set CURDEPTH."
   (let* ((callees (cdr (assoc fname funclist)))
-         (arrowtail (make-string curdepth 45))
-         (arrow (if inverted (concat (if (> curdepth 0) "<") arrowtail " ")
-                  (concat arrowtail (if (> curdepth 0) "> " " "))))
-         (face (intern-soft (format "outline-%d" (1+ (mod curdepth 8))))))
+         (arrowtail (make-string (1- curdepth) 45))
+         (arrow (if inverted (concat (if (> curdepth 1) "<") arrowtail " ")
+                  (concat arrowtail (if (> curdepth 1) "> " " "))))
+         (face (intern-soft (format "outline-%d" (mod curdepth 8)))))
     (insert "|" arrow (propertize fname
                                   'font-lock-face (list :inherit face :underline t)
                                   'mouse-face 'highlight) "\n")
     (if (< curdepth maxdepth)
         (dolist (callee callees)
           (simple-call-tree-list-callees-recursively callee maxdepth (1+ curdepth) funclist inverted)))))
+
+(defun simple-call-tree-outline-level nil
+  "Return the outline level of the function at point."
+  (with-current-buffer "*Simple Call Tree*"
+    (save-excursion
+      (move-beginning-of-line 1)
+      (re-search-forward outline-regexp)
+      (let ((len (length (match-string 1))))
+        (if (= len 0) 1 len)))))
 
 ;;; Major-mode commands bound to keys
 
@@ -385,7 +396,7 @@ This is a recursive function, and you should not need to set CURDEPTH."
     (simple-call-tree-list-callers-and-functions depth funclist)
     (simple-call-tree-jump-to-function thisfunc)
     (if narrowedp (simple-call-tree-toggle-narrowing))
-    (setq simple-call-tree-current-maxdepth depth)))
+    (setq simple-call-tree-current-maxdepth (max depth 1))))
 
 (defun simple-call-tree-change-maxdepth (maxdepth)
   "Alter the maximum tree depth in the *Simple Call Tree* buffer."
@@ -398,7 +409,7 @@ This is a recursive function, and you should not need to set CURDEPTH."
          (narrowedp (simple-call-tree-buffer-narrowed-p)))
 ;         (outline-level))
     (simple-call-tree-list-callers-and-functions depth funclist)
-    (setq simple-call-tree-current-maxdepth depth)))
+    (setq simple-call-tree-current-maxdepth (max depth 1))))
 
 (defun simple-call-tree-view-function (fnstr)
   "Display the source code for function with name FNSTR.
