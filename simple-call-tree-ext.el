@@ -413,7 +413,7 @@ or if called with a prefix arg it will be prompted for."
       (goto-char pos)
       (recenter 1))))
 
-(defun simple-call-tree-visit-function (fnstr)
+(defun* simple-call-tree-visit-function (&optional (fnstr (simple-call-tree-get-function-at-point)))
   "Display the source code for function with name FNSTR.
 When called interactively FNSTR will be set to the function name under point,
 or if called with a prefix arg it will be prompted for."
@@ -424,7 +424,7 @@ or if called with a prefix arg it will be prompted for."
   (let* ((funmark (cdr (assoc fnstr simple-call-tree-locations-alist)))
          (buf (marker-buffer funmark))
          (pos (marker-position funmark)))
-    (switch-to-buffer buf)
+    (pop-to-buffer buf)
     (goto-char pos)
     (recenter 1)))
 
@@ -504,6 +504,12 @@ When narrowed, the buffer will be narrowed to the subtree at point."
       (outline-mark-subtree)
       (narrow-to-region (region-beginning) (region-end))
       (let (select-active-regions) (deactivate-mark)))))
+
+
+(if (featurep 'fm)
+    (add-to-list 'fm-modes '(simple-call-tree-mode simple-call-tree-visit-function)))
+                 
+(add-hook 'simple-call-tree-mode-hook 'fm-start)
 
 (provide 'simple-call-tree-ext)
 
