@@ -406,7 +406,7 @@ If there is no parent, return nil."
                 (outline-up-heading (1- level))
               (error nil))
             (simple-call-tree-get-function-at-point))))))
-        
+
 ;;; Major-mode commands bound to keys
 
 (defun simple-call-tree-quit nil
@@ -431,21 +431,30 @@ If there is no parent, return nil."
         (narrowedp (simple-call-tree-buffer-narrowed-p)))
     (simple-call-tree-list-callers-and-functions depth funclist)
     (simple-call-tree-jump-to-function thisfunc)
-    (if narrowedp (simple-call-tree-toggle-narrowing))
+    (if narrowedp (simple-call-tree-toggle-narrowing -1))
     (setq simple-call-tree-current-maxdepth (max depth 1))))
 
 (defun simple-call-tree-change-maxdepth (maxdepth)
   "Alter the maximum tree depth in the *Simple Call Tree* buffer."
   (interactive "P")
-  (let* ((depth (if current-prefix-arg (prefix-numeric-value current-prefix-arg)
+  (move-beginning-of-line nil)
+  (re-search-forward outline-regexp)
+  (let* ((level (simple-call-tree-outline-level))
+         (depth (if current-prefix-arg (prefix-numeric-value current-prefix-arg)
                   (floor (abs (read-number "Maximum depth to display: " 2)))))
          (funclist (if simple-call-tree-inverted-bufferp
                        (simple-call-tree-invert simple-call-tree-alist)
                      simple-call-tree-alist))
-         (narrowedp (simple-call-tree-buffer-narrowed-p)))
-;         (outline-level))
+         (narrowedp (simple-call-tree-buffer-narrowed-p))
+         (thisfunc (simple-call-tree-get-function-at-point))
+         (thistree (simple-call-tree-get-toplevel)))
     (simple-call-tree-list-callers-and-functions depth funclist)
-    (setq simple-call-tree-current-maxdepth (max depth 1))))
+    (setq simple-call-tree-current-maxdepth (max depth 1))
+    (simple-call-tree-jump-to-function (or thistree thisfunc))
+    (if narrowedp (simple-call-tree-toggle-narrowing -1))
+    (if (> level 1) (search-forward
+                     thisfunc
+                     (save-excursion (outline-end-of-subtree) (point)) t))))
 
 (defun simple-call-tree-view-function (fnstr)
   "Display the source code for function with name FNSTR.
