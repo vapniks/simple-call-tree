@@ -105,6 +105,9 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
 (defmacro whilenotlast (&rest forms)
   `(while (not (progn ,@forms))))
 
+(defun simple-call-tree-symbol-as-regexp (symbolname)
+  (concat "\\_<" (regexp-opt (list symbolname)) "\\_>"))
+
 (define-derived-mode simple-call-tree-mode outline-mode "Simple Call Tree"
   "The major-mode for the one-key menu buffer."
   :group 'simple-call-tree
@@ -181,7 +184,7 @@ and the list of functions it calls in the cdr."
   (dolist (entry simple-call-tree-alist)
     (goto-char start)
     (catch 'done
-      (while (re-search-forward (concat (regexp-opt (list (car entry))) "\\s-")
+      (while (re-search-forward (simple-call-tree-symbol-as-regexp (car entry))
                                 end t)
 	(let ((faces (get-text-property (point) 'face)))
 	  (unless (listp faces)
@@ -488,11 +491,11 @@ If it is a called function then display the position in the calling function whe
     (display-buffer buf)
     (with-selected-window (get-buffer-window buf)
       (goto-char pos)
-      (if (> level 1)
-          (re-search-forward
-           (concat (regexp-opt (list (if simple-call-tree-inverted-bufferp
-                                         parent
-                                       thisfunc))) "\\s-")))
+      (if (> level 1) (re-search-forward
+                       (simple-call-tree-symbol-as-regexp
+                        (if simple-call-tree-inverted-bufferp
+                            parent
+                          thisfunc))))
       (recenter 1))))
 
 (defun* simple-call-tree-visit-function nil
@@ -513,11 +516,11 @@ If it is a called function then visit the position in the calling function where
          (pos (marker-position funmark)))
     (pop-to-buffer buf)
     (goto-char pos)
-    (if (> level 1)
-        (re-search-forward
-         (concat (regexp-opt (list (if simple-call-tree-inverted-bufferp
-                                       parent
-                                     thisfunc))) "\\s-")))
+    (if (> level 1) (re-search-forward
+                     (simple-call-tree-symbol-as-regexp
+                      (if simple-call-tree-inverted-bufferp
+                          parent
+                        thisfunc))))
     (recenter 1)))
 
 (defun simple-call-tree-jump-to-function (fnstr)
