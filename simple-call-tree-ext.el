@@ -15,7 +15,7 @@
 ;;
 ;; Features that might be required by this library:
 ;;
-;; simple-call-tree.el
+;; `thingatpt' `outline-magic'
 ;;
 
 ;;; This file is NOT part of GNU Emacs
@@ -77,14 +77,11 @@
 
 ;;; TODO
 ;;
-;; Rewrite simple-call-tree-view-function and simple-call-tree-visit-function to use
-;; the markers in simple-call-tree-locations-alist.
-;; Follow mode, using fm.el
 ;;
 
 ;;; Require
 (require 'thingatpt)
-(require 'outline-magic)
+(require 'outline-magic nil t)
 ;;; Code:
 
 (defgroup simple-call-tree nil
@@ -113,19 +110,33 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
   :group 'simple-call-tree
   (setq simple-call-tree-mode-map (make-keymap)
         buffer-read-only nil)
+  (outline-minor-mode 1)
+  (setq outline-regexp "|\\([-<>]*\\) "
+        outline-level 'simple-call-tree-outline-level)
   ;; Set keymap
   (define-key simple-call-tree-mode-map (kbd "q") 'simple-call-tree-quit)
-  (define-key simple-call-tree-mode-map (kbd "<tab>") 'outline-cycle)
+  (if (featurep 'outline-magic) (define-key simple-call-tree-mode-map (kbd "<tab>") 'outline-cycle))
   (define-key simple-call-tree-mode-map (kbd "SPC") 'simple-call-tree-view-function)
   (define-key simple-call-tree-mode-map (kbd "C-o") 'simple-call-tree-view-function)
   (define-key simple-call-tree-mode-map (kbd "<return>") 'simple-call-tree-visit-function)
   (define-key simple-call-tree-mode-map (kbd "o") 'simple-call-tree-visit-function)
   (define-key simple-call-tree-mode-map (kbd "j") 'simple-call-tree-jump-to-function)
+  (define-key simple-call-tree-mode-map (kbd "J") '(lambda nil (interactive)
+                                                     (setq current-prefix-arg 1)
+                                                     (call-interactively 'simple-call-tree-jump-to-function)))
+  (define-key simple-call-tree-mode-map (kbd "C-j") '(lambda nil (interactive)
+                                                     (setq current-prefix-arg 1)
+                                                     (call-interactively 'simple-call-tree-jump-to-function)))
   (define-key simple-call-tree-mode-map (kbd "u") 'simple-call-tree-move-up)
+  (define-key simple-call-tree-mode-map (kbd "^") 'simple-call-tree-move-up)
   (define-key simple-call-tree-mode-map (kbd "n") 'simple-call-tree-move-next)
   (define-key simple-call-tree-mode-map (kbd "p") 'simple-call-tree-move-prev)
-  (define-key simple-call-tree-mode-map (kbd "f") 'simple-call-tree-move-next-samelevel)
-  (define-key simple-call-tree-mode-map (kbd "b") 'simple-call-tree-move-prev-samelevel)
+  (define-key simple-call-tree-mode-map (kbd "C-f") 'simple-call-tree-move-next-samelevel)
+  (define-key simple-call-tree-mode-map (kbd "C-b") 'simple-call-tree-move-prev-samelevel)
+  (define-key simple-call-tree-mode-map (kbd "<S-down>") 'simple-call-tree-move-next-samelevel)
+  (define-key simple-call-tree-mode-map (kbd "<S-up>") 'simple-call-tree-move-prev-samelevel)
+  (define-key simple-call-tree-mode-map (kbd "N") 'simple-call-tree-move-next-samelevel)
+  (define-key simple-call-tree-mode-map (kbd "P") 'simple-call-tree-move-prev-samelevel)
   (define-key simple-call-tree-mode-map (kbd "i") 'simple-call-tree-invert-buffer)
   (define-key simple-call-tree-mode-map (kbd "d") 'simple-call-tree-change-maxdepth)
   (define-key simple-call-tree-mode-map (kbd "/") 'simple-call-tree-toggle-narrowing)
@@ -142,10 +153,7 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
                                simple-call-tree-current-maxdepth)))
          (subseq mode-line-format
                  (+ 2 (position 'mode-line-buffer-identification
-                                mode-line-format)))))
-  (outline-minor-mode 1)
-  (setq outline-regexp "|\\([-<>]*\\) "
-        outline-level 'simple-call-tree-outline-level))
+                                mode-line-format))))))
 
 (defvar simple-call-tree-alist nil
   "Alist of functions and the functions they call.")
@@ -476,19 +484,29 @@ or if called with a prefix arg it will be prompted for."
       (goto-char pos)
       (recenter 1))))
 
-(defun* simple-call-tree-visit-function (&optional (fnstr (simple-call-tree-get-function-at-point)))
-  "Display the source code for function with name FNSTR.
-When called interactively FNSTR will be set to the function name under point,
-or if called with a prefix arg it will be prompted for."
-  (interactive (list (if current-prefix-arg
-                         (ido-completing-read "Visit function: "
-                                              (mapcar 'car simple-call-tree-alist))
-                       (simple-call-tree-get-function-at-point))))
-  (let* ((funmark (cdr (assoc fnstr simple-call-tree-locations-alist)))
+(defun* simple-call-tree-visit-function nil
+  "Visit the source code corresponding to the current header.
+If the current header is a calling or toplevel function then visit that function.
+If it is a called function then visit the position in the calling function where it is called."
+  (interactive)
+  (move-beginning-of-line nil)
+  (re-search-forward outline-regexp)
+  (let* ((level (simple-call-tree-outline-level))
+         (thisfunc (simple-call-tree-get-function-at-point))
+         (parent (simple-call-tree-get-parent))
+         (funmark (cdr (assoc (if simple-call-tree-inverted-bufferp
+                                  thisfunc
+                                (or parent thisfunc))
+                              simple-call-tree-locations-alist)))
          (buf (marker-buffer funmark))
          (pos (marker-position funmark)))
     (pop-to-buffer buf)
     (goto-char pos)
+    (if (> level 1)
+        (re-search-forward
+         (concat (regexp-opt (list (if simple-call-tree-inverted-bufferp
+                                       parent
+                                     thisfunc))) "\\( \\|)\\)")))
     (recenter 1)))
 
 (defun simple-call-tree-jump-to-function (fnstr)
@@ -503,7 +521,7 @@ or if called with a prefix arg it will be prompted for."
     (widen)
     (with-current-buffer "*Simple Call Tree*"
       (goto-char (point-min))
-      (re-search-forward (concat "^" (regexp-opt (list (concat "| " fnstr)))))
+      (re-search-forward (concat "^" (regexp-opt (list (concat "| " fnstr))) "$"))
       (if narrowedp (simple-call-tree-toggle-narrowing)
         (case simple-call-tree-default-recenter
           (top (recenter 0))
