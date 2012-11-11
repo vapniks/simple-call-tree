@@ -77,7 +77,7 @@
 
 ;;; TODO
 ;;
-;;
+;; Create jump-ring to keep a track of functions jumped to so user can go back through jump history.
 
 ;;; Require
 (require 'thingatpt)
@@ -181,7 +181,8 @@ and the list of functions it calls in the cdr."
   (dolist (entry simple-call-tree-alist)
     (goto-char start)
     (catch 'done
-      (while (search-forward (car entry) end t)
+      (while (re-search-forward (concat (regexp-opt (list (car entry))) "\\s-")
+                                end t)
 	(let ((faces (get-text-property (point) 'face)))
 	  (unless (listp faces)
 	    (setq faces (list faces)))
@@ -491,7 +492,7 @@ If it is a called function then display the position in the calling function whe
           (re-search-forward
            (concat (regexp-opt (list (if simple-call-tree-inverted-bufferp
                                          parent
-                                       thisfunc))) "\\( \\|)\\)")))
+                                       thisfunc))) "\\s-")))
       (recenter 1))))
 
 (defun* simple-call-tree-visit-function nil
@@ -516,7 +517,7 @@ If it is a called function then visit the position in the calling function where
         (re-search-forward
          (concat (regexp-opt (list (if simple-call-tree-inverted-bufferp
                                        parent
-                                     thisfunc))) "\\( \\|)\\)")))
+                                     thisfunc))) "\\s-")))
     (recenter 1)))
 
 (defun simple-call-tree-jump-to-function (fnstr)
