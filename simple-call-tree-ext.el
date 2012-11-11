@@ -468,20 +468,30 @@ If there is no parent, return nil."
                      thisfunc
                      (save-excursion (outline-end-of-subtree) (point)) t))))
 
-(defun simple-call-tree-view-function (fnstr)
-  "Display the source code for function with name FNSTR.
-When called interactively FNSTR will be set to the function name under point,
-or if called with a prefix arg it will be prompted for."
-  (interactive (list (if current-prefix-arg
-                         (ido-completing-read "Display function: "
-                                              (mapcar 'car simple-call-tree-alist))
-                       (simple-call-tree-get-function-at-point))))
-  (let* ((funmark (cdr (assoc fnstr simple-call-tree-locations-alist)))
+(defun simple-call-tree-view-function nil
+  "Display the source code corresponding to current header.
+If the current header is a calling or toplevel function then display that function.
+If it is a called function then display the position in the calling function where it is called."
+  (interactive)
+  (move-beginning-of-line nil)
+  (re-search-forward outline-regexp)
+  (let* ((level (simple-call-tree-outline-level))
+         (thisfunc (simple-call-tree-get-function-at-point))
+         (parent (simple-call-tree-get-parent))
+         (funmark (cdr (assoc (if simple-call-tree-inverted-bufferp
+                                  thisfunc
+                                (or parent thisfunc))
+                              simple-call-tree-locations-alist)))
          (buf (marker-buffer funmark))
          (pos (marker-position funmark)))
     (display-buffer buf)
     (with-selected-window (get-buffer-window buf)
       (goto-char pos)
+      (if (> level 1)
+          (re-search-forward
+           (concat (regexp-opt (list (if simple-call-tree-inverted-bufferp
+                                         parent
+                                       thisfunc))) "\\( \\|)\\)")))
       (recenter 1))))
 
 (defun* simple-call-tree-visit-function nil
