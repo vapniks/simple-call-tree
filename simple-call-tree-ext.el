@@ -373,11 +373,15 @@ This is a recursive function, and you should not need to set CURDEPTH."
           (simple-call-tree-list-callees-recursively callee maxdepth (1+ curdepth) funclist inverted)))))
 
 (defun simple-call-tree-outline-level nil
-  "Return the outline level of the function at point."
+  "Return the outline level of the function at point.
+
+Note: this may not give correct results if the current headline was reached by moving
+the cursor manually since it depends on the match string from a previous outline movement
+command. To ensure correct results do a search for `outline-regexp' from the beginning of
+the line first in order to capture the match-string.
+We can't do that in this function as it causes other problems with outline mode commands."
   (with-current-buffer "*Simple Call Tree*"
     (save-excursion
-;      (move-beginning-of-line 1)
-;      (re-search-forward outline-regexp)
       (let ((len (length (match-string 1))))
         (if (= len 0) 1 len)))))
 
@@ -386,11 +390,23 @@ This is a recursive function, and you should not need to set CURDEPTH."
 If there is no parent, return nil."
   (with-current-buffer "*Simple Call Tree*"
     (save-excursion
-      (if (condition-case var
+      (if (condition-case nil
               (simple-call-tree-move-up)
             (error nil))
           (simple-call-tree-get-function-at-point)))))
-  
+
+(defun simple-call-tree-get-toplevel nil
+  "Return the name of the toplevel parent of the subtree at point."
+  (with-current-buffer "*Simple Call Tree*"
+    (save-excursion
+      (move-beginning-of-line nil)
+      (re-search-forward outline-regexp)
+      (let ((level (simple-call-tree-outline-level)))
+        (if (condition-case nil
+                (outline-up-heading (1- level))
+              (error nil))
+            (simple-call-tree-get-function-at-point))))))
+        
 ;;; Major-mode commands bound to keys
 
 (defun simple-call-tree-quit nil
@@ -536,7 +552,6 @@ When narrowed, the buffer will be narrowed to the subtree at point."
       (outline-mark-subtree)
       (narrow-to-region (region-beginning) (region-end))
       (let (select-active-regions) (deactivate-mark)))))
-
 
 (if (featurep 'fm)
     (add-to-list 'fm-modes '(simple-call-tree-mode simple-call-tree-visit-function)))
