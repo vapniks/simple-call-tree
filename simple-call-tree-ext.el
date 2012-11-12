@@ -336,7 +336,9 @@ prompted for, and only functions in the current buffer will be used."
                                   unless (string= file "SENTINEL")
                                   collect (find-file file))))))
     (simple-call-tree-analyze nil buffers)
-    (simple-call-tree-list-callers-and-functions maxdepth)))
+    (simple-call-tree-list-callers-and-functions maxdepth)
+    (setq simple-call-tree-jump-ring (make-ring simple-call-tree-jump-ring-max)
+          simple-call-tree-jump-ring-index 0)))
 
 (defun* simple-call-tree-current-function (func &optional wide)
   "Display call tree for function FUNC.
@@ -376,7 +378,6 @@ By default FUNCLIST is set to `simple-call-tree-alist'."
       (simple-call-tree-list-callees-recursively (car item) maxdepth 1 funclist inverted))
     (setq simple-call-tree-current-maxdepth (max maxdepth 1)
           simple-call-tree-inverted-bufferp inverted
-          simple-call-tree-jump-ring (make-ring simple-call-tree-jump-ring-max)
           buffer-read-only t)))
 
 (defun* simple-call-tree-list-callees-recursively (fname &optional (maxdepth 2)
