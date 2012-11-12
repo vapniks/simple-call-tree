@@ -144,6 +144,8 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
   (define-key simple-call-tree-mode-map (kbd "i") 'simple-call-tree-invert-buffer)
   (define-key simple-call-tree-mode-map (kbd "d") 'simple-call-tree-change-maxdepth)
   (define-key simple-call-tree-mode-map (kbd "/") 'simple-call-tree-toggle-narrowing)
+  (define-key simple-call-tree-mode-map (kbd "<") 'simple-call-tree-jump-prev)
+  (define-key simple-call-tree-mode-map (kbd ">") 'simple-call-tree-jump-next)
   (define-key simple-call-tree-mode-map (kbd "w") 'widen)
   (use-local-map simple-call-tree-mode-map)
   (setq mode-line-format
@@ -183,6 +185,9 @@ The minimum value is 0 which means show top level functions only.")
 
 (defvar simple-call-tree-jump-ring (make-ring simple-call-tree-jump-ring-max)
   "Ring to hold history of functions jumped to in *Simple Call Tree* buffer.")
+
+(defvar simple-call-tree-jump-ring-index 0
+  "The current position in the jump ring.")
 
 ;;; Functions from simple-call-tree.el (some are rewritten)
 
@@ -531,26 +536,55 @@ If it is a called function then visit the position in the calling function where
                         thisfunc))))
     (recenter 1)))
 
-(defun simple-call-tree-jump-to-function (fnstr)
+(defun* simple-call-tree-jump-to-function (fnstr &optional skipring)
   "Move cursor to the line corresponding to the function with name FNSTR.
 When called interactively FNSTR will be set to the function name under point,
-or if called with a prefix arg it will be prompted for."  
+or if called with a prefix arg it will be prompted for.
+Unless optional arg SKIPRING is non-nil (which will be true if called with a negative
+prefix arg) then the function name will be added to `simple-call-tree-jump-ring'"
   (interactive (list (if current-prefix-arg
                          (ido-completing-read "Jump to function: "
                                               (mapcar 'car simple-call-tree-alist))
-                       (simple-call-tree-get-function-at-point))))
+                       (simple-call-tree-get-function-at-point))
+                     (< (prefix-numeric-value current-prefix-arg) 0)))
   (let* ((narrowedp (simple-call-tree-buffer-narrowed-p)))
     (widen)
     (with-current-buffer "*Simple Call Tree*"
       (goto-char (point-min))
       (re-search-forward (concat "^" (regexp-opt (list (concat "| " fnstr))) "$"))
-      (ring-insert simple-call-tree-jump-ring fnstr)
+      (unless skipring (ring-insert simple-call-tree-jump-ring fnstr))
       (if narrowedp (simple-call-tree-toggle-narrowing)
         (case simple-call-tree-default-recenter
           (top (recenter 0))
           (middle (recenter))
           (bottom (recenter -1))
           (t (recenter arg)))))))
+
+(defun simple-call-tree-jump-prev nil
+  "Jump to the previous function in the `simple-call-tree-jump-ring'.
+The current index into the ring is `simple-call-tree-jump-ring-index'."
+  (interactive)
+  (unless (ring-empty-p simple-call-tree-jump-ring)
+    (let ((len (cadr simple-call-tree-jump-ring)))
+      (setq simple-call-tree-jump-ring-index
+            (mod (1+ simple-call-tree-jump-ring-index) len))
+      (simple-call-tree-jump-to-function
+       (ring-ref simple-call-tree-jump-ring
+                 simple-call-tree-jump-ring-index)
+       t))))
+
+(defun simple-call-tree-jump-next nil
+  "Jump to the next function in the `simple-call-tree-jump-ring'.
+The current index into the ring is `simple-call-tree-jump-ring-index'."
+  (interactive)
+  (unless (ring-empty-p simple-call-tree-jump-ring)
+    (let ((len (cadr simple-call-tree-jump-ring)))
+      (setq simple-call-tree-jump-ring-index
+            (mod (1- simple-call-tree-jump-ring-index) len))
+      (simple-call-tree-jump-to-function
+       (ring-ref simple-call-tree-jump-ring
+                 simple-call-tree-jump-ring-index)
+       t))))
 
 (defun simple-call-tree-move-up nil
   "Move cursor to the parent of this function."
