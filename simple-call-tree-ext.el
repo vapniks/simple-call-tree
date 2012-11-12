@@ -108,6 +108,7 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
 (defun simple-call-tree-symbol-as-regexp (symbolname)
   (concat "\\_<" (regexp-opt (list symbolname)) "\\_>"))
 
+;; Major-mode for simple call tree
 (define-derived-mode simple-call-tree-mode outline-mode "Simple Call Tree"
   "The major-mode for the one-key menu buffer."
   :group 'simple-call-tree
@@ -174,6 +175,14 @@ Otherwise it's the other way around.")
 (defvar simple-call-tree-current-maxdepth nil
   "The current maximum depth of the tree in the *Simple Call Tree* buffer.
 The minimum value is 0 which means show top level functions only.")
+
+(defcustom simple-call-tree-jump-ring-max 20
+  "Maximum number of elements in `simple-call-tree-jump-ring', before old elements are removed."
+  :group 'simple-call-tree
+  :type 'integer)
+
+(defvar simple-call-tree-jump-ring (make-ring simple-call-tree-jump-ring-max)
+  "Ring to hold history of functions jumped to in *Simple Call Tree* buffer.")
 
 ;;; Functions from simple-call-tree.el (some are rewritten)
 
@@ -362,6 +371,7 @@ By default FUNCLIST is set to `simple-call-tree-alist'."
       (simple-call-tree-list-callees-recursively (car item) maxdepth 1 funclist inverted))
     (setq simple-call-tree-current-maxdepth (max maxdepth 1)
           simple-call-tree-inverted-bufferp inverted
+          simple-call-tree-jump-ring (make-ring simple-call-tree-jump-ring-max)
           buffer-read-only t)))
 
 (defun* simple-call-tree-list-callees-recursively (fname &optional (maxdepth 2)
@@ -536,6 +546,7 @@ or if called with a prefix arg it will be prompted for."
     (with-current-buffer "*Simple Call Tree*"
       (goto-char (point-min))
       (re-search-forward (concat "^" (regexp-opt (list (concat "| " fnstr))) "$"))
+      (ring-insert simple-call-tree-jump-ring fnstr)
       (if narrowedp (simple-call-tree-toggle-narrowing)
         (case simple-call-tree-default-recenter
           (top (recenter 0))
