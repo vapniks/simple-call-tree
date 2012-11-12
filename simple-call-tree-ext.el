@@ -446,17 +446,15 @@ If there is no parent, return nil."
   (interactive "P")
   (move-beginning-of-line nil)
   (re-search-forward outline-regexp)
-  (let ((level (simple-call-tree-outline-level))
-        (depth (if current-prefix-arg (prefix-numeric-value maxdepth)
+  (let ((depth (if current-prefix-arg (prefix-numeric-value maxdepth)
                  simple-call-tree-current-maxdepth))
         (funclist (if simple-call-tree-inverted-bufferp
                       simple-call-tree-alist
                     (simple-call-tree-invert simple-call-tree-alist)))
         (narrowedp (simple-call-tree-buffer-narrowed-p))
-        (thisfunc (simple-call-tree-get-function-at-point))
-        (thistree (simple-call-tree-get-toplevel)))
+        (thisfunc (simple-call-tree-get-function-at-point)))
     (simple-call-tree-list-callers-and-functions depth funclist)
-    (simple-call-tree-jump-to-function (or thistree thisfunc))
+    (simple-call-tree-jump-to-function thisfunc)
     (if narrowedp (simple-call-tree-toggle-narrowing -1))
     (setq simple-call-tree-current-maxdepth (max depth 1))))
 
