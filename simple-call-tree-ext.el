@@ -15,7 +15,7 @@
 ;;
 ;; Features that might be required by this library:
 ;;
-;; `thingatpt' `outline-magic'
+;; `thingatpt' `outline-magic' `fm'
 ;;
 
 ;;; This file is NOT part of GNU Emacs
@@ -82,6 +82,7 @@
 ;;; Require
 (require 'thingatpt)
 (require 'outline-magic nil t)
+(require 'fm nil t)
 ;;; Code:
 
 (defgroup simple-call-tree nil
@@ -147,6 +148,8 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
   (define-key simple-call-tree-mode-map (kbd "/") 'simple-call-tree-toggle-narrowing)
   (define-key simple-call-tree-mode-map (kbd "<") 'simple-call-tree-jump-prev)
   (define-key simple-call-tree-mode-map (kbd ">") 'simple-call-tree-jump-next)
+  (define-key simple-call-tree-mode-map (kbd "M-p") 'simple-call-tree-jump-prev)
+  (define-key simple-call-tree-mode-map (kbd "M-n") 'simple-call-tree-jump-next)
   (define-key simple-call-tree-mode-map (kbd "w") 'widen)
   (use-local-map simple-call-tree-mode-map)
   (setq mode-line-format
@@ -161,6 +164,52 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
          (subseq mode-line-format
                  (+ 2 (position 'mode-line-buffer-identification
                                 mode-line-format))))))
+
+(easy-menu-define nil simple-call-tree-mode-map "test"
+  `("Simple Call Tree"
+    ["Quit" simple-call-tree-quit
+     :help "Quit and bury this buffer"]
+    ["View Function At Point" simple-call-tree-view-function
+     :help "View the function at point"]
+    ["Visit Function At Point" simple-call-tree-visit-function
+     :help "Visit the function at point"]
+    ["Jump To Branch At Point" simple-call-tree-jump-to-function
+     :help "Goto the toplevel branch for the function at point"]
+    ["Jump To Branch" ,(lambda nil (interactive) (setq current-prefix-arg 1)
+                         (call-interactively 'simple-call-tree-jump-to-function))
+     :help "Prompt for a toplevel branch to jump to"
+     :keys "J"]
+    ["Add To Jump Ring" simple-call-tree-jump-ring-add
+     :help "Add the function at point to the jump ring"]
+    ["Previous Jump" simple-call-tree-jump-prev
+     :help "Goto previous function in jump ring"]
+    ["Next Jump" simple-call-tree-jump-next
+     :help "Goto next function in jump ring"]
+    ["Parent Branch" simple-call-tree-move-up
+     :help "Goto the parent branch of this branch"]
+    ["Next Branch" simple-call-tree-move-next
+     :help "Goto the next branch"]
+    ["Previous Branch" simple-call-tree-move-prev
+     :help "Goto the previous branch"]
+    ["Next Branch Same Level" simple-call-tree-move-next-samelevel
+     :help "Goto the next branch at the same level as this one"]
+    ["Previous Branch Same Level" simple-call-tree-move-prev-samelevel
+     :help "Goto the previous branch at the same level as this one"]
+    ["Toggle Follow mode" fm-toggle
+     :help "Toggle Follow Mode - auto display of function at point"
+     :visible (featurep 'fm)
+     :style toggle
+     :selected fm-working]
+    ["Invert Tree" simple-call-tree-invert-buffer
+     :help "Invert the tree"
+     :style toggle
+     :selected simple-call-tree-inverted-bufferp]
+    ["Change Depth" simple-call-tree-change-maxdepth
+     :help "Change the depth of the tree"]
+    ["Toggle Narrowing" simple-call-tree-toggle-narrowing
+     :help "Toggle between narrowed/wide buffer"
+     :style toggle
+     :selected (simple-call-tree-buffer-narrowed-p)]))
 
 (defvar simple-call-tree-alist nil
   "Alist of functions and the functions they call.")
@@ -661,10 +710,9 @@ When narrowed, the buffer will be narrowed to the subtree at point."
         (let (select-active-regions) (deactivate-mark)))
       (goto-char pos))))
 
-(if (featurep 'fm)
-    (add-to-list 'fm-modes '(simple-call-tree-mode simple-call-tree-visit-function)))
-                 
-(add-hook 'simple-call-tree-mode-hook 'fm-start)
+(unless (not (featurep 'fm))
+  (add-to-list 'fm-modes '(simple-call-tree-mode simple-call-tree-visit-function))
+  (add-hook 'simple-call-tree-mode-hook 'fm-start))
 
 (provide 'simple-call-tree-ext)
 
