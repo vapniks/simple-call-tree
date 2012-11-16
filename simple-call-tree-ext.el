@@ -594,7 +594,8 @@ The current index into the ring is `simple-call-tree-jump-ring-index'."
 
 (defun simple-call-tree-jump-ring-add (fnstr)
   "Add the function at point to the jump-ring.
-Adds the string FNSTR to the end of `simple-call-tree-jump-ring'.
+Adds the string FNSTR to the `simple-call-tree-jump-ring' at the position indicated by
+`simple-call-tree-jump-ring-index', and reset `simple-call-tree-jump-ring-index' to 0.
 When called interactively the name of the function at point is used for FNSTR."
   (interactive (list (simple-call-tree-get-function-at-point)))
   (setf (cadr simple-call-tree-jump-ring) (- (ring-length simple-call-tree-jump-ring)
