@@ -129,8 +129,9 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
                                                      (setq current-prefix-arg 1)
                                                      (call-interactively 'simple-call-tree-jump-to-function)))
   (define-key simple-call-tree-mode-map (kbd "C-j") '(lambda nil (interactive)
-                                                     (setq current-prefix-arg 1)
-                                                     (call-interactively 'simple-call-tree-jump-to-function)))
+                                                       (setq current-prefix-arg 1)
+                                                       (call-interactively 'simple-call-tree-jump-to-function)))
+  (define-key simple-call-tree-mode-map (kbd ".") 'simple-call-tree-jump-ring-add)
   (define-key simple-call-tree-mode-map (kbd "u") 'simple-call-tree-move-up)
   (define-key simple-call-tree-mode-map (kbd "^") 'simple-call-tree-move-up)
   (define-key simple-call-tree-mode-map (kbd "n") 'simple-call-tree-move-next)
@@ -590,6 +591,14 @@ The current index into the ring is `simple-call-tree-jump-ring-index'."
        t)
       (message "Position %d in jump ring history"
                simple-call-tree-jump-ring-index))))
+
+(defun simple-call-tree-jump-ring-add (fnstr)
+  "Add the function at point to the jump-ring.
+Adds the string FNSTR to the end of `simple-call-tree-jump-ring'.
+When called interactively the name of the function at point is used for FNSTR."
+  (interactive (list (simple-call-tree-get-function-at-point)))
+  (ring-insert simple-call-tree-jump-ring fnstr)
+  (message "Added %s to `simple-call-tree-jump-ring'" fnstr))
 
 (defun simple-call-tree-move-up nil
   "Move cursor to the parent of this function."
