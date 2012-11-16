@@ -572,7 +572,9 @@ The current index into the ring is `simple-call-tree-jump-ring-index'."
       (simple-call-tree-jump-to-function
        (ring-ref simple-call-tree-jump-ring
                  simple-call-tree-jump-ring-index)
-       t))))
+       t)
+      (message "Position %d in jump ring history"
+               simple-call-tree-jump-ring-index))))
 
 (defun simple-call-tree-jump-next nil
   "Jump to the next function in the `simple-call-tree-jump-ring'.
@@ -585,7 +587,9 @@ The current index into the ring is `simple-call-tree-jump-ring-index'."
       (simple-call-tree-jump-to-function
        (ring-ref simple-call-tree-jump-ring
                  simple-call-tree-jump-ring-index)
-       t))))
+       t)
+      (message "Position %d in jump ring history"
+               simple-call-tree-jump-ring-index))))
 
 (defun simple-call-tree-move-up nil
   "Move cursor to the parent of this function."
