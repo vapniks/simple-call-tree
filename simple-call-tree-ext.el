@@ -554,7 +554,7 @@ prefix arg) then the function name will be added to `simple-call-tree-jump-ring'
     (with-current-buffer "*Simple Call Tree*"
       (goto-char (point-min))
       (re-search-forward (concat "^" (regexp-opt (list (concat "| " fnstr))) "$"))
-      (unless skipring (ring-insert simple-call-tree-jump-ring fnstr))
+      (unless skipring (simple-call-tree-jump-ring-add fnstr))
       (if narrowedp (simple-call-tree-toggle-narrowing)
         (case simple-call-tree-default-recenter
           (top (recenter 0))
@@ -597,6 +597,9 @@ The current index into the ring is `simple-call-tree-jump-ring-index'."
 Adds the string FNSTR to the end of `simple-call-tree-jump-ring'.
 When called interactively the name of the function at point is used for FNSTR."
   (interactive (list (simple-call-tree-get-function-at-point)))
+  (setf (cadr simple-call-tree-jump-ring) (- (ring-length simple-call-tree-jump-ring)
+                                             simple-call-tree-jump-ring-index))
+  (setq simple-call-tree-jump-ring-index 0)
   (ring-insert simple-call-tree-jump-ring fnstr)
   (message "Added %s to `simple-call-tree-jump-ring'" fnstr))
 
