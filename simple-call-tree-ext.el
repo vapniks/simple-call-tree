@@ -124,9 +124,11 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
       (define-key simple-call-tree-mode-map (kbd "<tab>") 'outline-cycle)
     (define-key simple-call-tree-mode-map (kbd "<tab>") 'outline-toggle-children))
   (define-key simple-call-tree-mode-map (kbd "a") 'show-all)
+  (define-key simple-call-tree-mode-map (kbd "1") 'delete-other-windows)
   (define-key simple-call-tree-mode-map (kbd "h") 'hide-sublevels)
   (define-key simple-call-tree-mode-map (kbd "SPC") 'simple-call-tree-view-function)
   (define-key simple-call-tree-mode-map (kbd "C-o") 'simple-call-tree-view-function)
+  (define-key simple-call-tree-mode-map (kbd "v") 'simple-call-tree-view-function)
   (define-key simple-call-tree-mode-map (kbd "<return>") 'simple-call-tree-visit-function)
   (define-key simple-call-tree-mode-map (kbd "o") 'simple-call-tree-visit-function)
   (define-key simple-call-tree-mode-map (kbd "j") 'simple-call-tree-jump-to-function)
@@ -161,7 +163,8 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
     ["Quit" simple-call-tree-quit
      :help "Quit and bury this buffer"]
     ["View Function At Point" simple-call-tree-view-function
-     :help "View the function at point"]
+     :help "View the function at point"
+     :key "v"]
     ["Visit Function At Point" simple-call-tree-visit-function
      :help "Visit the function at point"]
     ["Jump To Branch At Point" simple-call-tree-jump-to-function
@@ -205,6 +208,9 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
      :visible (featurep 'fm)
      :style toggle
      :selected fm-working]
+    ["Delete Other Windows" delete-other-windows
+     :help "Make this window fill the whole frame"
+     :key "1"]
     ["Invert Tree" simple-call-tree-invert-buffer
      :help "Invert the tree"
      :style toggle
