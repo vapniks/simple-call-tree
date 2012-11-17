@@ -183,9 +183,11 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
     ["Previous Branch" simple-call-tree-move-prev
      :help "Goto the previous branch"]
     ["Next Branch Same Level" simple-call-tree-move-next-samelevel
-     :help "Goto the next branch at the same level as this one"]
+     :help "Goto the next branch at the same level as this one"
+     :key "N"]
     ["Previous Branch Same Level" simple-call-tree-move-prev-samelevel
-     :help "Goto the previous branch at the same level as this one"]
+     :help "Goto the previous branch at the same level as this one"
+     :key "P"]
     ["Cycle Tree Visibility" outline-cycle
      :visible (featurep 'outline-magic)
      :keys "<tab>"]
