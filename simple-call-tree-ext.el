@@ -120,7 +120,11 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
         outline-level 'simple-call-tree-outline-level)
   ;; Set keymap
   (define-key simple-call-tree-mode-map (kbd "q") 'simple-call-tree-quit)
-  (if (featurep 'outline-magic) (define-key simple-call-tree-mode-map (kbd "<tab>") 'outline-cycle))
+  (if (featurep 'outline-magic)
+      (define-key simple-call-tree-mode-map (kbd "<tab>") 'outline-cycle)
+    (define-key simple-call-tree-mode-map (kbd "<tab>") 'outline-toggle-children))
+  (define-key simple-call-tree-mode-map (kbd "a") 'show-all)
+  (define-key simple-call-tree-mode-map (kbd "h") 'hide-sublevels)
   (define-key simple-call-tree-mode-map (kbd "SPC") 'simple-call-tree-view-function)
   (define-key simple-call-tree-mode-map (kbd "C-o") 'simple-call-tree-view-function)
   (define-key simple-call-tree-mode-map (kbd "<return>") 'simple-call-tree-visit-function)
@@ -182,6 +186,18 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
      :help "Goto the next branch at the same level as this one"]
     ["Previous Branch Same Level" simple-call-tree-move-prev-samelevel
      :help "Goto the previous branch at the same level as this one"]
+    ["Cycle Tree Visibility" outline-cycle
+     :visible (featurep 'outline-magic)
+     :keys "<tab>"]
+    ["Toggle Children Visibility" outline-toggle-children
+     :visible (not (featurep 'outline-magic))
+     :keys "<tab>"]
+    ["Show All" show-all
+     :help "Show All Branches"
+     :key-sequence "a"]
+    ["Hide Sublevels" hide-sublevels
+     :help "Hide Lower Level Branches"
+     :key-sequence "h"]
     ["Toggle Follow mode" fm-toggle
      :help "Toggle Follow Mode - auto display of function at point"
      :visible (featurep 'fm)
