@@ -152,20 +152,7 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
   (define-key simple-call-tree-mode-map (kbd "M-n") 'simple-call-tree-jump-next)
   (define-key simple-call-tree-mode-map (kbd "w") 'widen)
   (use-local-map simple-call-tree-mode-map)
-  (setq mode-line-format
-        (append
-         (subseq mode-line-format 0
-                 (1+ (position 'mode-line-buffer-identification
-                               mode-line-format)))
-         (list '(:eval (format (if simple-call-tree-inverted-bufferp
-                                   " Inverted, maxdepth=%d "
-                                 " maxdepth=%d ")
-                               simple-call-tree-current-maxdepth)))
-         (subseq mode-line-format
-                 (+ 2 (position 'mode-line-buffer-identification
-                                mode-line-format))))))
-
-(easy-menu-define nil simple-call-tree-mode-map "test"
+  (easy-menu-define nil simple-call-tree-mode-map "test"
   `("Simple Call Tree"
     ["Quit" simple-call-tree-quit
      :help "Quit and bury this buffer"]
@@ -210,6 +197,18 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
      :help "Toggle between narrowed/wide buffer"
      :style toggle
      :selected (simple-call-tree-buffer-narrowed-p)]))
+  (setq mode-line-format
+        (append
+         (subseq mode-line-format 0
+                 (1+ (position 'mode-line-buffer-identification
+                               mode-line-format)))
+         (list '(:eval (format (if simple-call-tree-inverted-bufferp
+                                   " Inverted, maxdepth=%d "
+                                 " maxdepth=%d ")
+                               simple-call-tree-current-maxdepth)))
+         (subseq mode-line-format
+                 (+ 2 (position 'mode-line-buffer-identification
+                                mode-line-format))))))
 
 (defvar simple-call-tree-alist nil
   "Alist of functions and the functions they call.")
