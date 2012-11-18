@@ -386,30 +386,29 @@ position of the function name."
       (unless (not end)
         (buffer-substring-no-properties start end)))))
 
-(defun* simple-call-tree-display-buffer (&optional depth files)
+(defun* simple-call-tree-display-buffer (&optional files)
   "Display call tree for current buffer.
-If optional args DEPTH and FILES are supplied they specify the depth of the tree,
-and the files to search for functions to display in the tree.
-When called interactively DEPTH will be set to the prefix arg if supplied, or be
-prompted for, and only functions in the current buffer will be used."
+If optional arg FILES is supplied it specifies a list of files to search for functions
+to display in the tree.
+When called interactively files will be prompted for and only functions in the current buffer will be used."
   (interactive "P")
-  (let ((maxdepth (if current-prefix-arg (prefix-numeric-value depth)
-                    (or depth
-                        (floor (abs (read-number "Maximum depth to display: " 2))))))
-        buffers)
-    (or current-prefix-arg files
+  (let (buffers dir regexp)
+    (or files
         (if (y-or-n-p "Include other files?")
-            (whilenotlast (setq file (read-file-name "File: " nil "SENTINEL"))
-                          (add-to-list 'files file)
-                          (string= file "SENTINEL"))))
+            (whilelast
+             (setq dir (ido-read-directory-name "Dir containing files: "))
+             (setq regexp (read-regexp "Regexp matching filenames (RET to finish)"))
+             (unless (string= regexp "")
+               (mapc (lambda (name) (if (string-match regexp name)
+                                        (add-to-list 'files (concat dir name))))
+                     (directory-files dir))))))
     (save-excursion
-      (setq buffers (if (or current-prefix-arg (not files)) (list (current-buffer))
-                      (cons (current-buffer)
-                            (loop for file in files
-                                  unless (string= file "SENTINEL")
-                                  collect (find-file file))))))
+      (setq buffers (loop for file in files
+                          collect (find-file file))))
+    (if (or (not files) (called-interactively-p))
+        (add-to-list 'buffers (current-buffer)))
     (simple-call-tree-analyze nil buffers)
-    (simple-call-tree-list-callers-and-functions maxdepth)
+    (simple-call-tree-list-callers-and-functions)
     (setq simple-call-tree-jump-ring (make-ring simple-call-tree-jump-ring-max)
           simple-call-tree-jump-ring-index 0)))
 
