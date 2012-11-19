@@ -1,6 +1,6 @@
-;;; simple-call-tree-ext.el --- Extensions to simple-call-tree
+;;; simple-call-tree+.el --- Extensions to simple-call-tree
 
-;; Filename: simple-call-tree-ext.el
+;; Filename: simple-call-tree+.el
 ;; Description: extensions to simple-call-tree
 ;; Author: Joe Bloggs <vapniks@yahoo.com>
 ;; Maintainer: Joe Bloggs <vapniks@yahoo.com>
@@ -9,7 +9,7 @@
 ;; Version: 0.1
 ;; Last-Updated: 2012-11-01 21:28:07
 ;;           By: Joe Bloggs
-;; URL: http://www.emacswiki.org/emacs/download/simple-call-tree-ext.el
+;; URL: http://www.emacswiki.org/emacs/download/simple-call-tree+.el
 ;; Keywords: programming
 ;; Compatibility: GNU Emacs 24.2.1
 ;;
@@ -44,7 +44,7 @@
 
 ;;; Installation:
 ;;
-;; Put simple-call-tree-ext.el in a directory in your load-path, e.g. ~/.emacs.d/
+;; Put simple-call-tree+.el in a directory in your load-path, e.g. ~/.emacs.d/
 ;; You can add a directory to your load-path with the following line in ~/.emacs
 ;; (add-to-list 'load-path (expand-file-name "~/elisp"))
 ;; where ~/elisp is the directory you want to add 
@@ -52,7 +52,7 @@
 ;;
 ;; Add the following to your ~/.emacs startup file.
 ;;
-;; (require 'simple-call-tree-ext)
+;; (require 'simple-call-tree+)
 
 ;;; Customize:
 ;;
@@ -61,7 +61,7 @@
 
 ;;
 ;; All of the above can customized by:
-;;      M-x customize-group RET simple-call-tree-ext RET
+;;      M-x customize-group RET simple-call-tree+ RET
 ;;
 
 ;;; Change log:
@@ -77,7 +77,10 @@
 
 ;;; TODO
 ;;
-;; Create jump-ring to keep a track of functions jumped to so user can go back through jump history.
+;; More reliable code for building tree (handle duplicate function names properly).
+;; Commands to do query-replace-regexp on functions, and maybe other refactorings.
+;; Code for marking functions (like with files in dired mode) and then applying operations to the marked functions.
+;; Code for rearranging functions.
 
 ;;; Require
 (require 'thingatpt)
@@ -736,6 +739,6 @@ When narrowed, the buffer will be narrowed to the subtree at point."
   (add-to-list 'fm-modes '(simple-call-tree-mode simple-call-tree-visit-function))
   (add-hook 'simple-call-tree-mode-hook 'fm-start))
 
-(provide 'simple-call-tree-ext)
+(provide 'simple-call-tree+)
 
-;;; simple-call-tree-ext.el ends here
+;;; simple-call-tree+.el ends here
