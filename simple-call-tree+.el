@@ -38,8 +38,31 @@
 
 ;;; Commentary: 
 ;; 
-;; Extensions to simple-call-tree.el for elisp libraries.
-;; 
+;; This library is based on simple-call-tree.el by Alex Schroeder.
+;; When the command `simple-call-tree-display-buffer' is executed
+;; a call tree for the functions in the current buffer will be created.
+;; The user is also prompted for other files containing functions to be
+;; included in the call tree.
+;; The call tree is displayed in a buffer called *Simple Call Tree*,
+;; which has a dedicated menu in the menu-bar showing various commands
+;; and their keybindings. Most of these commands are self explanatory
+;; so try them out.
+;; You can navigate the call tree either by moving through consecutive
+;; headers (n/p or N/P keys) or by jumping to main branches (j for branch
+;; corresponding to function at point, and J to prompt for a function).
+;; When you jump to a branch, it is added to `simple-call-tree-jump-ring',
+;; and you can navigate your jump history using the </> keys.
+;; You can also add the function under point to the jump-ring with the . key.
+;; If you use a negative prefix (e.g. C--) before pressing j then the branch
+;; jumped to will not be added to the jump-ring.
+;; If you have fm.el (available here: http://www.damtp.cam.ac.uk/user/sje30/emacs/fm.el)
+;; you can press f to toggle follow mode on/off.
+;; When follow mode is on, or when you press the v or C-o key the code line
+;; corresponding to the branch under point will be displayed. If it is a
+;; toplevel branch then that function will be displayed, if it is a lower-level
+;; branch then the corresponding function call will be displayed.
+;; You can invert the tree by pressing i, and change the depth by pressing d.
+;; You can also toggle narrowing to the current branch by pressing /.
 ;; 
 
 ;;; Installation:
@@ -72,7 +95,8 @@
 
 ;;; Acknowledgements:
 ;;
-;; 
+;; Alex Schroeder - the creator of the original simple-call-tree.el
+;;                  (available here: http://www.emacswiki.org/emacs/simple-call-tree.el)
 ;;
 
 ;;; TODO
