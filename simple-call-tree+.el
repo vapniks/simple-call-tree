@@ -10,6 +10,7 @@
 ;; Last-Updated: 2012-11-01 21:28:07
 ;;           By: Joe Bloggs
 ;; URL: http://www.emacswiki.org/emacs/download/simple-call-tree+.el
+;;      https://github.com/vapniks/simple-call-tree-ext
 ;; Keywords: programming
 ;; Compatibility: GNU Emacs 24.2.1
 ;;
