@@ -77,10 +77,14 @@
 ;;
 ;; (require 'simple-call-tree+)
 
+
+
 ;;; Customize:
 ;;
-;; To automatically insert descriptions of customizable variables defined in this buffer
-;; place point at the beginning of the next line and do: M-x insert-customizable-variable-descriptions
+;; `simple-call-tree-default-recenter' : How to recenter the window after moving to another function in the "*Simple Call Tree*" 
+;;                                       buffer.
+;; `simple-call-tree-jump-ring-max' : Maximum number of elements in `simple-call-tree-jump-ring', before old elements are removed.
+
 
 ;;
 ;; All of the above can customized by:
@@ -101,6 +105,8 @@
 
 ;;; TODO
 ;;
+;; I am going to work on a plugin for one-key.el which provides similar functionality.
+;; If anyone wants to implement the following ideas, please do:
 ;; More reliable code for building tree (handle duplicate function names properly).
 ;; Commands to do query-replace-regexp on functions, and maybe other refactorings.
 ;; Code for marking functions (like with files in dired mode) and then applying operations to the marked functions.
