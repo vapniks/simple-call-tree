@@ -464,6 +464,7 @@ its value will be changed to the position in the current buffer just after the f
          (test (fourth modevals))
          end)
     (while (and (not (and (memq (get-text-property start 'face) validfonts)
+                          (not (memq (get-text-property start 'face) invalidfonts))
                           (or (not (functionp test))
                               (funcall test start))))
                 (setq start (next-single-property-change start 'face))))
