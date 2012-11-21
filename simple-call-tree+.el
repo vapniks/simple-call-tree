@@ -163,7 +163,7 @@ and should return non-nil if that symbol is a valid object.
 END-TEST indicates how to find the end of the current object when parsing a buffer for the call tree.
 If END-TEST is nil then font changes will be used to determine the end of an object (by searching for the
 next part of text whose font is in FONTS). If END-TEST it is t then `end-of-defun' will be used, and if
-it is a function then that function will be used in the same way as `end-of-defun'."
+it is a function then that function will be used in the same way as `end-of-defun' (but needs no argument)."
   :group 'simple-call-tree
   :type '(repeat (list (symbol :tag "major-mode symbol")
                        (repeat :tag "Faces"
@@ -367,7 +367,7 @@ By default it is set to a list containing the current buffer."
         simple-call-tree-locations-alist nil)
   ;; First add all the functions defined in the buffers to simple-call-tree-alist.
   (let ((pos (point-min))
-        oldpos count nextfunc max item olditem)
+        oldpos count nextfunc max item endtest)
     (dolist (buf buffers)
       (with-current-buffer buf
         (font-lock-default-fontify-buffer)
@@ -386,23 +386,24 @@ By default it is set to a list containing the current buffer."
         (setq pos (point-min)
               max count
               count 0
-              oldpos pos
-              olditem '("*Start*") ;; dummy value required for 1st iteration of following loop
               endtest (fourth (assoc major-mode simple-call-tree-major-mode-alist))
               item nextfunc)
         (save-excursion
           ;; Loop through functions, adding called functions to associated items in simple-call-tree-alist.
           (while (setq nextfunc (simple-call-tree-next-func 'pos))
             (setq item (assoc nextfunc simple-call-tree-alist)
-                  count (1+ count))
+                  count (1+ count)
+                  oldpos pos)
             (message "Identifying functions called...%d/%d" count max)
-            (simple-call-tree-add oldpos (- pos (length nextfunc)) olditem)
-            (setq oldpos pos olditem item))
-          ;; Final function needs to be dealt with separately using a different method for finding its end.
-          (goto-char oldpos)
-          (end-of-defun)
-          (simple-call-tree-add oldpos (point) olditem)))))
-  (message "simple-call-tree done"))
+            (if endtest
+                (if (functionp endtest) (funcall endtest) (end-of-defun))
+              (simple-call-tree-next-func 'pos)
+              (goto-char pos)
+              (previous-line)
+              (beginning-of-line))
+            (setq pos (point))
+            (simple-call-tree-add oldpos pos item))))))
+    (message "simple-call-tree done"))
 
 (defun simple-call-tree-invert (alist)
   "Invert ALIST and return the result."
@@ -441,9 +442,7 @@ If optional arg BUF is supplied then use BUF instead of the *Simple Call Tree* b
 (defun simple-call-tree-next-func (posvar)
   "Find the next function in the current buffer after position POSVAR, and return its name.
 POSVAR should be a symbol which evaluates to a position in the current buffer. If a function is found
-its value will be changed to the position in the current buffer just after the function name.
-If optional function TEST is given, it must return non-nil when called with one parameter, the starting
-position of the function name."
+its value will be changed to the position in the current buffer just after the function name."
   (let* ((start (eval posvar))
          (modevals (assoc major-mode simple-call-tree-major-mode-alist))
          (fonts (or (second modevals)
