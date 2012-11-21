@@ -460,7 +460,7 @@ its value will be changed to the position in the current buffer just after the f
          (validfonts (or (second modevals)
                          simple-call-tree-default-valid-fonts))
          (invalidfonts (or (third modevals)
-                           simple-call-tree-default-valid-fonts))
+                           simple-call-tree-default-invalid-fonts))
          (test (fourth modevals))
          end)
     (while (and (not (and (memq (get-text-property start 'face) validfonts)
