@@ -133,6 +133,52 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
                  (const :tag "Middle" middle)
                  (const :tag "Bottom" bottom)))
 
+(defcustom simple-call-tree-default-fonts '(font-lock-function-name-face)
+  "List of font-lock fonts to use for finding objects to include in the call tree."
+  :group 'simple-call-tree
+  :type '(repeat face))
+
+(defcustom simple-call-tree-major-mode-alist
+  '((cperl-mode nil (lambda (pos)
+                      (goto-char pos)
+                      (beginning-of-line)
+                      (looking-at "sub")) nil)
+    (perl-mode nil (lambda (pos)
+                     (goto-char pos)
+                     (beginning-of-line)
+                     (looking-at "sub")) nil))
+  "Alist of major modes, and information to use for identifying objects for the simple call tree.
+Each element is a list in the form '(MAJOR-MODE FONTS START-TEST END-TEST) where:
+
+MAJOR-MODE is the symbol for the major-mode that this items applies to.
+
+FONTS is either nil or a list of fonts for finding objects for the call tree (functions/variables/etc).
+If nil then `simple-call-tree-default-fonts' will be used.
+
+START-TEST indicates how to determing the start of the next object.
+If START-TEST is nil then objects are found by examining changes in font only. If START-TEST is a
+function then in addition to the font check, this function will be called at the beginning of a name
+and should return non-nil if that symbol is a valid object.
+
+END-TEST indicates how to find the end of the current object when parsing a buffer for the call tree.
+If END-TEST is nil then font changes will be used to determine the end of an object (by searching for the
+next part of text whose font is in FONTS). If END-TEST it is t then `end-of-defun' will be used, and if
+it is a function then that function will be used in the same way as `end-of-defun'."
+  :group 'simple-call-tree
+  :type '(repeat (list (symbol :tag "major-mode symbol")
+                       (repeat :tag "Faces"
+                               (face :help-echo "List of faces corresponding to items to include in the call tree."))
+                       (choice :tag "Start test"
+                               (const :tag "Font only" nil)
+                               (function
+                                :tag "Function:"
+                                :help-echo "Function that evaluates to true when point is at beginning of function name."))
+                       (choice :tag "End test"
+                               (const :tag "Font only" nil)
+                               (const :tag "end-of-defun function" t)
+                               (function :tag "Other function" :help-echo "Function for finding end of object"))))
+  :link '(variable-link simple-call-tree-default-fonts))
+
 ;; Saves a little typing
 (defmacro whilelast (&rest forms)
   `(while (progn ,@forms)))
@@ -360,14 +406,6 @@ By default it is set to a list containing the current buffer."
           (simple-call-tree-add oldpos (point) olditem)))))
   (message "simple-call-tree done"))
 
-(defun simple-call-tree-analyze-perl ()
-  "Call `simple-call-tree-analyze-perl' for CPerl code."
-  (interactive)
-  (simple-call-tree-analyze (lambda (pos)
-		       (goto-char pos)
-		       (beginning-of-line)
-		       (looking-at "sub"))))
-
 (defun simple-call-tree-invert (alist)
   "Invert ALIST and return the result."
   (let (result)
@@ -402,15 +440,19 @@ If optional arg BUF is supplied then use BUF instead of the *Simple Call Tree* b
                      (symbol-nearest-point)
                    (symbol-at-point)))))
 
-(defun simple-call-tree-next-func (posvar &optional test)
+(defun simple-call-tree-next-func (posvar)
   "Find the next function in the current buffer after position POSVAR, and return its name.
 POSVAR should be a symbol which evaluates to a position in the current buffer. If a function is found
 its value will be changed to the position in the current buffer just after the function name.
 If optional function TEST is given, it must return non-nil when called with one parameter, the starting
 position of the function name."
-  (let ((start (eval posvar)) end)
-    (while (and (not (and (eq (get-text-property start 'face)
-                              'font-lock-function-name-face)
+  (let ((start (eval posvar))
+        (modevals (assoc major-mode simple-call-tree-major-mode-alist))
+        (fonts (or (second modevals)
+                   simple-call-tree-default-fonts))
+        (test (third modevals))
+        end)
+    (while (and (not (and (memq (get-text-property start 'face) fonts)
                           (or (not (functionp test))
                               (funcall test start))))
                 (setq start (next-single-property-change start 'face))))
