@@ -133,7 +133,10 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
                  (const :tag "Middle" middle)
                  (const :tag "Bottom" bottom)))
 
-(defcustom simple-call-tree-default-fonts '(font-lock-function-name-face)
+(defcustom simple-call-tree-default-fonts '(font-lock-function-name-face
+                                            font-lock-constant-face
+                                            font-lock-type-face
+                                            font-lock-variable-name-face)
   "List of font-lock fonts to use for finding objects to include in the call tree."
   :group 'simple-call-tree
   :type '(repeat face))
@@ -345,7 +348,7 @@ The minimum value is 0 which means show top level functions only.")
 ;;; Functions from simple-call-tree.el (some are rewritten)
 
 (defun simple-call-tree-add (start end alist)
-  "Add tokes between START and END to ALIST.
+  "Add tokens between START and END to ALIST.
 ALIST is a list with a string identifying the function in its car,
 and the list of functions it calls in the cdr."
   (dolist (entry simple-call-tree-alist)
