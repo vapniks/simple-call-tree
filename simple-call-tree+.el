@@ -133,30 +133,40 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
                  (const :tag "Middle" middle)
                  (const :tag "Bottom" bottom)))
 
-(defcustom simple-call-tree-default-fonts '(font-lock-function-name-face
-                                            font-lock-constant-face
-                                            font-lock-type-face
-                                            font-lock-variable-name-face)
-  "List of font-lock fonts to use for finding objects to include in the call tree."
+(defcustom simple-call-tree-default-valid-fonts '(font-lock-function-name-face
+                                                  font-lock-constant-face
+                                                  font-lock-type-face
+                                                  font-lock-variable-name-face)
+  "List of fonts to use for finding objects to include in the call tree."
+  :group 'simple-call-tree
+  :type '(repeat face))
+
+(defcustom simple-call-tree-default-invalid-fonts '(font-lock-comment-face
+                                                    font-lock-string-face
+                                                    font-lock-doc-face)
+  "List of fonts that should not be in the text property of any valid token."
   :group 'simple-call-tree
   :type '(repeat face))
 
 (defcustom simple-call-tree-major-mode-alist
-  '((cperl-mode nil (lambda (pos)
-                      (goto-char pos)
-                      (beginning-of-line)
-                      (looking-at "sub")) nil)
-    (perl-mode nil (lambda (pos)
-                     (goto-char pos)
-                     (beginning-of-line)
-                     (looking-at "sub")) nil))
+  '((cperl-mode nil nil (lambda (pos)
+                          (goto-char pos)
+                          (beginning-of-line)
+                          (looking-at "sub")) nil)
+    (perl-mode nil nil (lambda (pos)
+                         (goto-char pos)
+                         (beginning-of-line)
+                         (looking-at "sub")) nil))
   "Alist of major modes, and information to use for identifying objects for the simple call tree.
-Each element is a list in the form '(MAJOR-MODE FONTS START-TEST END-TEST) where:
+Each element is a list in the form '(MAJOR-MODE VALID-FONTS INVALID-FONTS START-TEST END-TEST) where:
 
 MAJOR-MODE is the symbol for the major-mode that this items applies to.
 
-FONTS is either nil or a list of fonts for finding objects for the call tree (functions/variables/etc).
-If nil then `simple-call-tree-default-fonts' will be used.
+VALID-FONTS is either nil or a list of fonts for finding objects for the call tree (functions/variables/etc).
+If nil then `simple-call-tree-default-valid-fonts' will be used.
+
+INVALID-FONTS is either nil or a list of fonts that should not be present in the text properties of
+any objects to be added to the call tree. If nil then `simple-call-tree-default-invalid-fonts' will be used. 
 
 START-TEST indicates how to determing the start of the next object.
 If START-TEST is nil then objects are found by examining changes in font only. If START-TEST is a
@@ -180,7 +190,7 @@ it is a function then that function will be used in the same way as `end-of-defu
                                (const :tag "Font only" nil)
                                (const :tag "end-of-defun function" t)
                                (function :tag "Other function" :help-echo "Function for finding end of object"))))
-  :link '(variable-link simple-call-tree-default-fonts))
+  :link '(variable-link simple-call-tree-default-valid-fonts))
 
 ;; Saves a little typing
 (defmacro whilelast (&rest forms)
@@ -389,7 +399,7 @@ By default it is set to a list containing the current buffer."
         (setq pos (point-min)
               max count
               count 0
-              endtest (fourth (assoc major-mode simple-call-tree-major-mode-alist))
+              endtest (fifth (assoc major-mode simple-call-tree-major-mode-alist))
               item nextfunc)
         (save-excursion
           ;; Loop through functions, adding called functions to associated items in simple-call-tree-alist.
@@ -427,9 +437,8 @@ By default it is set to a list containing the current buffer."
   "Return t if face at point is a valid function name face, and nil otherwise."
   (let ((faces (get-text-property (point) 'face)))
     (unless (listp faces) (setq faces (list faces)))
-    (not (or (memq 'font-lock-comment-face faces)
-             (memq 'font-lock-string-face faces)
-             (memq 'font-lock-doc-face faces)))))
+    (not (intersection faces
+                       simple-call-tree-default-invalid-fonts))))
 
 (defun* simple-call-tree-get-function-at-point (&optional (buf "*Simple Call Tree*"))
   "Return the name of the function nearest point in the *Simple Call Tree* buffer.
@@ -448,11 +457,13 @@ POSVAR should be a symbol which evaluates to a position in the current buffer. I
 its value will be changed to the position in the current buffer just after the function name."
   (let* ((start (eval posvar))
          (modevals (assoc major-mode simple-call-tree-major-mode-alist))
-         (fonts (or (second modevals)
-                    simple-call-tree-default-fonts))
-         (test (third modevals))
+         (validfonts (or (second modevals)
+                         simple-call-tree-default-valid-fonts))
+         (invalidfonts (or (third modevals)
+                           simple-call-tree-default-valid-fonts))
+         (test (fourth modevals))
          end)
-    (while (and (not (and (memq (get-text-property start 'face) fonts)
+    (while (and (not (and (memq (get-text-property start 'face) validfonts)
                           (or (not (functionp test))
                               (funcall test start))))
                 (setq start (next-single-property-change start 'face))))
