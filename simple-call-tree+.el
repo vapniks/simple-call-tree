@@ -444,12 +444,12 @@ POSVAR should be a symbol which evaluates to a position in the current buffer. I
 its value will be changed to the position in the current buffer just after the function name.
 If optional function TEST is given, it must return non-nil when called with one parameter, the starting
 position of the function name."
-  (let ((start (eval posvar))
-        (modevals (assoc major-mode simple-call-tree-major-mode-alist))
-        (fonts (or (second modevals)
-                   simple-call-tree-default-fonts))
-        (test (third modevals))
-        end)
+  (let* ((start (eval posvar))
+         (modevals (assoc major-mode simple-call-tree-major-mode-alist))
+         (fonts (or (second modevals)
+                    simple-call-tree-default-fonts))
+         (test (third modevals))
+         end)
     (while (and (not (and (memq (get-text-property start 'face) fonts)
                           (or (not (functionp test))
                               (funcall test start))))
