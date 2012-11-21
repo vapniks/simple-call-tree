@@ -357,12 +357,9 @@ and the list of functions it calls in the cdr."
           (setcdr alist (cons (car entry) (cdr alist)))
           (throw 'done t))))))
 
-(defun* simple-call-tree-analyze (&optional test (buffers (list (current-buffer))))
+(defun* simple-call-tree-analyze (&optional (buffers (list (current-buffer))))
   "Analyze the current buffer, or the buffers in list BUFFERS.
 The result is stored in `simple-call-tree-alist'.
-If optional function TEST is given, it must return non-nil when
-called with one parameter, the starting position of the function
-name.
 Optional arg BUFFERS is a list of buffers to analyze together.
 By default it is set to a list containing the current buffer."
   (interactive)
@@ -377,7 +374,7 @@ By default it is set to a list containing the current buffer."
         (setq pos (point-min)
               count 0)
         (save-excursion
-          (while (setq nextfunc (simple-call-tree-next-func 'pos test))
+          (while (setq nextfunc (simple-call-tree-next-func 'pos))
             (goto-char pos)
             (setq simple-call-tree-alist (cons (list nextfunc) simple-call-tree-alist)
                   simple-call-tree-locations-alist (cons (cons nextfunc (point-marker)) simple-call-tree-locations-alist)
@@ -391,10 +388,11 @@ By default it is set to a list containing the current buffer."
               count 0
               oldpos pos
               olditem '("*Start*") ;; dummy value required for 1st iteration of following loop
+              endtest (fourth (assoc major-mode simple-call-tree-major-mode-alist))
               item nextfunc)
         (save-excursion
           ;; Loop through functions, adding called functions to associated items in simple-call-tree-alist.
-          (while (setq nextfunc (simple-call-tree-next-func 'pos test))
+          (while (setq nextfunc (simple-call-tree-next-func 'pos))
             (setq item (assoc nextfunc simple-call-tree-alist)
                   count (1+ count))
             (message "Identifying functions called...%d/%d" count max)
@@ -484,7 +482,7 @@ When called interactively files will be prompted for and only functions in the c
                           collect (find-file file))))
     (if (or (not files) (called-interactively-p))
         (add-to-list 'buffers (current-buffer)))
-    (simple-call-tree-analyze nil buffers)
+    (simple-call-tree-analyze buffers)
     (simple-call-tree-list-callers-and-functions)
     (setq simple-call-tree-jump-ring (make-ring simple-call-tree-jump-ring-max)
           simple-call-tree-jump-ring-index 0)))
