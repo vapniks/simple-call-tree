@@ -134,8 +134,6 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
                  (const :tag "Bottom" bottom)))
 
 (defcustom simple-call-tree-default-valid-fonts '(font-lock-function-name-face
-                                                  font-lock-constant-face
-                                                  font-lock-type-face
                                                   font-lock-variable-name-face)
   "List of fonts to use for finding objects to include in the call tree."
   :group 'simple-call-tree
@@ -408,15 +406,15 @@ By default it is set to a list containing the current buffer."
                   count (1+ count)
                   oldpos pos)
             (message "Identifying functions called...%d/%d" count max)
-            (if endtest
-                (if (functionp endtest) (funcall endtest) (end-of-defun))
-              (simple-call-tree-next-func 'pos)
-              (goto-char pos)
-              (previous-line)
-              (beginning-of-line))
-            (setq pos (point))
-            (simple-call-tree-add oldpos pos item))))))
-    (message "simple-call-tree done"))
+            (cond ((functionp endtest) (funcall endtest))
+                  (endtest (end-of-defun))
+                  ((simple-call-tree-next-func 'pos)
+                   (progn (goto-char pos)
+                          (previous-line)
+                          (end-of-line)))
+                  (t (goto-char (point-max))))
+            (simple-call-tree-add oldpos (point) item))))))
+  (message "simple-call-tree done"))
 
 (defun simple-call-tree-invert (alist)
   "Invert ALIST and return the result."
