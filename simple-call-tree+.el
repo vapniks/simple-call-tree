@@ -377,8 +377,7 @@ By default it is set to a list containing the current buffer."
   (setq simple-call-tree-alist nil
         simple-call-tree-locations-alist nil)
   ;; First add all the functions defined in the buffers to simple-call-tree-alist.
-  (let ((pos (point-min))
-        oldpos count nextfunc max item endtest)
+  (let (pos oldpos count nextfunc max item endtest oldpos)
     (dolist (buf buffers)
       (with-current-buffer buf
         (font-lock-default-fontify-buffer)
@@ -386,19 +385,18 @@ By default it is set to a list containing the current buffer."
               count 0)
         (save-excursion
           (while (setq nextfunc (simple-call-tree-next-func 'pos))
+            (add-to-list 'simple-call-tree-alist (list nextfunc))
             (goto-char pos)
-            (setq simple-call-tree-alist (cons (list nextfunc) simple-call-tree-alist)
-                  simple-call-tree-locations-alist (cons (cons nextfunc (point-marker)) simple-call-tree-locations-alist)
-                  count (1+ count))
-            (message "Identifying functions...%d" count)))))
+            (add-to-list 'simple-call-tree-locations-alist (cons nextfunc (point-marker)))
+            (setq count (1+ count))
+            (message "Identifying functions...%d:%s" count nextfunc)))))
     ;; Set variables in preparation for next part.
     (dolist (buf buffers)
       (with-current-buffer buf
         (setq pos (point-min)
               max count
               count 0
-              endtest (fifth (assoc major-mode simple-call-tree-major-mode-alist))
-              item nextfunc)
+              endtest (fifth (assoc major-mode simple-call-tree-major-mode-alist)))
         (save-excursion
           ;; Loop through functions, adding called functions to associated items in simple-call-tree-alist.
           (while (setq nextfunc (simple-call-tree-next-func 'pos))
