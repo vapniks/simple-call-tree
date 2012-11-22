@@ -440,12 +440,13 @@ By default it is set to a list containing the current buffer."
   "Return the name of the function nearest point in the *Simple Call Tree* buffer.
 If optional arg BUF is supplied then use BUF instead of the *Simple Call Tree* buffer."
   (with-current-buffer buf
-    (if (and (equal buf "*Simple Call Tree*")
-             (looking-at "[-|<>]* [^|<> -]"))
-        (goto-char (next-single-property-change (point) 'face)))
-    (symbol-name (if (functionp 'symbol-nearest-point)
-                     (symbol-nearest-point)
-                   (symbol-at-point)))))
+    (if (equal buf "*Simple Call Tree*")
+        (let* ((start (next-single-property-change (line-beginning-position) 'face))
+               (end (next-single-property-change start 'face)))
+          (buffer-substring-no-properties start end))
+      (symbol-name (if (functionp 'symbol-nearest-point)
+                       (symbol-nearest-point)
+                     (symbol-at-point))))))
 
 (defun simple-call-tree-next-func (posvar)
   "Find the next function in the current buffer after position POSVAR, and return its name.
