@@ -154,7 +154,10 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
     (perl-mode nil nil (lambda (pos)
                          (goto-char pos)
                          (beginning-of-line)
-                         (looking-at "sub")) nil))
+                         (looking-at "sub")) nil)
+    (python-mode (font-lock-function-name-face
+                  font-lock-type-face)
+                 nil nil t))
   "Alist of major modes, and information to use for identifying objects for the simple call tree.
 Each element is a list in the form '(MAJOR-MODE VALID-FONTS INVALID-FONTS START-TEST END-TEST) where:
 
@@ -173,8 +176,9 @@ and should return non-nil if that symbol is a valid object.
 
 END-TEST indicates how to find the end of the current object when parsing a buffer for the call tree.
 If END-TEST is nil then font changes will be used to determine the end of an object (by searching for the
-next part of text whose font is in FONTS). If END-TEST it is t then `end-of-defun' will be used, and if
-it is a function then that function will be used in the same way as `end-of-defun' (but needs no argument)."
+next part of text whose font is in FONTS). If END-TEST it is t then `end-of-defun' will be used to move to the
+end of the function, and if it is a function then that function will be used in the same way as `end-of-defun'
+ (but needs no argument)."
   :group 'simple-call-tree
   :type '(repeat (list (symbol :tag "major-mode symbol")
                        (repeat :tag "Faces"
@@ -404,11 +408,11 @@ By default it is set to a list containing the current buffer."
                   count (1+ count)
                   oldpos pos)
             (message "Identifying functions called...%d/%d" count max)
+            (goto-char pos)
             (cond ((functionp endtest) (funcall endtest))
                   (endtest (end-of-defun))
                   ((simple-call-tree-next-func 'pos)
-                   (progn (goto-char pos)
-                          (previous-line)
+                   (progn (previous-line)
                           (end-of-line)))
                   (t (goto-char (point-max))))
             (simple-call-tree-add oldpos (point) item))))))
