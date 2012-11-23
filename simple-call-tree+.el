@@ -312,7 +312,7 @@ end of the function, and if it is a function then that function will be used in 
      :style toggle
      :selected fm-working]
     ["Delete Other Windows" delete-other-windows
-     :help "Make this window fill the whole frame"
+     :help "Make this window fill the whole frame (toggle mode must be off)"
      :key "1"]
     ["Invert Tree" simple-call-tree-invert-buffer
      :help "Invert the tree"
@@ -389,42 +389,39 @@ By default it is set to a list containing the current buffer."
   (setq simple-call-tree-alist nil
         simple-call-tree-locations-alist nil)
   ;; First add all the functions defined in the buffers to simple-call-tree-alist.
-  (let (pos oldpos count nextfunc max item endtest oldpos)
+  (let (pos oldpos count1 nextfunc item endtest oldpos)
     (dolist (buf buffers)
       (with-current-buffer buf
         (font-lock-default-fontify-buffer)
         (setq pos (point-min)
-              count 0)
+              count1 0)
         (save-excursion
           (while (setq nextfunc (simple-call-tree-next-func 'pos))
             (add-to-list 'simple-call-tree-alist (list nextfunc))
             (goto-char pos)
             (add-to-list 'simple-call-tree-locations-alist (cons nextfunc (point-marker)))
-            (setq count (1+ count))
-            (message "Identifying functions...%d:%s" count nextfunc)))))
-    ;; Set variables in preparation for next part.
-    (dolist (buf buffers)
-      (with-current-buffer buf
-        (setq pos (point-min)
-              max count
-              count 0
-              endtest (fifth (assoc major-mode simple-call-tree-major-mode-alist)))
-        (save-excursion
-          ;; Loop through functions, adding called functions to associated items in simple-call-tree-alist.
-          (while (setq nextfunc (simple-call-tree-next-func 'pos))
-            (setq item (assoc nextfunc simple-call-tree-alist)
-                  count (1+ count)
-                  oldpos pos)
-            (message "Identifying functions called...%d/%d" count max)
-            (goto-char pos)
-            (cond ((functionp endtest) (funcall endtest))
-                  (endtest (end-of-defun))
-                  ((simple-call-tree-next-func 'pos)
-                   (progn (previous-line)
-                          (end-of-line)))
-                  (t (goto-char (point-max))))
-            (simple-call-tree-add oldpos (point) item))))))
-  (message "simple-call-tree done"))
+            (setq count1 (1+ count1))
+            (message "Identifying functions...%d:%s" count1 nextfunc)))))
+    ;; Now find functions called
+    (loop for (func . marker) in simple-call-tree-locations-alist
+          for count2 from 1
+          for buf = (marker-buffer marker)
+          for start = (marker-position marker)
+          for endtest = (with-current-buffer buf
+                          (fifth (assoc major-mode simple-call-tree-major-mode-alist)))
+          for item = (assoc func simple-call-tree-alist)
+          do (with-current-buffer buf
+               (save-excursion
+                 (goto-char start)
+                 (cond ((functionp endtest) (funcall endtest))
+                       (endtest (end-of-defun))
+                       ((simple-call-tree-next-func 'start)
+                        (progn (previous-line)
+                               (end-of-line)))
+                       (t (goto-char (point-max))))
+                 (message "Identifying functions called...%d/%d" count2 count1)
+                 (simple-call-tree-add start (point) item))))
+    (message "simple-call-tree done")))
 
 (defun simple-call-tree-invert (alist)
   "Invert ALIST and return the result."
