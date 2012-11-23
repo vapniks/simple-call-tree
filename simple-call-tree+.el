@@ -157,7 +157,14 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
                          (looking-at "sub")) nil)
     (python-mode (font-lock-function-name-face
                   font-lock-type-face)
-                 nil nil t))
+                 nil (lambda (pos)
+                       (goto-char pos)
+                       (beginning-of-line)
+                       (re-search-forward "\\<")
+                       (or (looking-at "def\\|class")
+                           (eq (get-text-property (point) 'face)
+                               font-lock-variable-name-face)))
+                 t))
   "Alist of major modes, and information to use for identifying objects for the simple call tree.
 Each element is a list in the form '(MAJOR-MODE VALID-FONTS INVALID-FONTS START-TEST END-TEST) where:
 
@@ -169,10 +176,10 @@ If nil then `simple-call-tree-default-valid-fonts' will be used.
 INVALID-FONTS is either nil or a list of fonts that should not be present in the text properties of
 any objects to be added to the call tree. If nil then `simple-call-tree-default-invalid-fonts' will be used. 
 
-START-TEST indicates how to determing the start of the next object.
-If START-TEST is nil then objects are found by examining changes in font only. If START-TEST is a
-function then in addition to the font check, this function will be called at the beginning of a name
-and should return non-nil if that symbol is a valid object.
+START-TEST indicates how to determing the start of the next object. Potential objects are found by checking
+the fonts of tokens in the buffer (against VALID-FONTS). If START-TEST is a function then it will be used as
+an additional check for potential objects. It will be passed the buffer position of the beginning of the
+current token to check, and should return non-nil if it represents a valid object.
 
 END-TEST indicates how to find the end of the current object when parsing a buffer for the call tree.
 If END-TEST is nil then font changes will be used to determine the end of an object (by searching for the
