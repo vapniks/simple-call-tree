@@ -165,7 +165,12 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
                        (or (looking-at "def\\|class")
                            (eq (get-text-property (point) 'face)
                                font-lock-variable-name-face)))
-                 t))
+                 (lambda nil
+                   (backward-char)
+                   (if (eq (get-text-property (point) 'face)
+                           font-lock-variable-name-face)
+                       (end-of-line)
+                     (end-of-defun)))))
   "Alist of major modes, and information to use for identifying objects for the simple call tree.
 Each element is a list in the form '(MAJOR-MODE VALID-FONTS INVALID-FONTS START-TEST END-TEST) where:
 
