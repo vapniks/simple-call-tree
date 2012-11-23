@@ -156,6 +156,7 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
                          (beginning-of-line)
                          (looking-at "sub")) nil)
     (python-mode (font-lock-function-name-face
+                  font-lock-variable-name-face
                   font-lock-type-face)
                  nil (lambda (pos)
                        (goto-char pos)
@@ -469,12 +470,12 @@ its value will be changed to the position in the current buffer just after the f
                          simple-call-tree-default-valid-fonts))
          (invalidfonts (or (third modevals)
                            simple-call-tree-default-invalid-fonts))
-         (test (fourth modevals))
+         (starttest (fourth modevals))
          end)
     (while (and (not (and (memq (get-text-property start 'face) validfonts)
                           (not (memq (get-text-property start 'face) invalidfonts))
-                          (or (not (functionp test))
-                              (funcall test start))))
+                          (or (not (functionp starttest))
+                              (funcall starttest start))))
                 (setq start (next-single-property-change start 'face))))
     (unless (not start)
       (setq end (next-single-property-change start 'face))
