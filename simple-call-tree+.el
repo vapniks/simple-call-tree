@@ -106,6 +106,7 @@
 
 ;;; TODO
 ;;
+;; Use font-lock fonts for displaying objects instead of outline-mode fonts.
 ;; I am going to work on a plugin for one-key.el which provides similar functionality.
 ;; If anyone wants to implement the following ideas, please do:
 ;; More reliable code for building tree (handle duplicate function names properly).
@@ -147,7 +148,11 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
   :type '(repeat face))
 
 (defcustom simple-call-tree-major-mode-alist
-  '((cperl-mode nil nil (lambda (pos)
+  '(
+    ;; (emacs-lisp-mode (font-lock-function-name-face
+    ;;                   font-lock-variable-name-face)
+    ;;                  nil nil t)
+    (cperl-mode nil nil (lambda (pos)
                           (goto-char pos)
                           (beginning-of-line)
                           (looking-at "sub")) nil)
@@ -394,14 +399,16 @@ By default it is set to a list containing the current buffer."
   (setq simple-call-tree-alist nil
         simple-call-tree-locations-alist nil)
   ;; First add all the functions defined in the buffers to simple-call-tree-alist.
-  (let (pos oldpos count1 nextfunc item endtest oldpos)
+  (let (pos oldpos count1 pair nextfunc item endtest oldpos)
     (dolist (buf buffers)
       (with-current-buffer buf
         (font-lock-default-fontify-buffer)
         (setq pos (point-min)
               count1 0)
         (save-excursion
-          (while (setq nextfunc (simple-call-tree-next-func 'pos))
+          (while (setq pair (simple-call-tree-next-func pos)
+                       pos (car pair)
+                       nextfunc (cdr pair))
             (add-to-list 'simple-call-tree-alist (list nextfunc))
             (goto-char pos)
             (add-to-list 'simple-call-tree-locations-alist (cons nextfunc (point-marker)))
@@ -420,9 +427,8 @@ By default it is set to a list containing the current buffer."
                  (goto-char start)
                  (cond ((functionp endtest) (funcall endtest))
                        (endtest (end-of-defun))
-                       ((simple-call-tree-next-func 'start)
-                        (progn (previous-line)
-                               (end-of-line)))
+                       ((setq pair (simple-call-tree-next-func start))
+                        (goto-char (- (car pair) (length (cdr pair)))))
                        (t (goto-char (point-max))))
                  (message "Identifying functions called...%d/%d" count2 count1)
                  (simple-call-tree-add start (point) item))))
@@ -462,12 +468,12 @@ If optional arg BUF is supplied then use BUF instead of the *Simple Call Tree* b
                        (symbol-nearest-point)
                      (symbol-at-point))))))
 
-(defun simple-call-tree-next-func (posvar)
-  "Find the next function in the current buffer after position POSVAR, and return its name.
-POSVAR should be a symbol which evaluates to a position in the current buffer. If a function is found
-its value will be changed to the position in the current buffer just after the function name."
-  (let* ((start (eval posvar))
-         (modevals (assoc major-mode simple-call-tree-major-mode-alist))
+(defun simple-call-tree-next-func (start)
+  "Find the next function in the current buffer after position START.
+Return a cons cell whose car is the position in the buffer just after the function name,
+and whose cdr is the function name, unless there are no more functions in which case return
+nil."
+  (let* ((modevals (assoc major-mode simple-call-tree-major-mode-alist))
          (validfonts (or (second modevals)
                          simple-call-tree-default-valid-fonts))
          (invalidfonts (or (third modevals)
@@ -481,9 +487,8 @@ its value will be changed to the position in the current buffer just after the f
                 (setq start (next-single-property-change start 'face))))
     (unless (not start)
       (setq end (next-single-property-change start 'face))
-      (set posvar end)
       (unless (not end)
-        (buffer-substring-no-properties start end)))))
+        (cons end (buffer-substring start end))))))
 
 (defun* simple-call-tree-display-buffer (&optional files)
   "Display call tree for current buffer.
