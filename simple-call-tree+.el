@@ -148,10 +148,9 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
   :type '(repeat face))
 
 (defcustom simple-call-tree-major-mode-alist
-  '(
-    ;; (emacs-lisp-mode (font-lock-function-name-face
-    ;;                   font-lock-variable-name-face)
-    ;;                  nil nil t)
+  '((emacs-lisp-mode (font-lock-function-name-face
+                      font-lock-variable-name-face)
+                     nil nil t)
     (cperl-mode nil nil (lambda (pos)
                           (goto-char pos)
                           (beginning-of-line)
@@ -569,10 +568,11 @@ This is a recursive function, and you should not need to set CURDEPTH."
          (arrowtail (make-string (1- curdepth) 45))
          (arrow (if inverted (concat (if (> curdepth 1) "<") arrowtail " ")
                   (concat arrowtail (if (> curdepth 1) "> " " "))))
-         (face (intern-soft (format "outline-%d" (mod curdepth 8)))))
+         (face (get-text-property 0 'face fname)))
     (insert "|" arrow (propertize fname
                                   'font-lock-face (list :inherit face :underline t)
-                                  'mouse-face 'highlight) "\n")
+                                  'mouse-face 'highlight)
+            "\n")
     (if (< curdepth maxdepth)
         (dolist (callee callees)
           (simple-call-tree-list-callees-recursively callee maxdepth (1+ curdepth) funclist inverted)))))
