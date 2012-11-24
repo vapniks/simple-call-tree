@@ -565,7 +565,7 @@ FNAME must be the car of one of the elements of FUNCLIST which is set to `simple
 The optional arguments MAXDEPTH and CURDEPTH specify the maximum and current depth of the tree respectively.
 This is a recursive function, and you should not need to set CURDEPTH."
   (let* ((callees (cdr (assoc fname funclist)))
-         (arrowtail (make-string (1- curdepth) 45))
+         (arrowtail (make-string (* 2 (1- curdepth)) 45))
          (arrow (if inverted (concat (if (> curdepth 1) "<") arrowtail " ")
                   (concat arrowtail (if (> curdepth 1) "> " " "))))
          (face (get-text-property 0 'face fname)))
@@ -587,8 +587,8 @@ the line first in order to capture the match-string.
 We can't do that in this function as it causes other problems with outline mode commands."
   (with-current-buffer "*Simple Call Tree*"
     (save-excursion
-      (let ((len (length (match-string 1))))
-        (if (= len 0) 1 len)))))
+      (let ((arrowlen (length (match-string 1))))
+        (if (= arrowlen 0) 1 (1+ (/ (1- arrowlen) 2)))))))
 
 (defun simple-call-tree-get-parent nil
   "Return the name of the parent of the function at point according to the current tree.
