@@ -398,39 +398,40 @@ By default it is set to a list containing the current buffer."
   (setq simple-call-tree-alist nil
         simple-call-tree-locations-alist nil)
   ;; First add all the functions defined in the buffers to simple-call-tree-alist.
-  (let (pos oldpos count1 pair nextfunc item endtest oldpos)
+  (let (pos oldpos count1 pair nextfunc item endtest oldpos startmark endmark)
     (dolist (buf buffers)
       (with-current-buffer buf
         (font-lock-default-fontify-buffer)
         (setq pos (point-min)
-              count1 0)
+              count1 0
+              endtest (fifth (assoc major-mode simple-call-tree-major-mode-alist)))
         (save-excursion
           (while (setq pair (simple-call-tree-next-func pos)
                        pos (car pair)
                        nextfunc (cdr pair))
             (add-to-list 'simple-call-tree-alist (list nextfunc))
             (goto-char pos)
-            (add-to-list 'simple-call-tree-locations-alist (cons nextfunc (point-marker)))
+            (setq startmark (point-marker))
+            (cond ((functionp endtest) (funcall endtest))
+                  (endtest (end-of-defun))
+                  ((setq pair (simple-call-tree-next-func pos))
+                   (goto-char (- (car pair) (length (cdr pair)))))
+                  (t (goto-char (point-max))))
+            (setq endmark (point-marker))
+            (add-to-list 'simple-call-tree-locations-alist (list nextfunc startmark endmark))
             (setq count1 (1+ count1))
             (message "Identifying functions...%d:%s" count1 nextfunc)))))
     ;; Now find functions called
-    (loop for (func . marker) in simple-call-tree-locations-alist
+    (loop for (func startmark endmark) in simple-call-tree-locations-alist
           for count2 from 1
-          for buf = (marker-buffer marker)
-          for start = (marker-position marker)
-          for endtest = (with-current-buffer buf
-                          (fifth (assoc major-mode simple-call-tree-major-mode-alist)))
+          for buf = (marker-buffer startmark)
+          for start = (marker-position startmark)
+          for end = (marker-position endmark)
           for item = (assoc func simple-call-tree-alist)
           do (with-current-buffer buf
                (save-excursion
-                 (goto-char start)
-                 (cond ((functionp endtest) (funcall endtest))
-                       (endtest (end-of-defun))
-                       ((setq pair (simple-call-tree-next-func start))
-                        (goto-char (- (car pair) (length (cdr pair)))))
-                       (t (goto-char (point-max))))
                  (message "Identifying functions called...%d/%d" count2 count1)
-                 (simple-call-tree-add start (point) item))))
+                 (simple-call-tree-add start end item))))
     (message "simple-call-tree done")))
 
 (defun simple-call-tree-invert (alist)
@@ -673,10 +674,10 @@ If it is a called function then display the position in the calling function whe
   (let* ((level (simple-call-tree-outline-level))
          (thisfunc (simple-call-tree-get-function-at-point))
          (parent (simple-call-tree-get-parent))
-         (funmark (cdr (assoc (if simple-call-tree-inverted-bufferp
-                                  thisfunc
-                                (or parent thisfunc))
-                              simple-call-tree-locations-alist)))
+         (funmark (second (assoc (if simple-call-tree-inverted-bufferp
+                                     thisfunc
+                                   (or parent thisfunc))
+                                 simple-call-tree-locations-alist)))
          (buf (marker-buffer funmark))
          (pos (marker-position funmark)))
     (display-buffer buf)
@@ -702,10 +703,10 @@ If it is a called function then visit the position in the calling function where
   (let* ((level (simple-call-tree-outline-level))
          (thisfunc (simple-call-tree-get-function-at-point))
          (parent (simple-call-tree-get-parent))
-         (funmark (cdr (assoc (if simple-call-tree-inverted-bufferp
-                                  thisfunc
-                                (or parent thisfunc))
-                              simple-call-tree-locations-alist)))
+         (funmark (second (assoc (if simple-call-tree-inverted-bufferp
+                                     thisfunc
+                                   (or parent thisfunc))
+                                 simple-call-tree-locations-alist)))
          (buf (marker-buffer funmark))
          (pos (marker-position funmark)))
     (pop-to-buffer buf)
