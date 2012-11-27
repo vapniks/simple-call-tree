@@ -620,7 +620,9 @@ If there is no parent, return nil."
          (start (marker-position (second trio)))
          (end (marker-position (third trio))))
     (with-current-buffer buf
-      (narrow-to-region start end))))
+      (goto-char start)
+      (beginning-of-line)
+      (narrow-to-region (point) end))))
 
 ;;; Major-mode commands bound to keys
 
