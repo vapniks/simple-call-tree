@@ -281,9 +281,13 @@ end of the function, and if it is a function then that function will be used in 
      :key "v"]
     ["Visit Function At Point" simple-call-tree-visit-function
      :help "Visit the function at point"]
+    ["Replace String In Function At Point..." simple-call-tree-query-replace
+     :help "Perform query-replace on the function at point"]
+    ["Replace Regexp In Function At Point..." simple-call-tree-query-replace-regexp
+     :help "Perform query-replace-regexp on the function at point"]
     ["Jump To Branch At Point" simple-call-tree-jump-to-function
      :help "Goto the toplevel branch for the function at point"]
-    ["Jump To Branch" ,(lambda nil (interactive) (setq current-prefix-arg 1)
+    ["Jump To Branch..." ,(lambda nil (interactive) (setq current-prefix-arg 1)
                          (call-interactively 'simple-call-tree-jump-to-function))
      :help "Prompt for a toplevel branch to jump to"
      :keys "J"]
@@ -329,7 +333,7 @@ end of the function, and if it is a function then that function will be used in 
      :help "Invert the tree"
      :style toggle
      :selected simple-call-tree-inverted-bufferp]
-    ["Change Depth" simple-call-tree-change-maxdepth
+    ["Change Depth..." simple-call-tree-change-maxdepth
      :help "Change the depth of the tree"]
     ["Toggle Narrowing" simple-call-tree-toggle-narrowing
      :help "Toggle between narrowed/wide buffer"
@@ -659,7 +663,9 @@ If there is no parent, return nil."
   "Alter the maximum tree depth in the *Simple Call Tree* buffer."
   (interactive "P")
   (move-beginning-of-line nil)
-  (re-search-forward outline-regexp)
+  (or (re-search-forward outline-regexp nil t)
+      (progn (simple-call-tree-move-prev)
+             (re-search-forward outline-regexp nil t)))
   (let* ((level (simple-call-tree-outline-level))
          (depth (if current-prefix-arg (prefix-numeric-value current-prefix-arg)
                   (floor (abs (read-number "Maximum depth to display: " 2)))))
@@ -807,13 +813,15 @@ When called interactively the name of the function at point is used for FNSTR."
   "Move cursor to the parent of this function."
   (interactive)
   (outline-up-heading 1)
-  (goto-char (next-single-property-change (point) 'face)))
+  (let ((nextpos (next-single-property-change (point) 'face)))
+    (if nextpos (goto-char nextpos))))
 
 (defun simple-call-tree-move-next nil
   "Move cursor to the next function."
   (interactive)
   (outline-next-visible-heading 1)
-  (goto-char (next-single-property-change (point) 'face)))  
+  (let ((nextpos (next-single-property-change (point) 'face)))
+    (if nextpos (goto-char nextpos))))
 
 (defun simple-call-tree-move-prev nil
   "Move cursor to the previous function."
