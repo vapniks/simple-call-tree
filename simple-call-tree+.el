@@ -266,6 +266,8 @@ end of the function, and if it is a function then that function will be used in 
   (define-key simple-call-tree-mode-map (kbd "/") 'simple-call-tree-toggle-narrowing)
   (define-key simple-call-tree-mode-map (kbd "<") 'simple-call-tree-jump-prev)
   (define-key simple-call-tree-mode-map (kbd ">") 'simple-call-tree-jump-next)
+  (define-key simple-call-tree-mode-map (kbd "%") 'simple-call-tree-query-replace)
+  (define-key simple-call-tree-mode-map (kbd "C-%") 'simple-call-tree-query-replace-regexp)
   (define-key simple-call-tree-mode-map (kbd "M-p") 'simple-call-tree-jump-prev)
   (define-key simple-call-tree-mode-map (kbd "M-n") 'simple-call-tree-jump-next)
   (define-key simple-call-tree-mode-map (kbd "w") 'widen)
@@ -857,6 +859,27 @@ When narrowed, the buffer will be narrowed to the subtree at point."
         (narrow-to-region (region-beginning) (region-end))
         (let (select-active-regions) (deactivate-mark)))
       (goto-char pos))))
+
+(defun simple-call-tree-query-replace (func &optional arg)
+  "Perform query-replace on function FUNC.
+If called interactively the function at point in the *Simple Call Tree*
+buffer will be used.
+If ARG is non-nil perform query-replace-regexp instead."
+  (interactive (list (simple-call-tree-get-function-at-point)))
+  (let ((buf (marker-buffer
+              (second (assoc func simple-call-tree-locations-alist)))))
+    (switch-to-buffer-other-window buf)
+    (simple-call-tree-narrow-to-function func)
+    (if arg
+        (call-interactively 'query-replace-regexp)
+      (call-interactively 'query-replace))
+    (widen)
+    (switch-to-buffer-other-window "*Simple Call Tree*")))
+
+(defun simple-call-tree-query-replace-regexp (func)
+  "Perform query-replace-regexp on function FUNC."
+  (interactive (list (simple-call-tree-get-function-at-point)))
+  (simple-call-tree-query-replace func t))
 
 (unless (not (featurep 'fm))
   (add-to-list 'fm-modes '(simple-call-tree-mode simple-call-tree-visit-function))
