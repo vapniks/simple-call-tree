@@ -702,20 +702,22 @@ If it is a called function then display the position in the calling function whe
            (simple-call-tree-valid-face-p)))
       (recenter 1))))
 
-(defun* simple-call-tree-visit-function nil
+(defun* simple-call-tree-visit-function (&optional arg)
   "Visit the source code corresponding to the current header.
 If the current header is a calling or toplevel function then visit that function.
-If it is a called function then visit the position in the calling function where it is called."
-  (interactive)
+If it is a called function then visit the position in the calling function where it is called.
+If ARG is non-nil, or a prefix arg is supplied when called interactively then narrow
+the source buffer to the function."
+  (interactive "P")
   (move-beginning-of-line nil)
   (re-search-forward outline-regexp)
   (let* ((level (simple-call-tree-outline-level))
          (thisfunc (simple-call-tree-get-function-at-point))
          (parent (simple-call-tree-get-parent))
-         (funmark (second (assoc (if simple-call-tree-inverted-bufferp
-                                     thisfunc
-                                   (or parent thisfunc))
-                                 simple-call-tree-locations-alist)))
+         (visitfunc (if simple-call-tree-inverted-bufferp
+                        thisfunc
+                      (or parent thisfunc)))
+         (funmark (second (assoc visitfunc simple-call-tree-locations-alist)))
          (buf (marker-buffer funmark))
          (pos (marker-position funmark)))
     (pop-to-buffer buf)
@@ -728,6 +730,7 @@ If it is a called function then visit the position in the calling function where
                parent
              thisfunc)))
          (simple-call-tree-valid-face-p)))
+    (if arg (simple-call-tree-narrow-to-function visitfunc))
     (recenter 1)))
 
 (defun* simple-call-tree-jump-to-function (fnstr &optional skipring)
