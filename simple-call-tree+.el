@@ -40,6 +40,11 @@
 ;;; Commentary: 
 ;; 
 ;; This library is based on simple-call-tree.el by Alex Schroeder.
+;; It displays a buffer containing a call tree for functions in source
+;; code files. You can easily & quickly navigate the call tree, displaying
+;; the code in another window, and perform query-replace on the functions
+;; which may be useful for refactoring.
+
 ;; When the command `simple-call-tree-display-buffer' is executed
 ;; a call tree for the functions in the current buffer will be created.
 ;; The user is also prompted for other files containing functions to be
@@ -48,6 +53,7 @@
 ;; which has a dedicated menu in the menu-bar showing various commands
 ;; and their keybindings. Most of these commands are self explanatory
 ;; so try them out.
+
 ;; You can navigate the call tree either by moving through consecutive
 ;; headers (n/p or N/P keys) or by jumping to main branches (j for branch
 ;; corresponding to function at point, and J to prompt for a function).
@@ -63,8 +69,9 @@
 ;; toplevel branch then that function will be displayed, if it is a lower-level
 ;; branch then the corresponding function call will be displayed.
 ;; You can invert the tree by pressing i, and change the depth by pressing d.
-;; You can also toggle narrowing to the current branch by pressing /.
-;; 
+;; You can toggle narrowing to the current branch by pressing /.
+;; You can perform query-replace or query-replace-regexp on the function at
+;; point by pressing % or C-%
 
 ;;; Installation:
 ;;
