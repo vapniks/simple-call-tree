@@ -613,6 +613,15 @@ If there is no parent, return nil."
               (error nil))
             (simple-call-tree-get-function-at-point))))))
 
+(defun simple-call-tree-narrow-to-function (func)
+  "Narrow the source buffer containing FUNC to that function."
+  (let* ((trio (assoc func simple-call-tree-locations-alist))
+         (buf (marker-buffer (second trio)))
+         (start (marker-position (second trio)))
+         (end (marker-position (third trio))))
+    (with-current-buffer buf
+      (narrow-to-region start end))))
+
 ;;; Major-mode commands bound to keys
 
 (defun simple-call-tree-quit nil
