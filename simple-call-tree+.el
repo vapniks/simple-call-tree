@@ -116,6 +116,9 @@
 ;; I am going to work on a plugin for one-key.el which provides similar functionality.
 ;; If anyone wants to implement the following ideas, please do:
 ;; More reliable code for building tree (handle duplicate function names properly).
+;; Fix simple-call-tree-alist so that we can save markers for locations of function calls aswell,
+;; e.g. have cons cells in form (func . marker) for each called function, and fix code so that
+;; we can have several calls to the same function in the same tree (may need major refactor).
 ;; Code for marking functions (like with files in dired mode) and then applying operations to the marked functions.
 ;; Code for rearranging functions.
 
