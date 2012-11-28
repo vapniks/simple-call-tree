@@ -155,11 +155,11 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
 (defcustom simple-call-tree-major-mode-alist
   '((emacs-lisp-mode (font-lock-function-name-face
                       font-lock-variable-name-face)
-                     nil nil end-of-defun)
+                     nil nil nil end-of-defun)
     (cperl-mode nil nil (lambda (pos)
                           (goto-char pos)
                           (beginning-of-line)
-                          (looking-at "sub")) nil)
+                          (looking-at "sub")) nil nil)
     (haskell-mode (font-lock-function-name-face) nil
                   (lambda (pos)
                     (goto-char pos)
@@ -167,11 +167,13 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
                     (let ((thistoken (symbol-at-point)))
                       (previous-line)
                       (not (string= (symbol-at-point) thistoken))))
+                  nil
                   haskell-ds-forward-decl)
     (perl-mode nil nil (lambda (pos)
                          (goto-char pos)
                          (beginning-of-line)
-                         (looking-at "sub")) nil)
+                         (looking-at "sub"))
+               nil nil)
     (python-mode (font-lock-function-name-face
                   font-lock-variable-name-face
                   font-lock-type-face)
@@ -182,6 +184,7 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
                        (or (looking-at "def\\|class")
                            (eq (get-text-property (point) 'face)
                                font-lock-variable-name-face)))
+                 nil
                  (lambda nil
                    (backward-char)
                    (if (eq (get-text-property (point) 'face)
@@ -204,11 +207,13 @@ the fonts of tokens in the buffer (against VALID-FONTS). If START-TEST is a func
 an additional check for potential objects. It will be passed the buffer position of the beginning of the
 current token to check, and should return non-nil if it represents a valid object.
 
-END-TEST indicates how to find the end of the current object when parsing a buffer for the call tree.
-If END-TEST is nil then font changes will be used to determine the end of an object (by searching for the
-next part of text whose font is in FONTS). If END-TEST it is t then `end-of-defun' will be used to move to the
-end of the function, and if it is a function then that function will be used in the same way as `end-of-defun'
- (but needs no argument)."
+NEXT-FUNC is an alternative way of determining the locations of functions.
+It is either nil, meaning the function locations will be determined by fonts and maybe START-TEST,
+or a function of no args which moves point to the start of the next function in the buffer.
+
+END-FUNC indicates how to find the end of the current object when parsing a buffer for the call tree.
+It is either nil, meaning that font changes will be used to determine the end of an object,
+or a function of no args which moves point to the end of the current function in the buffer."
   :group 'simple-call-tree
   :type '(repeat (list (symbol :tag "major-mode symbol")
                        (repeat :tag "Faces"
@@ -423,7 +428,7 @@ By default it is set to a list containing the current buffer."
         (font-lock-default-fontify-buffer)
         (setq pos (point-min)
               count1 0
-              endtest (fifth (assoc major-mode simple-call-tree-major-mode-alist)))
+              endtest (sixth (assoc major-mode simple-call-tree-major-mode-alist)))
         (save-excursion
           (while (setq pair (simple-call-tree-next-func pos)
                        pos (car pair)
