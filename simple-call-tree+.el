@@ -147,7 +147,10 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
 
 (defcustom simple-call-tree-default-invalid-fonts '(font-lock-comment-face
                                                     font-lock-string-face
-                                                    font-lock-doc-face)
+                                                    font-lock-doc-face
+                                                    font-lock-keyword-face
+                                                    font-lock-warning-face
+                                                    font-lock-preprocessor-face)
   "List of fonts that should not be in the text property of any valid token."
   :group 'simple-call-tree
   :type '(repeat face))
@@ -160,7 +163,13 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
                           (goto-char pos)
                           (beginning-of-line)
                           (looking-at "sub")) nil nil)
-    (haskell-mode (font-lock-function-name-face) nil
+    (haskell-mode nil (font-lock-function-name-face
+                       font-lock-comment-face
+                       font-lock-string-face
+                       font-lock-doc-face
+                       font-lock-keyword-face
+                       font-lock-warning-face
+                       font-lock-preprocessor-face)
                   (lambda (pos)
                     (goto-char pos)
                     (beginning-of-line)
@@ -410,7 +419,10 @@ and the list of functions it calls in the cdr."
     (catch 'done
       (while (re-search-forward (simple-call-tree-symbol-as-regexp (car entry))
                                 end t)
-        (unless (not (simple-call-tree-valid-face-p))
+        ;; need to go back a char so that the text properties are read correctly
+        (backward-char)                 
+        (if (not (simple-call-tree-valid-face-p))
+            (forward-char)
           (setcdr alist (cons (car entry) (cdr alist)))
           (throw 'done t))))))
 
@@ -477,8 +489,7 @@ By default it is set to a list containing the current buffer."
 (defun simple-call-tree-valid-face-p nil
   "Return t if face at point is a valid function name face, and nil otherwise."
   (let ((faces (get-text-property (point) 'face))
-        (modevals (assoc major-mode simple-call-tree-major-mode-alist))
-        (invalidfonts (or (third modevals)
+        (invalidfonts (or (third (assoc major-mode simple-call-tree-major-mode-alist))
                           simple-call-tree-default-invalid-fonts)))
     (unless (listp faces) (setq faces (list faces)))
     (not (intersection faces invalidfonts))))
