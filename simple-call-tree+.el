@@ -167,7 +167,7 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
                     (let ((thistoken (symbol-at-point)))
                       (previous-line)
                       (not (string= (symbol-at-point) thistoken))))
-                  nil
+                  haskell-ds-forward-decl
                   haskell-ds-forward-decl)
     (perl-mode nil nil (lambda (pos)
                          (goto-char pos)
@@ -200,7 +200,8 @@ VALID-FONTS is either nil or a list of fonts for finding objects for the call tr
 If nil then `simple-call-tree-default-valid-fonts' will be used.
 
 INVALID-FONTS is either nil or a list of fonts that should not be present in the text properties of
-any objects to be added to the call tree. If nil then `simple-call-tree-default-invalid-fonts' will be used. 
+any objects to be added to the call tree. If nil then `simple-call-tree-default-invalid-fonts' will be used.
+The invalid fonts will also be checked when finding function calls.
 
 START-TEST indicates how to determing the start of the next object. Potential objects are found by checking
 the fonts of tokens in the buffer (against VALID-FONTS). If START-TEST is a function then it will be used as
@@ -475,10 +476,12 @@ By default it is set to a list containing the current buffer."
 
 (defun simple-call-tree-valid-face-p nil
   "Return t if face at point is a valid function name face, and nil otherwise."
-  (let ((faces (get-text-property (point) 'face)))
+  (let ((faces (get-text-property (point) 'face))
+        (modevals (assoc major-mode simple-call-tree-major-mode-alist))
+        (invalidfonts (or (third modevals)
+                          simple-call-tree-default-invalid-fonts)))
     (unless (listp faces) (setq faces (list faces)))
-    (not (intersection faces
-                       simple-call-tree-default-invalid-fonts))))
+    (not (intersection faces invalidfonts))))
 
 (defun* simple-call-tree-get-function-at-point (&optional (buf "*Simple Call Tree*"))
   "Return the name of the function nearest point in the *Simple Call Tree* buffer.
