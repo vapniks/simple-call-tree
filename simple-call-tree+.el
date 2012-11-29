@@ -573,7 +573,8 @@ When called interactively files will be prompted for and only functions in the c
     (simple-call-tree-analyze buffers)
     (simple-call-tree-list-callers-and-functions)
     (setq simple-call-tree-jump-ring (make-ring simple-call-tree-jump-ring-max)
-          simple-call-tree-jump-ring-index 0)))
+          simple-call-tree-jump-ring-index 0
+          simple-call-tree-inverted-bufferp nil)))
 
 (defun* simple-call-tree-current-function (func &optional wide)
   "Display call tree for function FUNC.
