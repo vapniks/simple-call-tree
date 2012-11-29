@@ -472,6 +472,9 @@ By default it is set to a list containing the current buffer."
                (save-excursion
                  (message "Identifying functions called...%d/%d" count2 count1)
                  (simple-call-tree-add start end item))))
+    (message "Creating inverted list...")
+    (setq simple-call-tree-inverted-alist
+          (simple-call-tree-invert simple-call-tree-alist))
     (message "simple-call-tree done")))
 
 (defun simple-call-tree-invert (alist)
