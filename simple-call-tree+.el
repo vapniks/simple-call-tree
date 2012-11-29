@@ -590,7 +590,7 @@ otherwise it will be narrowed around FUNC."
   (interactive (list (if current-prefix-arg
                          (which-function)
                        (simple-call-tree-get-function-at-point (current-buffer)))))
-  (if (assoc func simple-call-tree-alist)
+  (if (assoc-if (lambda (x) (string= (car x) func)) simple-call-tree-alist)
       (if (get-buffer "*Simple Call Tree*")
           (switch-to-buffer "*Simple Call Tree*")
         (simple-call-tree-list-callers-and-functions))
