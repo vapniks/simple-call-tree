@@ -915,7 +915,8 @@ buffer will be used.
 If ARG is non-nil perform query-replace-regexp instead."
   (interactive (list (simple-call-tree-get-function-at-point)))
   (let ((buf (marker-buffer
-              (second (assoc func simple-call-tree-locations-alist)))))
+              (second (car (assoc-if (lambda (x) (string= (car x) func))
+                                     simple-call-tree-alist))))))
     (switch-to-buffer-other-window buf)
     (simple-call-tree-narrow-to-function func)
     (if arg
