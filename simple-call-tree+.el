@@ -717,7 +717,8 @@ narrowing."
     (simple-call-tree-list-callers-and-functions depth funclist)
     (simple-call-tree-jump-to-function thisfunc)
     (if narrowedp (simple-call-tree-toggle-narrowing -1))
-    (setq simple-call-tree-current-maxdepth (max depth 1))))
+    (setq simple-call-tree-current-maxdepth (max depth 1)
+          simple-call-tree-inverted-bufferp (not simple-call-tree-inverted-bufferp))))
 
 (defun simple-call-tree-change-maxdepth (maxdepth)
   "Alter the maximum tree depth in the *Simple Call Tree* buffer."
