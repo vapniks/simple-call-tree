@@ -474,11 +474,11 @@ By default it is set to a list containing the current buffer."
                  (simple-call-tree-add start end item))))
     (message "Creating inverted list...")
     (setq simple-call-tree-inverted-alist
-          (simple-call-tree-invert simple-call-tree-alist))
+          (simple-call-tree-invert))
     (message "simple-call-tree done")))
 
-(defun simple-call-tree-invert (alist)
-  "Invert ALIST and return the result."
+(defun simple-call-tree-invert nil
+  "Invert `simple-call-tree-alist' and return the result."
   (let (result)
     (dolist (item simple-call-tree-alist)
       (let* ((caller (first item))
@@ -487,7 +487,8 @@ By default it is set to a list containing the current buffer."
         (dolist (callee callees)
           (let* ((calleename (first callee))
                  (callerpos (second callee))
-                 (calleeitem (car (assoc-if (lambda (x) (string= (car x) calleename)) alist)))
+                 (calleeitem (car (assoc-if (lambda (x) (string= (car x) calleename))
+                                            simple-call-tree-alist)))
                  (elem (assoc-if (lambda (x) (string= (car x) calleename)) result)))
             (if elem
                 (setcdr elem (cons (list callername callerpos) (cdr elem)))
@@ -728,7 +729,7 @@ narrowing."
          (depth (if current-prefix-arg (prefix-numeric-value current-prefix-arg)
                   (floor (abs (read-number "Maximum depth to display: " 2)))))
          (funclist (if simple-call-tree-inverted-bufferp
-                       (simple-call-tree-invert simple-call-tree-alist)
+                       (simple-call-tree-invert)
                      simple-call-tree-alist))
          (narrowedp (simple-call-tree-buffer-narrowed-p))
          (thisfunc (simple-call-tree-get-function-at-point))
