@@ -736,26 +736,12 @@ If it is a called function then display the position in the calling function whe
   (interactive)
   (move-beginning-of-line nil)
   (re-search-forward outline-regexp)
-  (let* ((level (simple-call-tree-outline-level))
-         (thisfunc (simple-call-tree-get-function-at-point))
-         (parent (simple-call-tree-get-parent))
-         (funmark (second (assoc (if simple-call-tree-inverted-bufferp
-                                     thisfunc
-                                   (or parent thisfunc))
-                                 simple-call-tree-locations-alist)))
+  (let* ((funmark (get-text-property (point) 'location))
          (buf (marker-buffer funmark))
          (pos (marker-position funmark)))
     (display-buffer buf)
     (with-selected-window (get-buffer-window buf)
       (goto-char pos)
-      (if (> level 1)
-          (whilenotlast
-           (re-search-forward
-            (simple-call-tree-symbol-as-regexp
-             (if simple-call-tree-inverted-bufferp
-                 parent
-               thisfunc)))
-           (simple-call-tree-valid-face-p)))
       (recenter 1))))
 
 (defun* simple-call-tree-visit-function (&optional arg)
@@ -768,24 +754,16 @@ the source buffer to the function."
   (move-beginning-of-line nil)
   (re-search-forward outline-regexp)
   (let* ((level (simple-call-tree-outline-level))
+         (funmark (get-text-property (point) 'location))
+         (buf (marker-buffer funmark))
+         (pos (marker-position funmark))
          (thisfunc (simple-call-tree-get-function-at-point))
          (parent (simple-call-tree-get-parent))
          (visitfunc (if simple-call-tree-inverted-bufferp
                         thisfunc
-                      (or parent thisfunc)))
-         (funmark (second (assoc visitfunc simple-call-tree-locations-alist)))
-         (buf (marker-buffer funmark))
-         (pos (marker-position funmark)))
+                      (or parent thisfunc))))
     (pop-to-buffer buf)
     (goto-char pos)
-    (if (> level 1)
-        (whilenotlast
-         (re-search-forward
-          (simple-call-tree-symbol-as-regexp
-           (if simple-call-tree-inverted-bufferp
-               parent
-             thisfunc)))
-         (simple-call-tree-valid-face-p)))
     (if arg (simple-call-tree-narrow-to-function visitfunc))
     (recenter 1)))
 
