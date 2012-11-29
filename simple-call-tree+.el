@@ -780,7 +780,7 @@ Unless optional arg SKIPRING is non-nil (which will be true if called with a neg
 prefix arg) then the function name will be added to `simple-call-tree-jump-ring'"
   (interactive (list (if current-prefix-arg
                          (ido-completing-read "Jump to function: "
-                                              (mapcar 'car simple-call-tree-alist))
+                                              (mapcar 'caar simple-call-tree-alist))
                        (simple-call-tree-get-function-at-point))
                      (< (prefix-numeric-value current-prefix-arg) 0)))
   (let* ((narrowedp (simple-call-tree-buffer-narrowed-p)))
