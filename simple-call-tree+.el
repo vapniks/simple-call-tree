@@ -391,11 +391,6 @@ positions of the start and end of the function. The other lists contain informat
 for functions called by FUNC, and are in the form (FUNC2 POS) where FUNC2 is the name
 of the called function and POS is the position of the call.")
 
-(defvar simple-call-tree-locations-alist nil
-  "Alist of functions and their locations within their respective buffers.
-The car of each element is a function name, and the cdr is a marker indicating the position
-of the functions definition.")
-
 (defvar simple-call-tree-inverted-bufferp nil
   "Indicates if the *Simple Call Tree* buffer is currently inverted or not.
 If non-nil then children correspond to callers of parents in the outline tree.
@@ -439,8 +434,7 @@ The result is stored in `simple-call-tree-alist'.
 Optional arg BUFFERS is a list of buffers to analyze together.
 By default it is set to a list containing the current buffer."
   (interactive)
-  (setq simple-call-tree-alist nil
-        simple-call-tree-locations-alist nil)
+  (setq simple-call-tree-alist nil)
   ;; First add all the functions defined in the buffers to simple-call-tree-alist.
   (let (pos oldpos count1 pair nextfunc item endtest oldpos startmark endmark)
     (dolist (buf buffers)
