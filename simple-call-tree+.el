@@ -384,7 +384,12 @@ or a function of no args which moves point to the end of the current function in
                                 mode-line-format))))))
 
 (defvar simple-call-tree-alist nil
-  "Alist of functions and the functions they call.")
+  "Alist of functions and the functions they call, and markers for their locations.
+Each element is a list of lists. The first list in each element is in the form
+ (FUNC START END) where FUNC is the function name and START & END are markers for the
+positions of the start and end of the function. The other lists contain information
+for functions called by FUNC, and are in the form (FUNC2 POS) where FUNC2 is the name
+of the called function and POS is the position of the call.")
 
 (defvar simple-call-tree-locations-alist nil
   "Alist of functions and their locations within their respective buffers.
@@ -415,18 +420,17 @@ The minimum value is 0 which means show top level functions only.")
 
 (defun simple-call-tree-add (start end alist)
   "Add tokens between START and END to ALIST.
-ALIST is a list with a string identifying the function in its car,
-and the list of functions it calls in the cdr."
-  (dolist (entry simple-call-tree-alist)
+ALIST is an item of simple-call-tree-alist."
+  (dolist (item simple-call-tree-alist)
     (goto-char start)
     (catch 'done
-      (while (re-search-forward (simple-call-tree-symbol-as-regexp (car entry))
+      (while (re-search-forward (simple-call-tree-symbol-as-regexp (caar item))
                                 end t)
         ;; need to go back a char so that the text properties are read correctly
-        (backward-char)                 
+        (backward-char)
         (if (not (simple-call-tree-valid-face-p))
             (forward-char)
-          (setcdr alist (cons (car entry) (cdr alist)))
+          (setcdr alist (cons (list (caar item) (point-marker)) (cdr alist)))
           (throw 'done t))))))
 
 (defun* simple-call-tree-analyze (&optional (buffers (list (current-buffer))))
@@ -463,9 +467,9 @@ By default it is set to a list containing the current buffer."
     ;; Now find functions called
     (loop for item in simple-call-tree-alist
           for count2 from 1
-          for buf = (marker-buffer (second item))
-          for start = (marker-position (second item))
-          for end = (marker-position (third item))
+          for buf = (marker-buffer (second (car item)))
+          for start = (marker-position (second (car item)))
+          for end = (marker-position (third (car item)))
           do (with-current-buffer buf
                (save-excursion
                  (message "Identifying functions called...%d/%d" count2 count1)
