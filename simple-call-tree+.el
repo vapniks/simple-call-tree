@@ -665,16 +665,20 @@ If there is no parent, return nil."
               (error nil))
             (simple-call-tree-get-function-at-point))))))
 
-(defun simple-call-tree-narrow-to-function (func)
-  "Narrow the source buffer containing FUNC to that function."
-  (let* ((trio (assoc func simple-call-tree-locations-alist))
+(defun simple-call-tree-narrow-to-function (func &optional pos)
+  "Narrow the source buffer containing FUNC to that function.
+If optional arg POS is supplied then move point to POS after
+narrowing."
+  (let* ((trio (car (assoc-if (lambda (x) (string= (car x) func))
+                              simple-call-tree-alist)))
          (buf (marker-buffer (second trio)))
          (start (marker-position (second trio)))
          (end (marker-position (third trio))))
     (with-current-buffer buf
       (goto-char start)
       (beginning-of-line)
-      (narrow-to-region (point) end))))
+      (narrow-to-region (point) end)
+      (if pos (goto-char pos)))))
 
 ;;; Major-mode commands bound to keys
 
@@ -764,7 +768,7 @@ the source buffer to the function."
                       (or parent thisfunc))))
     (pop-to-buffer buf)
     (goto-char pos)
-    (if arg (simple-call-tree-narrow-to-function visitfunc))
+    (if arg (simple-call-tree-narrow-to-function visitfunc pos))
     (recenter 1)))
 
 (defun* simple-call-tree-jump-to-function (fnstr &optional skipring)
