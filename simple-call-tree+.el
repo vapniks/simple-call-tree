@@ -449,7 +449,6 @@ By default it is set to a list containing the current buffer."
           (while (setq pair (simple-call-tree-next-func pos)
                        pos (car pair)
                        nextfunc (cdr pair))
-            (add-to-list 'simple-call-tree-alist (list nextfunc))
             (goto-char pos)
             (setq startmark (point-marker))
             (cond ((functionp endtest) (funcall endtest))
@@ -458,16 +457,15 @@ By default it is set to a list containing the current buffer."
                    (goto-char (- (car pair) (length (cdr pair)))))
                   (t (goto-char (point-max))))
             (setq endmark (point-marker))
-            (add-to-list 'simple-call-tree-locations-alist (list nextfunc startmark endmark))
+            (add-to-list 'simple-call-tree-alist (list (list nextfunc startmark endmark)))
             (setq count1 (1+ count1))
             (message "Identifying functions...%d:%s" count1 nextfunc)))))
     ;; Now find functions called
-    (loop for (func startmark endmark) in simple-call-tree-locations-alist
+    (loop for item in simple-call-tree-alist
           for count2 from 1
-          for buf = (marker-buffer startmark)
-          for start = (marker-position startmark)
-          for end = (marker-position endmark)
-          for item = (assoc func simple-call-tree-alist)
+          for buf = (marker-buffer (second item))
+          for start = (marker-position (second item))
+          for end = (marker-position (third item))
           do (with-current-buffer buf
                (save-excursion
                  (message "Identifying functions called...%d/%d" count2 count1)
