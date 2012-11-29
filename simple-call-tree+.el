@@ -608,12 +608,13 @@ By default FUNCLIST is set to `simple-call-tree-alist'."
   (if (not (equal major-mode 'simple-call-tree-mode)) (simple-call-tree-mode))
   (setq buffer-read-only nil)
   (erase-buffer)
-  (let ((inverted (not (equal funclist simple-call-tree-alist)))
-        (maxdepth (max maxdepth 1)))
+  (let ((maxdepth (max maxdepth 1)))
     (dolist (item funclist)
-      (simple-call-tree-list-callees-recursively (car item) maxdepth 1 funclist inverted))
+      (simple-call-tree-list-callees-recursively
+       (car item)
+       maxdepth 1 funclist
+       simple-call-tree-inverted-bufferp))
     (setq simple-call-tree-current-maxdepth (max maxdepth 1)
-          simple-call-tree-inverted-bufferp inverted
           buffer-read-only t)))
 
 (defun* simple-call-tree-list-callees-recursively (item &optional (maxdepth 2)
