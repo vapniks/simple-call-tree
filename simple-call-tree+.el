@@ -606,22 +606,25 @@ By default FUNCLIST is set to `simple-call-tree-alist'."
           simple-call-tree-inverted-bufferp inverted
           buffer-read-only t)))
 
-(defun* simple-call-tree-list-callees-recursively (fname &optional (maxdepth 2)
-                                                         (curdepth 1)
-                                                         (funclist simple-call-tree-alist)
-                                                         (inverted (not (equal funclist simple-call-tree-alist))))
+(defun* simple-call-tree-list-callees-recursively (item &optional (maxdepth 2)
+                                                        (curdepth 1)
+                                                        (funclist simple-call-tree-alist)
+                                                        (inverted (not (equal funclist simple-call-tree-alist))))
   "Insert a call tree for the function named FNAME, to depth MAXDEPTH.
 FNAME must be the car of one of the elements of FUNCLIST which is set to `simple-call-tree-alist' by default.
 The optional arguments MAXDEPTH and CURDEPTH specify the maximum and current depth of the tree respectively.
 This is a recursive function, and you should not need to set CURDEPTH."
-  (let* ((callees (cdr (assoc fname funclist)))
+  (let* ((fname (first item))
+         (pos (second item))
+         (callees (cdr (assoc-if (lambda (x) (string= (car x) fname)) funclist)))
          (arrowtail (make-string (* 2 (1- curdepth)) 45))
          (arrow (if inverted (concat (if (> curdepth 1) "<") arrowtail " ")
                   (concat arrowtail (if (> curdepth 1) "> " " "))))
          (face (get-text-property 0 'face fname)))
     (insert "|" arrow (propertize fname
                                   'font-lock-face (list :inherit face :underline t)
-                                  'mouse-face 'highlight)
+                                  'mouse-face 'highlight
+                                  'location pos)
             "\n")
     (if (< curdepth maxdepth)
         (dolist (callee callees)
