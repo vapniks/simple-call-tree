@@ -729,7 +729,7 @@ narrowing."
          (depth (if current-prefix-arg (prefix-numeric-value current-prefix-arg)
                   (floor (abs (read-number "Maximum depth to display: " 2)))))
          (funclist (if simple-call-tree-inverted-bufferp
-                       (simple-call-tree-invert)
+                       simple-call-tree-inverted-alist
                      simple-call-tree-alist))
          (narrowedp (simple-call-tree-buffer-narrowed-p))
          (thisfunc (simple-call-tree-get-function-at-point))
