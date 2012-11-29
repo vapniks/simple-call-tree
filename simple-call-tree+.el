@@ -391,6 +391,10 @@ positions of the start and end of the function. The other lists contain informat
 for functions called by FUNC, and are in the form (FUNC2 POS) where FUNC2 is the name
 of the called function and POS is the position of the call.")
 
+(defvar simple-call-tree-inverted-alist nil
+  "Alist of functions and the functions that call them, and markers for their locations.
+This is an inverted version of `simple-call-tree-alist'.")
+
 (defvar simple-call-tree-inverted-bufferp nil
   "Indicates if the *Simple Call Tree* buffer is currently inverted or not.
 If non-nil then children correspond to callers of parents in the outline tree.
