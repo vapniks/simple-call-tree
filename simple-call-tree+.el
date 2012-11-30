@@ -629,7 +629,7 @@ By default FUNCLIST is set to `simple-call-tree-alist'."
 (defun* simple-call-tree-list-callees-recursively (item &optional (maxdepth 2)
                                                         (curdepth 1)
                                                         (funclist simple-call-tree-alist)
-                                                        (inverted (not (equal funclist simple-call-tree-alist))))
+                                                        (inverted simple-call-tree-inverted-bufferp))
   "Insert a call tree for the function named FNAME, to depth MAXDEPTH.
 FNAME must be the car of one of the elements of FUNCLIST which is set to `simple-call-tree-alist' by default.
 The optional arguments MAXDEPTH and CURDEPTH specify the maximum and current depth of the tree respectively.
