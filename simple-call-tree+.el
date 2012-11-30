@@ -942,3 +942,6 @@ If ARG is non-nil perform query-replace-regexp instead."
 (provide 'simple-call-tree+)
 
 ;;; simple-call-tree+.el ends here
+
+;; (progn (magit-push) (yaoddmuse-post "EmacsWiki" "simple-call-tree+.el" (buffer-name) (buffer-string) "update"))
+
