@@ -116,11 +116,10 @@
 ;; I am going to work on a plugin for one-key.el which provides similar functionality.
 ;; If anyone wants to implement the following ideas, please do:
 ;; More reliable code for building tree (handle duplicate function names properly).
-;; Fix simple-call-tree-alist so that we can save markers for locations of function calls aswell,
-;; e.g. have cons cells in form (func . marker) for each called function, and fix code so that
-;; we can have several calls to the same function in the same tree (may need major refactor).
+;; Fix code so that we can have several calls to the same function in the same tree.
 ;; Code for marking functions (like with files in dired mode) and then applying operations to the marked functions.
 ;; Code for rearranging functions.
+;; Code for renaming functions.
 
 ;;; Require
 (require 'thingatpt)
@@ -267,7 +266,7 @@ or a function of no args which moves point to the end of the current function in
       (define-key simple-call-tree-mode-map (kbd "<tab>") 'outline-cycle)
     (define-key simple-call-tree-mode-map (kbd "<tab>") 'outline-toggle-children))
   (define-key simple-call-tree-mode-map (kbd "a") 'show-all)
-  (define-key simple-call-tree-mode-map (kbd "1") 'delete-other-windows)
+  (define-key simple-call-tree-mode-map (kbd "1") 'simple-call-tree-delete-other-windows)
   (define-key simple-call-tree-mode-map (kbd "h") 'hide-sublevels)
   (define-key simple-call-tree-mode-map (kbd "SPC") 'simple-call-tree-view-function)
   (define-key simple-call-tree-mode-map (kbd "C-o") 'simple-call-tree-view-function)
@@ -357,8 +356,8 @@ or a function of no args which moves point to the end of the current function in
      :visible (featurep 'fm)
      :style toggle
      :selected fm-working]
-    ["Delete Other Windows" delete-other-windows
-     :help "Make this window fill the whole frame (toggle mode must be off)"
+    ["Delete Other Windows" simple-call-tree-delete-other-windows
+     :help "Make this window fill the whole frame"
      :key "1"]
     ["Invert Tree" simple-call-tree-invert-buffer
      :help "Invert the tree"
@@ -929,6 +928,12 @@ If ARG is non-nil perform query-replace-regexp instead."
   "Perform query-replace-regexp on function FUNC."
   (interactive (list (simple-call-tree-get-function-at-point)))
   (simple-call-tree-query-replace func t))
+
+(defun simple-call-tree-delete-other-windows nil
+  "Make the *Simple Call Tree* buffer fill the frame."
+  (interactive)
+  (setq fm-working nil)
+  (delete-other-windows))
 
 (unless (not (featurep 'fm))
   (add-to-list 'fm-modes '(simple-call-tree-mode simple-call-tree-visit-function))
