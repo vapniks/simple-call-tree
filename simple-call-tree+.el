@@ -621,15 +621,13 @@ By default FUNCLIST is set to `simple-call-tree-alist'."
     (dolist (item funclist)
       (simple-call-tree-list-callees-recursively
        (car item)
-       maxdepth 1 funclist
-       simple-call-tree-inverted-bufferp))
+       maxdepth 1 funclist))
     (setq simple-call-tree-current-maxdepth (max maxdepth 1)
           buffer-read-only t)))
 
 (defun* simple-call-tree-list-callees-recursively (item &optional (maxdepth 2)
                                                         (curdepth 1)
-                                                        (funclist simple-call-tree-alist)
-                                                        (inverted (not (equal funclist simple-call-tree-alist))))
+                                                        (funclist simple-call-tree-alist))
   "Insert a call tree for the function named FNAME, to depth MAXDEPTH.
 FNAME must be the car of one of the elements of FUNCLIST which is set to `simple-call-tree-alist' by default.
 The optional arguments MAXDEPTH and CURDEPTH specify the maximum and current depth of the tree respectively.
@@ -648,7 +646,7 @@ This is a recursive function, and you should not need to set CURDEPTH."
             "\n")
     (if (< curdepth maxdepth)
         (dolist (callee callees)
-          (simple-call-tree-list-callees-recursively callee maxdepth (1+ curdepth) funclist inverted)))))
+          (simple-call-tree-list-callees-recursively callee maxdepth (1+ curdepth) funclist)))))
 
 (defun simple-call-tree-outline-level nil
   "Return the outline level of the function at point.
