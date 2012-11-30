@@ -231,7 +231,11 @@ or a function of no args which moves point to the start of the next function in 
 
 END-FUNC indicates how to find the end of the current object when parsing a buffer for the call tree.
 It is either nil, meaning that font changes will be used to determine the end of an object,
-or a function of no args which moves point to the end of the current function in the buffer."
+or a function of no args which moves point to the end of the current function in the buffer.
+
+START-REGEXP a regular expression to match the beginning of a token, you can probably leave this blank.
+
+END-REGEXP a regular expression to match the end of a token, by default this is \"\\_>\""
   :group 'simple-call-tree
   :type '(repeat (list (symbol :tag "major-mode symbol")
                        (repeat :tag "Faces"
@@ -259,7 +263,12 @@ or a function of no args which moves point to the end of the current function in
 ;; This happens in haskell mode for example when you have defined two functions
 ;; named func and func' for example.
 (defun simple-call-tree-symbol-as-regexp (symbolname)
-  (concat "\\_<" (regexp-opt (list symbolname)) "\\(\\|\\s-\\|\\.\\|\\(\\|\\)\\)"))
+  (let* ((modevals (assoc major-mode simple-call-tree-major-mode-alist))
+         (start (seventh modevals))
+         (end (eighth modevals)))
+    (concat (or start "\\_<")
+            (regexp-opt (list symbolname))
+            (or end "\\_>"))))
 
 ;; Major-mode for simple call tree
 (define-derived-mode simple-call-tree-mode outline-mode "Simple Call Tree"
