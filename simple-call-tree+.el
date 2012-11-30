@@ -185,7 +185,9 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
                       (previous-line)
                       (not (string= (symbol-at-point) thistoken))))
                   haskell-ds-forward-decl
-                  haskell-ds-forward-decl)
+                  haskell-ds-forward-decl
+                  nil
+                  "\\s-")
     (perl-mode nil nil (lambda (pos)
                          (goto-char pos)
                          (beginning-of-line)
@@ -234,8 +236,9 @@ It is either nil, meaning that font changes will be used to determine the end of
 or a function of no args which moves point to the end of the current function in the buffer.
 
 START-REGEXP a regular expression to match the beginning of a token, you can probably leave this blank.
+By default it is \"\\_<\".
 
-END-REGEXP a regular expression to match the end of a token, by default this is \"\\_>\""
+END-REGEXP a regular expression to match the end of a token, by default this is \"\\_>\"."
   :group 'simple-call-tree
   :type '(repeat (list (symbol :tag "major-mode symbol")
                        (repeat :tag "Faces"
