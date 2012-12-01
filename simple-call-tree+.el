@@ -186,7 +186,7 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
                       (not (string= (symbol-at-point) thistoken))))
                   haskell-ds-forward-decl
                   haskell-ds-forward-decl
-                  nil
+                  "\\(:\\|\\_<\\)"
                   "\\s-")
     (perl-mode nil nil (lambda (pos)
                          (goto-char pos)
@@ -446,10 +446,10 @@ ALIST is an item of simple-call-tree-alist."
     (catch 'done
       (while (re-search-forward (simple-call-tree-symbol-as-regexp (caar item))
                                 end t)
-        ;; need to go back a char so that the text properties are read correctly
-        (backward-char)
+        ;; need to go back so that the text properties are read correctly
+        (left-word 1)
         (if (not (simple-call-tree-valid-face-p))
-            (forward-char)
+            (right-word 1)
           (setcdr alist (cons (list (caar item) (point-marker)) (cdr alist)))
           (throw 'done t))))))
 
