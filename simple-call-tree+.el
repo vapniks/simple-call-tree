@@ -709,6 +709,36 @@ narrowing."
       (narrow-to-region (point) end)
       (if pos (goto-char pos)))))
 
+(defun simple-call-tree-sort (predicate)
+  "Sort the branches and sub-branches of `simple-call-tree-alist' and `simple-call-tree-inverted-alist' by predicate."
+  (dolist (branch simple-call-tree-alist)
+    (setcdr branch (sort (cdr branch) predicate)))
+  (setq simple-call-tree-alist
+        (sort simple-call-tree-alist
+              (lambda (a b)
+                (funcall predicate (car a) (car b)))))
+  (dolist (branch simple-call-tree-inverted-alist)
+    (setcdr branch (sort (cdr branch) predicate)))
+  (setq simple-call-tree-inverted-alist
+        (sort simple-call-tree-inverted-alist
+              (lambda (a b)
+                (funcall predicate (car a) (car b))))))
+
+(defun simple-call-tree-sort-alphabetically nil
+  "Sort the functions in the *Simple Call Tree* buffer alphabetically.
+The toplevel functions will be sorted, and the functions in each branch will be sorted separately."
+  (interactive)
+  (simple-call-tree-sort-tree (lambda (a b) (string< (car a) (car b))))
+  (simple-call-tree-list-callers-and-functions))
+
+(defun simple-call-tree-sort-positionally nil
+  "Sort the functions in the *Simple Call Tree* buffer by position.
+The toplevel functions will be sorted, and the functions in each branch will be sorted separately."
+  (interactive)
+  (simple-call-tree-sort-tree (lambda (a b) (< (marker-position (second a))
+                                               (marker-position (second b)))))
+  (simple-call-tree-list-callers-and-functions))
+
 ;;; Major-mode commands bound to keys
 
 (defun simple-call-tree-quit nil
