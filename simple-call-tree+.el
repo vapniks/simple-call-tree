@@ -443,15 +443,13 @@ The minimum value is 0 which means show top level functions only.")
 ALIST is an item of simple-call-tree-alist."
   (dolist (item simple-call-tree-alist)
     (goto-char start)
-    (catch 'done
-      (while (re-search-forward (simple-call-tree-symbol-as-regexp (caar item))
-                                end t)
-        ;; need to go back so that the text properties are read correctly
-        (left-word 1)
-        (if (not (simple-call-tree-valid-face-p))
-            (right-word 1)
-          (setcdr alist (cons (list (caar item) (point-marker)) (cdr alist)))
-          (throw 'done t))))))
+    (while (re-search-forward (simple-call-tree-symbol-as-regexp (caar item))
+                              end t)
+      ;; need to go back so that the text properties are read correctly
+      (left-word 1)
+      (if (simple-call-tree-valid-face-p)
+          (setcdr alist (cons (list (caar item) (point-marker)) (cdr alist))))
+      (right-word 1))))
 
 (defun* simple-call-tree-analyze (&optional (buffers (list (current-buffer))))
   "Analyze the current buffer, or the buffers in list BUFFERS.
