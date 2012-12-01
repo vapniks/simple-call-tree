@@ -590,6 +590,7 @@ When called interactively files will be prompted for and only functions in the c
     (if (or (not files) (called-interactively-p))
         (add-to-list 'buffers (current-buffer)))
     (simple-call-tree-analyze buffers)
+    (simple-call-tree-sort-positionally)
     (setq simple-call-tree-inverted-bufferp nil)
     (simple-call-tree-list-callers-and-functions)
     (setq simple-call-tree-jump-ring (make-ring simple-call-tree-jump-ring-max)
@@ -728,15 +729,15 @@ narrowing."
   "Sort the functions in the *Simple Call Tree* buffer alphabetically.
 The toplevel functions will be sorted, and the functions in each branch will be sorted separately."
   (interactive)
-  (simple-call-tree-sort-tree (lambda (a b) (string< (car a) (car b))))
+  (simple-call-tree-sort (lambda (a b) (string< (car a) (car b))))
   (simple-call-tree-list-callers-and-functions))
 
 (defun simple-call-tree-sort-positionally nil
   "Sort the functions in the *Simple Call Tree* buffer by position.
 The toplevel functions will be sorted, and the functions in each branch will be sorted separately."
   (interactive)
-  (simple-call-tree-sort-tree (lambda (a b) (< (marker-position (second a))
-                                               (marker-position (second b)))))
+  (simple-call-tree-sort (lambda (a b) (< (marker-position (second a))
+                                          (marker-position (second b)))))
   (simple-call-tree-list-callers-and-functions))
 
 ;;; Major-mode commands bound to keys
