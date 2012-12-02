@@ -769,14 +769,14 @@ The toplevel functions will be sorted, and the functions in each branch will be 
 
 (defun simple-call-tree-store-state nil
   "Store the current state of the displayed call tree, and return as an alist."
-  (list (cons 'narrowed (simple-call-tree-buffer-narrowed-p))
-        (cons 'depth simple-call-tree-current-maxdepth)
-        (cons 'level (simple-call-tree-outline-level))
-        (cons 'tree (if simple-call-tree-inverted
-                        simple-call-tree-inverted-alist
-                      simple-call-tree-alist))
-        (cons 'thisfunc (simple-call-tree-get-function-at-point))
-        (cons 'topfunc (simple-call-tree-get-toplevel))))
+  (list 'narrowed (simple-call-tree-buffer-narrowed-p)
+        'depth simple-call-tree-current-maxdepth
+        'level (simple-call-tree-outline-level)
+        'tree (if simple-call-tree-inverted
+                  simple-call-tree-inverted-alist
+                simple-call-tree-alist)
+        'thisfunc (simple-call-tree-get-function-at-point)
+        'topfunc (simple-call-tree-get-toplevel)))
 
 ;;; Major-mode commands bound to keys
 
@@ -799,9 +799,9 @@ The toplevel functions will be sorted, and the functions in each branch will be 
     (setq simple-call-tree-inverted
           (not simple-call-tree-inverted))
     (simple-call-tree-list-callers-and-functions
-     simple-call-tree-current-maxdepth (cdr (assq 'tree state)))
-    (simple-call-tree-jump-to-function (cdr (assq 'thisfunc state)))
-    (if (cdr (assq 'narrowed state)) (simple-call-tree-toggle-narrowing -1))))
+     simple-call-tree-current-maxdepth (plist-get state 'tree))
+    (simple-call-tree-jump-to-function (plist-get state 'thisfunc))
+    (if (plist-get state 'narrowed) (simple-call-tree-toggle-narrowing -1))))
 
 (defun simple-call-tree-change-maxdepth (maxdepth)
   "Alter the maximum tree depth in the *Simple Call Tree* buffer."
@@ -810,22 +810,18 @@ The toplevel functions will be sorted, and the functions in each branch will be 
   (or (re-search-forward outline-regexp nil t)
       (progn (simple-call-tree-move-prev)
              (re-search-forward outline-regexp nil t)))
-  (let* ((level (simple-call-tree-outline-level))
+  (let* ((state (simple-call-tree-store-state))
          (depth (if current-prefix-arg (prefix-numeric-value current-prefix-arg)
-                  (floor (abs (read-number "Maximum depth to display: " 2)))))
-         (funclist (if simple-call-tree-inverted
-                       simple-call-tree-inverted-alist
-                     simple-call-tree-alist))
-         (narrowedp (simple-call-tree-buffer-narrowed-p))
-         (thisfunc (simple-call-tree-get-function-at-point))
-         (thistree (simple-call-tree-get-toplevel)))
-    (simple-call-tree-list-callers-and-functions depth funclist)
+                  (floor (abs (read-number "Maximum depth to display: " 2))))))
+    (simple-call-tree-list-callers-and-functions depth (plist-get state 'tree))
     (setq simple-call-tree-current-maxdepth (max depth 1))
-    (simple-call-tree-jump-to-function (or thistree thisfunc))
-    (if narrowedp (simple-call-tree-toggle-narrowing -1))
-    (if (> level 1) (search-forward
-                     thisfunc
-                     (save-excursion (outline-end-of-subtree) (point)) t))))
+    (simple-call-tree-jump-to-function (or (plist-get state 'thisfunc)
+                                           (plist-get state 'topfunc)))
+    (if (plist-get state 'narrowed) (simple-call-tree-toggle-narrowing -1))
+    (if (> (plist-get state 'level) 1)
+        (search-forward
+         (plist-get state 'thisfunc)
+         (save-excursion (outline-end-of-subtree) (point)) t))))
 
 (defun simple-call-tree-view-function nil
   "Display the source code corresponding to current header.
