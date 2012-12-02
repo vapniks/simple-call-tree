@@ -556,9 +556,11 @@ If optional arg BUF is supplied then use BUF instead of the *Simple Call Tree* b
 If there is no function on this line of the *Simple Call Tree* buffer, return nil."
   (with-current-buffer buf
     (if (equal buf "*Simple Call Tree*")
-        (let* ((start (next-single-property-change (line-beginning-position) 'face))
-               (end (if start (next-single-property-change start 'face))))
-          (if start (buffer-substring-no-properties start end)))
+        (let* ((start (or (next-single-property-change (line-beginning-position) 'face)
+                          (progn (previous-line)
+                                 (next-single-property-change (line-beginning-position) 'face))))
+               (end (next-single-property-change start 'face)))
+          (buffer-substring-no-properties start end))
       (symbol-name (if (functionp 'symbol-nearest-point)
                        (symbol-nearest-point)
                      (symbol-at-point))))))
