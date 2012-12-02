@@ -552,12 +552,13 @@ By default it is set to a list containing the current buffer."
 
 (defun* simple-call-tree-get-function-at-point (&optional (buf "*Simple Call Tree*"))
   "Return the name of the function nearest point in the *Simple Call Tree* buffer.
-If optional arg BUF is supplied then use BUF instead of the *Simple Call Tree* buffer."
+If optional arg BUF is supplied then use BUF instead of the *Simple Call Tree* buffer.
+If there is no function on this line of the *Simple Call Tree* buffer, return nil."
   (with-current-buffer buf
     (if (equal buf "*Simple Call Tree*")
         (let* ((start (next-single-property-change (line-beginning-position) 'face))
-               (end (next-single-property-change start 'face)))
-          (buffer-substring-no-properties start end))
+               (end (if start (next-single-property-change start 'face))))
+          (if start (buffer-substring-no-properties start end)))
       (symbol-name (if (functionp 'symbol-nearest-point)
                        (symbol-nearest-point)
                      (symbol-at-point))))))
