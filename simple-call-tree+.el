@@ -163,6 +163,13 @@ This variable is used by the `simple-call-tree-jump-to-function' function when n
   :group 'simple-call-tree
   :type '(repeat face))
 
+(defcustom simple-call-tree-default-sort-method 'position
+  "The default sort method to use when a call tree is newly created.
+The the children of each header will be sorted separately."
+  :group 'simple-call-tree
+  :type '(choice (const :tag "Sort by position" position)
+                 (const :tag "Sort alphabetically" alphabet)))
+
 (defcustom simple-call-tree-major-mode-alist
   '((emacs-lisp-mode (font-lock-function-name-face
                       font-lock-variable-name-face)
@@ -602,7 +609,9 @@ When called interactively files will be prompted for and only functions in the c
     (if (or (not files) (called-interactively-p))
         (add-to-list 'buffers (current-buffer)))
     (simple-call-tree-analyze buffers)
-    (simple-call-tree-sort-positionally)
+    (case simple-call-tree-default-sort-method
+      (alphabet (simple-call-tree-sort-alphabetically))
+      (position (simple-call-tree-sort-positionally)))
     (setq simple-call-tree-inverted-bufferp nil)
     (simple-call-tree-list-callers-and-functions)
     (setq simple-call-tree-jump-ring (make-ring simple-call-tree-jump-ring-max)
