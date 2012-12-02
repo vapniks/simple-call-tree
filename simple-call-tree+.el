@@ -760,10 +760,6 @@ The toplevel functions will be sorted, and the functions in each branch will be 
   (simple-call-tree-sort (lambda (a b) (string< (car a) (car b))))
   (let ((state (simple-call-tree-store-state)))
     (simple-call-tree-restore-state state)
-    ;; (if (> (plist-get state 'level) 1)
-    ;;     (search-forward
-    ;;      (plist-get state 'thisfunc)
-    ;;      (save-excursion (outline-end-of-subtree) (point)) t))
     (setq simple-call-tree-current-sort-order 'alphabet)))
 
 (defun simple-call-tree-sort-positionally nil
@@ -774,10 +770,6 @@ The toplevel functions will be sorted, and the functions in each branch will be 
                                           (marker-position (second b)))))
   (let ((state (simple-call-tree-store-state)))
     (simple-call-tree-restore-state state)
-    ;; (if (> (plist-get state 'level) 1)
-    ;;     (search-forward
-    ;;      (plist-get state 'thisfunc)
-    ;;      (save-excursion (outline-end-of-subtree) (point)) t)))
     (setq simple-call-tree-current-sort-order 'position)))
 
 (defun simple-call-tree-store-state nil
@@ -801,7 +793,8 @@ The toplevel functions will be sorted, and the functions in each branch will be 
                                                (plist-get state 'tree))
   (simple-call-tree-jump-to-function (or (plist-get state 'topfunc)
                                          (plist-get state 'thisfunc)))
-  (if (plist-get state 'narrowed) (simple-call-tree-toggle-narrowing -1)))
+  (if (plist-get state 'narrowed) (simple-call-tree-toggle-narrowing -1))
+  (setq simple-call-tree-current-maxdepth (plist-get state 'depth)))
 
 ;;; Major-mode commands bound to keys
 
