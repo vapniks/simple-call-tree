@@ -792,20 +792,16 @@ The toplevel functions will be sorted, and the functions in each branch will be 
 
 (defun simple-call-tree-invert-buffer nil
   "Invert the tree in *Simple Call Tree* buffer."
-  (interactive "P")
+  (interactive)
   (move-beginning-of-line nil)
   (re-search-forward outline-regexp)
-  (let ((funclist (if simple-call-tree-inverted-bufferp
-                      simple-call-tree-alist
-                    simple-call-tree-inverted-alist))
-        (narrowedp (simple-call-tree-buffer-narrowed-p))
-        (thisfunc (simple-call-tree-get-function-at-point)))
+  (let ((state (simple-call-tree-store-state)))
     (setq simple-call-tree-inverted-bufferp
           (not simple-call-tree-inverted-bufferp))
     (simple-call-tree-list-callers-and-functions
-     simple-call-tree-current-maxdepth funclist)
-    (simple-call-tree-jump-to-function thisfunc)
-    (if narrowedp (simple-call-tree-toggle-narrowing -1))))
+     simple-call-tree-current-maxdepth (cdr (assq 'tree state)))
+    (simple-call-tree-jump-to-function (cdr (assq 'thisfunc state)))
+    (if (cdr (assq 'narrowed state)) (simple-call-tree-toggle-narrowing -1))))
 
 (defun simple-call-tree-change-maxdepth (maxdepth)
   "Alter the maximum tree depth in the *Simple Call Tree* buffer."
