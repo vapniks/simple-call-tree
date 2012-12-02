@@ -284,6 +284,10 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
         outline-level 'simple-call-tree-outline-level)
   ;; Set keymap
   (define-key simple-call-tree-mode-map (kbd "q") 'simple-call-tree-quit)
+  (define-prefix-command 'simple-call-tree-sort-map)
+  (define-key simple-call-tree-mode-map (kbd "s") 'simple-call-tree-sort-map)
+  (define-key simple-call-tree-mode-map (kbd "s a") 'simple-call-tree-sort-alphabetically)
+  (define-key simple-call-tree-mode-map (kbd "s p") 'simple-call-tree-sort-positionally)
   (if (featurep 'outline-magic)
       (define-key simple-call-tree-mode-map (kbd "<tab>") 'outline-cycle)
     (define-key simple-call-tree-mode-map (kbd "<tab>") 'outline-toggle-children))
@@ -325,72 +329,80 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
   (define-key simple-call-tree-mode-map (kbd "w") 'widen)
   (use-local-map simple-call-tree-mode-map)
   (easy-menu-define nil simple-call-tree-mode-map "test"
-  `("Simple Call Tree"
-    ["Quit" simple-call-tree-quit
-     :help "Quit and bury this buffer"]
-    ["View Function At Point" simple-call-tree-view-function
-     :help "View the function at point"
-     :key "v"]
-    ["Visit Function At Point" simple-call-tree-visit-function
-     :help "Visit the function at point"]
-    ["Replace String In Function At Point..." simple-call-tree-query-replace
-     :help "Perform query-replace on the function at point"]
-    ["Replace Regexp In Function At Point..." simple-call-tree-query-replace-regexp
-     :help "Perform query-replace-regexp on the function at point"]
-    ["Jump To Branch At Point" simple-call-tree-jump-to-function
-     :help "Goto the toplevel branch for the function at point"]
-    ["Jump To Branch..." ,(lambda nil (interactive) (setq current-prefix-arg 1)
-                         (call-interactively 'simple-call-tree-jump-to-function))
-     :help "Prompt for a toplevel branch to jump to"
-     :keys "J"]
-    ["Add To Jump Ring" simple-call-tree-jump-ring-add
-     :help "Add the function at point to the jump ring"]
-    ["Previous Jump" simple-call-tree-jump-prev
-     :help "Goto previous function in jump ring"]
-    ["Next Jump" simple-call-tree-jump-next
-     :help "Goto next function in jump ring"]
-    ["Parent Branch" simple-call-tree-move-up
-     :help "Goto the parent branch of this branch"]
-    ["Next Branch" simple-call-tree-move-next
-     :help "Goto the next branch"]
-    ["Previous Branch" simple-call-tree-move-prev
-     :help "Goto the previous branch"]
-    ["Next Branch Same Level" simple-call-tree-move-next-samelevel
-     :help "Goto the next branch at the same level as this one"
-     :key "N"]
-    ["Previous Branch Same Level" simple-call-tree-move-prev-samelevel
-     :help "Goto the previous branch at the same level as this one"
-     :key "P"]
-    ["Cycle Tree Visibility" outline-cycle
-     :visible (featurep 'outline-magic)
-     :keys "<tab>"]
-    ["Toggle Children Visibility" outline-toggle-children
-     :visible (not (featurep 'outline-magic))
-     :keys "<tab>"]
-    ["Show All" show-all
-     :help "Show All Branches"
-     :key-sequence "a"]
-    ["Hide Sublevels" hide-sublevels
-     :help "Hide Lower Level Branches"
-     :key-sequence "h"]
-    ["Toggle Follow mode" fm-toggle
-     :help "Toggle Follow Mode - auto display of function at point"
-     :visible (featurep 'fm)
-     :style toggle
-     :selected fm-working]
-    ["Delete Other Windows" simple-call-tree-delete-other-windows
-     :help "Make this window fill the whole frame"
-     :key "1"]
-    ["Invert Tree" simple-call-tree-invert-buffer
-     :help "Invert the tree"
-     :style toggle
-     :selected simple-call-tree-inverted-bufferp]
-    ["Change Depth..." simple-call-tree-change-maxdepth
-     :help "Change the depth of the tree"]
-    ["Toggle Narrowing" simple-call-tree-toggle-narrowing
-     :help "Toggle between narrowed/wide buffer"
-     :style toggle
-     :selected (simple-call-tree-buffer-narrowed-p)]))
+    `("Simple Call Tree"
+      ["Quit" simple-call-tree-quit
+       :help "Quit and bury this buffer"]
+      ["View Function At Point" simple-call-tree-view-function
+       :help "View the function at point"
+       :key "v"]
+      ["Visit Function At Point" simple-call-tree-visit-function
+       :help "Visit the function at point"]
+      ["Replace String In Function At Point..." simple-call-tree-query-replace
+       :help "Perform query-replace on the function at point"]
+      ["Replace Regexp In Function At Point..." simple-call-tree-query-replace-regexp
+       :help "Perform query-replace-regexp on the function at point"]
+      ["Jump To Branch At Point" simple-call-tree-jump-to-function
+       :help "Goto the toplevel branch for the function at point"]
+      ["Jump To Branch..." ,(lambda nil (interactive) (setq current-prefix-arg 1)
+                              (call-interactively 'simple-call-tree-jump-to-function))
+       :help "Prompt for a toplevel branch to jump to"
+       :keys "J"]
+      ["Add To Jump Ring" simple-call-tree-jump-ring-add
+       :help "Add the function at point to the jump ring"]
+      ["Previous Jump" simple-call-tree-jump-prev
+       :help "Goto previous function in jump ring"]
+      ["Next Jump" simple-call-tree-jump-next
+       :help "Goto next function in jump ring"]
+      ["Parent Branch" simple-call-tree-move-up
+       :help "Goto the parent branch of this branch"]
+      ["Next Branch" simple-call-tree-move-next
+       :help "Goto the next branch"]
+      ["Previous Branch" simple-call-tree-move-prev
+       :help "Goto the previous branch"]
+      ["Next Branch Same Level" simple-call-tree-move-next-samelevel
+       :help "Goto the next branch at the same level as this one"
+       :key "N"]
+      ["Previous Branch Same Level" simple-call-tree-move-prev-samelevel
+       :help "Goto the previous branch at the same level as this one"
+       :key "P"]
+      ["Cycle Tree Visibility" outline-cycle
+       :help "Cycle through different tree visibility states"
+       :visible (featurep 'outline-magic)
+       :keys "<tab>"]
+      ["Toggle Children Visibility" outline-toggle-children
+       :help "Toggle the visibility of the children of this header"
+       :visible (not (featurep 'outline-magic))
+       :keys "<tab>"]
+      ["Show All" show-all
+       :help "Show All Branches"
+       :key-sequence "a"]
+      ["Hide Sublevels" hide-sublevels
+       :help "Hide Lower Level Branches"
+       :key-sequence "h"]
+      
+      ["Toggle Follow mode" fm-toggle
+       :help "Toggle Follow Mode - auto display of function at point"
+       :visible (featurep 'fm)
+       :style toggle
+       :selected fm-working]
+      ["Delete Other Windows" simple-call-tree-delete-other-windows
+       :help "Make this window fill the whole frame"
+       :key "1"]
+      ["Invert Tree" simple-call-tree-invert-buffer
+       :help "Invert the tree"
+       :style toggle
+       :selected simple-call-tree-inverted-bufferp]
+      ["Sort Tree..." (keymap
+                       "Sort"
+                       (alpha menu-item "Alphabetically" simple-call-tree-sort-alphabetically)
+                       (position menu-item "Positionally" simple-call-tree-sort-positionally))]
+      ["Change Depth..." simple-call-tree-change-maxdepth
+       :help "Change the depth of the tree"]
+      ["Toggle Narrowing" simple-call-tree-toggle-narrowing
+       :help "Toggle between narrowed/wide buffer"
+       :style toggle
+       :selected (simple-call-tree-buffer-narrowed-p)]))
+  
   (setq mode-line-format
         (append
          (subseq mode-line-format 0
