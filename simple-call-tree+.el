@@ -413,11 +413,11 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
          (subseq mode-line-format 0
                  (1+ (position 'mode-line-buffer-identification
                                mode-line-format)))
-         (list '(:eval (format (concat " Maxdepth=%d "
+         (list '(:eval (format (concat "|Maxdepth=%d|"
                                        "Sorted "
                                        (case simple-call-tree-current-sort-order
-                                         (position "by position ")
-                                         (alphabet "alphabetically ")))
+                                         (position "by position|")
+                                         (alphabet "alphabetically|")))
                                simple-call-tree-current-maxdepth)))
          (subseq mode-line-format
                  (+ 2 (position 'mode-line-buffer-identification
