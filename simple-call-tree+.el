@@ -755,8 +755,18 @@ narrowing."
 The toplevel functions will be sorted, and the functions in each branch will be sorted separately."
   (interactive)
   (simple-call-tree-sort (lambda (a b) (string< (car a) (car b))))
-  (simple-call-tree-list-callers-and-functions)
-  (setq simple-call-tree-current-sort-order 'alphabet))
+  (let ((state (simple-call-tree-store-state)))
+    (simple-call-tree-list-callers-and-functions (plist-get state 'depth)
+                                                 (plist-get state 'tree))
+    (simple-call-tree-jump-to-function (or (plist-get state 'topfunc)
+                                           (plist-get state 'thisfunc)))
+    
+    (if (plist-get state 'narrowed) (simple-call-tree-toggle-narrowing -1))
+    (if (> (plist-get state 'level) 1)
+        (search-forward
+         (plist-get state 'thisfunc)
+         (save-excursion (outline-end-of-subtree) (point)) t))
+    (setq simple-call-tree-current-sort-order 'alphabet)))
 
 (defun simple-call-tree-sort-positionally nil
   "Sort the functions in the *Simple Call Tree* buffer by position.
@@ -764,19 +774,32 @@ The toplevel functions will be sorted, and the functions in each branch will be 
   (interactive)
   (simple-call-tree-sort (lambda (a b) (< (marker-position (second a))
                                           (marker-position (second b)))))
-  (simple-call-tree-list-callers-and-functions)
+  (let ((state (simple-call-tree-store-state)))
+    (simple-call-tree-list-callers-and-functions (plist-get state 'depth)
+                                                 (plist-get state 'tree))
+    (simple-call-tree-jump-to-function (or (plist-get state 'topfunc)
+                                           (plist-get state 'thisfunc)))
+    (if (plist-get state 'narrowed) (simple-call-tree-toggle-narrowing -1))
+    (if (> (plist-get state 'level) 1)
+        (search-forward
+         (plist-get state 'thisfunc)
+         (save-excursion (outline-end-of-subtree) (point)) t)))
   (setq simple-call-tree-current-sort-order 'position))
 
 (defun simple-call-tree-store-state nil
   "Store the current state of the displayed call tree, and return as an alist."
-  (list 'narrowed (simple-call-tree-buffer-narrowed-p)
+  (list 'narrowed (if (get-buffer "*Simple Call Tree*")
+                      (simple-call-tree-buffer-narrowed-p))
         'depth simple-call-tree-current-maxdepth
-        'level (simple-call-tree-outline-level)
+        'level (if (get-buffer "*Simple Call Tree*")
+                   (simple-call-tree-outline-level))
         'tree (if simple-call-tree-inverted
                   simple-call-tree-inverted-alist
                 simple-call-tree-alist)
-        'thisfunc (simple-call-tree-get-function-at-point)
-        'topfunc (simple-call-tree-get-toplevel)))
+        'thisfunc (if (get-buffer "*Simple Call Tree*")
+                      (simple-call-tree-get-function-at-point))
+        'topfunc (if (get-buffer "*Simple Call Tree*")
+                     (simple-call-tree-get-toplevel))))
 
 ;;; Major-mode commands bound to keys
 
@@ -815,8 +838,8 @@ The toplevel functions will be sorted, and the functions in each branch will be 
                   (floor (abs (read-number "Maximum depth to display: " 2))))))
     (simple-call-tree-list-callers-and-functions depth (plist-get state 'tree))
     (setq simple-call-tree-current-maxdepth (max depth 1))
-    (simple-call-tree-jump-to-function (or (plist-get state 'thisfunc)
-                                           (plist-get state 'topfunc)))
+    (simple-call-tree-jump-to-function (or (plist-get state 'topfunc)
+                                           (plist-get state 'thisfunc)))
     (if (plist-get state 'narrowed) (simple-call-tree-toggle-narrowing -1))
     (if (> (plist-get state 'level) 1)
         (search-forward
