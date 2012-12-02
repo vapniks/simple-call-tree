@@ -397,7 +397,7 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
       ["Invert Tree" simple-call-tree-invert-buffer
        :help "Invert the tree"
        :style toggle
-       :selected simple-call-tree-inverted-bufferp]
+       :selected simple-call-tree-inverted]
       ["Sort Tree..." (keymap
                        "Sort"
                        (alpha menu-item "Alphabetically" simple-call-tree-sort-alphabetically)
@@ -435,7 +435,7 @@ of the called function and POS is the position of the call.")
   "Alist of functions and the functions that call them, and markers for their locations.
 This is an inverted version of `simple-call-tree-alist'.")
 
-(defvar simple-call-tree-inverted-bufferp nil
+(defvar simple-call-tree-inverted nil
   "Indicates if the *Simple Call Tree* buffer is currently inverted or not.
 If non-nil then children correspond to callers of parents in the outline tree.
 Otherwise it's the other way around.")
@@ -616,7 +616,7 @@ When called interactively files will be prompted for and only functions in the c
     (case simple-call-tree-default-sort-method
       (alphabet (simple-call-tree-sort-alphabetically))
       (position (simple-call-tree-sort-positionally)))
-    (setq simple-call-tree-inverted-bufferp nil)
+    (setq simple-call-tree-inverted nil)
     (simple-call-tree-list-callers-and-functions)
     (setq simple-call-tree-jump-ring (make-ring simple-call-tree-jump-ring-max)
           simple-call-tree-jump-ring-index 0)))
@@ -664,7 +664,7 @@ By default FUNCLIST is set to `simple-call-tree-alist'."
 (defun* simple-call-tree-list-callees-recursively (item &optional (maxdepth 2)
                                                         (curdepth 1)
                                                         (funclist simple-call-tree-alist)
-                                                        (inverted simple-call-tree-inverted-bufferp))
+                                                        (inverted simple-call-tree-inverted))
   "Insert a call tree for the function named FNAME, to depth MAXDEPTH.
 FNAME must be the car of one of the elements of FUNCLIST which is set to `simple-call-tree-alist' by default.
 The optional arguments MAXDEPTH and CURDEPTH specify the maximum and current depth of the tree respectively.
@@ -772,7 +772,7 @@ The toplevel functions will be sorted, and the functions in each branch will be 
   (list (cons 'narrowed (simple-call-tree-buffer-narrowed-p))
         (cons 'depth simple-call-tree-current-maxdepth)
         (cons 'level (simple-call-tree-outline-level))
-        (cons 'tree (if simple-call-tree-inverted-bufferp
+        (cons 'tree (if simple-call-tree-inverted
                         simple-call-tree-inverted-alist
                       simple-call-tree-alist))
         (cons 'thisfunc (simple-call-tree-get-function-at-point))
@@ -796,8 +796,8 @@ The toplevel functions will be sorted, and the functions in each branch will be 
   (move-beginning-of-line nil)
   (re-search-forward outline-regexp)
   (let ((state (simple-call-tree-store-state)))
-    (setq simple-call-tree-inverted-bufferp
-          (not simple-call-tree-inverted-bufferp))
+    (setq simple-call-tree-inverted
+          (not simple-call-tree-inverted))
     (simple-call-tree-list-callers-and-functions
      simple-call-tree-current-maxdepth (cdr (assq 'tree state)))
     (simple-call-tree-jump-to-function (cdr (assq 'thisfunc state)))
@@ -813,7 +813,7 @@ The toplevel functions will be sorted, and the functions in each branch will be 
   (let* ((level (simple-call-tree-outline-level))
          (depth (if current-prefix-arg (prefix-numeric-value current-prefix-arg)
                   (floor (abs (read-number "Maximum depth to display: " 2)))))
-         (funclist (if simple-call-tree-inverted-bufferp
+         (funclist (if simple-call-tree-inverted
                        simple-call-tree-inverted-alist
                      simple-call-tree-alist))
          (narrowedp (simple-call-tree-buffer-narrowed-p))
@@ -857,7 +857,7 @@ the source buffer to the function."
          (pos (marker-position funmark))
          (thisfunc (simple-call-tree-get-function-at-point))
          (parent (simple-call-tree-get-parent))
-         (visitfunc (if simple-call-tree-inverted-bufferp
+         (visitfunc (if simple-call-tree-inverted
                         thisfunc
                       (or parent thisfunc))))
     (pop-to-buffer buf)
