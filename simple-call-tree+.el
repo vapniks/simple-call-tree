@@ -1032,7 +1032,10 @@ If ARG is non-nil perform query-replace-regexp instead."
 (defun simple-call-tree-delete-other-windows nil
   "Make the *Simple Call Tree* buffer fill the frame."
   (interactive)
-  (if (featurep 'fm) (setq fm-working nil))
+  (unless (not (featurep 'fm))
+    (fm-unhighlight 0)
+    (fm-unhighlight 1)
+    (setq fm-working nil))
   (delete-other-windows))
 
 (unless (not (featurep 'fm))
