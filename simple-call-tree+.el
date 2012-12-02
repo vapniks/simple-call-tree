@@ -796,7 +796,11 @@ The toplevel functions will be sorted, and the functions in each branch will be 
   (simple-call-tree-jump-to-function (or (plist-get state 'topfunc)
                                          (plist-get state 'thisfunc)))
   (if (plist-get state 'narrowed) (simple-call-tree-toggle-narrowing -1))
-  (setq simple-call-tree-current-maxdepth (plist-get state 'depth)))
+  (setq simple-call-tree-current-maxdepth (plist-get state 'depth))
+  (if (> (plist-get state 'level) 1)
+      (search-forward
+       (plist-get state 'thisfunc)
+       (save-excursion (outline-end-of-subtree) (point)) t)))
 
 ;;; Major-mode commands bound to keys
 
@@ -820,22 +824,10 @@ The toplevel functions will be sorted, and the functions in each branch will be 
 (defun simple-call-tree-change-maxdepth (maxdepth)
   "Alter the maximum tree depth in the *Simple Call Tree* buffer."
   (interactive "P")
-  (move-beginning-of-line nil)
-  (or (re-search-forward outline-regexp nil t)
-      (progn (simple-call-tree-move-prev)
-             (re-search-forward outline-regexp nil t)))
-  (let* ((state (simple-call-tree-store-state))
-         (depth (if current-prefix-arg (prefix-numeric-value current-prefix-arg)
-                  (floor (abs (read-number "Maximum depth to display: " 2))))))
-    (simple-call-tree-list-callers-and-functions depth (plist-get state 'tree))
-    (setq simple-call-tree-current-maxdepth (max depth 1))
-    (simple-call-tree-jump-to-function (or (plist-get state 'topfunc)
-                                           (plist-get state 'thisfunc)))
-    (if (plist-get state 'narrowed) (simple-call-tree-toggle-narrowing -1))
-    (if (> (plist-get state 'level) 1)
-        (search-forward
-         (plist-get state 'thisfunc)
-         (save-excursion (outline-end-of-subtree) (point)) t))))
+  (setq simple-call-tree-current-maxdepth
+        (if current-prefix-arg (prefix-numeric-value current-prefix-arg)
+          (floor (abs (read-number "Maximum depth to display: " 2)))))
+  (simple-call-tree-restore-state (simple-call-tree-store-state)))
 
 (defun simple-call-tree-view-function nil
   "Display the source code corresponding to current header.
