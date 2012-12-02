@@ -170,6 +170,11 @@ The the children of each header will be sorted separately."
   :type '(choice (const :tag "Sort by position" position)
                  (const :tag "Sort alphabetically" alphabet)))
 
+(defcustom simple-call-tree-default-maxdepth 2
+  "The depth at which new call trees should be displayed."
+  :group 'simple-call-tree
+  :type 'integer)
+
 (defcustom simple-call-tree-major-mode-alist
   '((emacs-lisp-mode (font-lock-function-name-face
                       font-lock-variable-name-face)
@@ -648,7 +653,7 @@ otherwise it will be narrowed around FUNC."
   (if wide (simple-call-tree-toggle-narrowing 1)
     (simple-call-tree-toggle-narrowing -1)))
 
-(defun* simple-call-tree-list-callers-and-functions (&optional (maxdepth 2)
+(defun* simple-call-tree-list-callers-and-functions (&optional (maxdepth simple-call-tree-default-maxdepth)
                                                                (funclist simple-call-tree-alist))
   "List callers and functions in FUNCLIST to depth MAXDEPTH.
 By default FUNCLIST is set to `simple-call-tree-alist'."
