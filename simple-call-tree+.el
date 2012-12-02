@@ -758,9 +758,8 @@ narrowing."
 The toplevel functions will be sorted, and the functions in each branch will be sorted separately."
   (interactive)
   (simple-call-tree-sort (lambda (a b) (string< (car a) (car b))))
-  (let ((state (simple-call-tree-store-state)))
-    (simple-call-tree-restore-state state)
-    (setq simple-call-tree-current-sort-order 'alphabet)))
+  (simple-call-tree-restore-state (simple-call-tree-store-state))
+  (setq simple-call-tree-current-sort-order 'alphabet))
 
 (defun simple-call-tree-sort-positionally nil
   "Sort the functions in the *Simple Call Tree* buffer by position.
@@ -768,9 +767,8 @@ The toplevel functions will be sorted, and the functions in each branch will be 
   (interactive)
   (simple-call-tree-sort (lambda (a b) (< (marker-position (second a))
                                           (marker-position (second b)))))
-  (let ((state (simple-call-tree-store-state)))
-    (simple-call-tree-restore-state state)
-    (setq simple-call-tree-current-sort-order 'position)))
+  (simple-call-tree-restore-state (simple-call-tree-store-state))
+  (setq simple-call-tree-current-sort-order 'position)))
 
 (defun simple-call-tree-store-state nil
   "Store the current state of the displayed call tree, and return as an alist."
