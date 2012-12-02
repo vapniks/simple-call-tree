@@ -754,14 +754,10 @@ narrowing."
   "Sort the functions in the *Simple Call Tree* buffer alphabetically.
 The toplevel functions will be sorted, and the functions in each branch will be sorted separately."
   (interactive)
-  (simple-call-tree-sort (lambda (a b) (string< (car a) (car b))))
+
   (let ((state (simple-call-tree-store-state)))
-    (simple-call-tree-list-callers-and-functions (plist-get state 'depth)
-                                                 (plist-get state 'tree))
-    (simple-call-tree-jump-to-function (or (plist-get state 'topfunc)
-                                           (plist-get state 'thisfunc)))
-    
-    (if (plist-get state 'narrowed) (simple-call-tree-toggle-narrowing -1))
+    (simple-call-tree-sort (lambda (a b) (string< (car a) (car b))))
+    (simple-call-tree-restore-state state)
     (if (> (plist-get state 'level) 1)
         (search-forward
          (plist-get state 'thisfunc)
@@ -772,14 +768,11 @@ The toplevel functions will be sorted, and the functions in each branch will be 
   "Sort the functions in the *Simple Call Tree* buffer by position.
 The toplevel functions will be sorted, and the functions in each branch will be sorted separately."
   (interactive)
-  (simple-call-tree-sort (lambda (a b) (< (marker-position (second a))
-                                          (marker-position (second b)))))
+  
   (let ((state (simple-call-tree-store-state)))
-    (simple-call-tree-list-callers-and-functions (plist-get state 'depth)
-                                                 (plist-get state 'tree))
-    (simple-call-tree-jump-to-function (or (plist-get state 'topfunc)
-                                           (plist-get state 'thisfunc)))
-    (if (plist-get state 'narrowed) (simple-call-tree-toggle-narrowing -1))
+    (simple-call-tree-sort (lambda (a b) (< (marker-position (second a))
+                                            (marker-position (second b)))))
+    (simple-call-tree-restore-state state)
     (if (> (plist-get state 'level) 1)
         (search-forward
          (plist-get state 'thisfunc)
@@ -800,6 +793,14 @@ The toplevel functions will be sorted, and the functions in each branch will be 
                       (simple-call-tree-get-function-at-point))
         'topfunc (if (get-buffer "*Simple Call Tree*")
                      (simple-call-tree-get-toplevel))))
+
+(defun simple-call-tree-restore-state (state)
+  "Restore the *Simple Call Tree* buffer to the state in STATE."
+  (simple-call-tree-list-callers-and-functions (plist-get state 'depth)
+                                               (plist-get state 'tree))
+  (simple-call-tree-jump-to-function (or (plist-get state 'topfunc)
+                                         (plist-get state 'thisfunc)))
+  (if (plist-get state 'narrowed) (simple-call-tree-toggle-narrowing -1)))
 
 ;;; Major-mode commands bound to keys
 
