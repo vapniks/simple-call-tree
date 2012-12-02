@@ -942,9 +942,15 @@ When called interactively the name of the function at point is used for FNSTR."
 (defun simple-call-tree-move-up nil
   "Move cursor to the parent of this function."
   (interactive)
-  (outline-up-heading 1)
-  (let ((nextpos (next-single-property-change (point) 'face)))
-    (if nextpos (goto-char nextpos))))
+  (with-current-buffer "*Simple Call Tree*"
+    (move-beginning-of-line nil)
+    (or (re-search-forward outline-regexp nil t)
+        (progn (simple-call-tree-move-prev)
+               (re-search-forward outline-regexp nil t)))
+    (unless (= (simple-call-tree-outline-level) 1)
+      (outline-up-heading 1)
+      (let ((nextpos (next-single-property-change (point) 'face)))
+        (if nextpos (goto-char nextpos))))))
 
 (defun simple-call-tree-move-next nil
   "Move cursor to the next function."
