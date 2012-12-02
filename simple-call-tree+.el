@@ -774,6 +774,10 @@ The toplevel functions will be sorted, and the functions in each branch will be 
 
 (defun simple-call-tree-store-state nil
   "Store the current state of the displayed call tree, and return as an alist."
+  (move-beginning-of-line nil)
+  (or (re-search-forward outline-regexp nil t)
+      (progn (simple-call-tree-move-prev)
+             (re-search-forward outline-regexp nil t)))
   (list 'narrowed (if (get-buffer "*Simple Call Tree*")
                       (simple-call-tree-buffer-narrowed-p))
         'depth simple-call-tree-current-maxdepth
@@ -811,8 +815,6 @@ The toplevel functions will be sorted, and the functions in each branch will be 
 (defun simple-call-tree-invert-buffer nil
   "Invert the tree in *Simple Call Tree* buffer."
   (interactive)
-  (move-beginning-of-line nil)
-  (re-search-forward outline-regexp)
   (setq simple-call-tree-inverted
         (not simple-call-tree-inverted))
   (simple-call-tree-restore-state (simple-call-tree-store-state)))
