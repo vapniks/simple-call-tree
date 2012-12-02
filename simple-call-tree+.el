@@ -386,7 +386,6 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
       ["Hide Sublevels" hide-sublevels
        :help "Hide Lower Level Branches"
        :key-sequence "h"]
-      
       ["Toggle Follow mode" fm-toggle
        :help "Toggle Follow Mode - auto display of function at point"
        :visible (featurep 'fm)
@@ -409,15 +408,16 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
        :help "Toggle between narrowed/wide buffer"
        :style toggle
        :selected (simple-call-tree-buffer-narrowed-p)]))
-  
   (setq mode-line-format
         (append
          (subseq mode-line-format 0
                  (1+ (position 'mode-line-buffer-identification
                                mode-line-format)))
-         (list '(:eval (format (if simple-call-tree-inverted-bufferp
-                                   " Inverted, maxdepth=%d "
-                                 " maxdepth=%d ")
+         (list '(:eval (format (concat " Maxdepth=%d "
+                                       "Sorted "
+                                       (case simple-call-tree-current-sort-order
+                                         (position "by position ")
+                                         (alphabet "alphabetically ")))
                                simple-call-tree-current-maxdepth)))
          (subseq mode-line-format
                  (+ 2 (position 'mode-line-buffer-identification
@@ -454,6 +454,10 @@ The minimum value is 0 which means show top level functions only.")
 
 (defvar simple-call-tree-jump-ring-index 0
   "The current position in the jump ring.")
+
+(defvar simple-call-tree-current-sort-order simple-call-tree-default-sort-method
+  "The current sort order of the call tree.
+See `simple-call-tree-default-sort-method' for possible values.")
 
 ;;; Functions from simple-call-tree.el (some are rewritten)
 
@@ -751,7 +755,8 @@ narrowing."
 The toplevel functions will be sorted, and the functions in each branch will be sorted separately."
   (interactive)
   (simple-call-tree-sort (lambda (a b) (string< (car a) (car b))))
-  (simple-call-tree-list-callers-and-functions))
+  (simple-call-tree-list-callers-and-functions)
+  (setq simple-call-tree-current-sort-order 'alphabet))
 
 (defun simple-call-tree-sort-positionally nil
   "Sort the functions in the *Simple Call Tree* buffer by position.
@@ -759,7 +764,8 @@ The toplevel functions will be sorted, and the functions in each branch will be 
   (interactive)
   (simple-call-tree-sort (lambda (a b) (< (marker-position (second a))
                                           (marker-position (second b)))))
-  (simple-call-tree-list-callers-and-functions))
+  (simple-call-tree-list-callers-and-functions)
+  (setq simple-call-tree-current-sort-order 'position))
 
 ;;; Major-mode commands bound to keys
 
