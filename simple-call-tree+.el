@@ -464,6 +464,10 @@ The minimum value is 0 which means show top level functions only.")
   "The current sort order of the call tree.
 See `simple-call-tree-default-sort-method' for possible values.")
 
+(defvar simple-call-tree-nodups nil
+  "If non-nil then duplicate sub-branches will not be included in the tree.
+I.e. if a function makes multiple calls to the same function then only one of these calls will
+be shown in the tree.")
 ;;; Functions from simple-call-tree.el (some are rewritten)
 
 (defun simple-call-tree-add (start end alist)
@@ -688,7 +692,8 @@ This is a recursive function, and you should not need to set CURDEPTH."
          (arrowtail (make-string (* 2 (1- curdepth)) 45))
          (arrow (if inverted (concat (if (> curdepth 1) "<") arrowtail " ")
                   (concat arrowtail (if (> curdepth 1) "> " " "))))
-         (face (get-text-property 0 'face fname)))
+         (face (get-text-property 0 'face fname))
+         done)
     (insert "|" arrow (propertize fname
                                   'font-lock-face (list :inherit face :underline t)
                                   'mouse-face 'highlight
@@ -696,7 +701,9 @@ This is a recursive function, and you should not need to set CURDEPTH."
             "\n")
     (if (< curdepth maxdepth)
         (dolist (callee callees)
-          (simple-call-tree-list-callees-recursively callee maxdepth (1+ curdepth) funclist)))))
+          (unless (and simple-call-tree-nodups (member (car callee) done))
+            (simple-call-tree-list-callees-recursively callee maxdepth (1+ curdepth) funclist))
+          (add-to-list 'done (car callee))))))
 
 (defun simple-call-tree-outline-level nil
   "Return the outline level of the function at point.
