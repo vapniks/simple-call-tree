@@ -829,7 +829,7 @@ The toplevel functions will be sorted, and the functions in each branch will be 
         (nodups (plist-get state 'nodups)))
     (simple-call-tree-list-callers-and-functions depth tree)
     (if (or topfunc thisfunc)
-        (simple-call-tree-jump-to-function (or topfunc thisfunc)))
+        (simple-call-tree-jump-to-function (or topfunc thisfunc) t))
     (if narrowed (simple-call-tree-toggle-narrowing -1))
     (setq simple-call-tree-current-maxdepth depth
           simple-call-tree-nodups nodups)
