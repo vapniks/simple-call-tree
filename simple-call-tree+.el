@@ -531,6 +531,9 @@ By default it is set to a list containing the current buffer."
       (let* ((caller (first item))
              (callername (first caller))
              (callees (cdr item)))
+        (unless (assoc-if (lambda (x) (string= (car x) callername)) result)
+          (setq result (cons (list (list callername (second caller) (third caller)))
+                             result)))
         (dolist (callee callees)
           (let* ((calleename (first callee))
                  (callerpos (second callee))
@@ -539,7 +542,8 @@ By default it is set to a list containing the current buffer."
                  (elem (assoc-if (lambda (x) (string= (car x) calleename)) result)))
             (if elem
                 (setcdr elem (cons (list callername callerpos) (cdr elem)))
-              (setq result (cons (list (list calleename (second calleeitem)
+              (setq result (cons (list (list calleename
+                                             (second calleeitem)
                                              (third calleeitem))
                                        (list callername callerpos))
                                  result)))))))
