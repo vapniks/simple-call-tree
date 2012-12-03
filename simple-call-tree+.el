@@ -804,7 +804,8 @@ The toplevel functions will be sorted, and the functions in each branch will be 
         'thisfunc (if (get-buffer "*Simple Call Tree*")
                       (simple-call-tree-get-function-at-point))
         'topfunc (if (get-buffer "*Simple Call Tree*")
-                     (simple-call-tree-get-toplevel))))
+                     (simple-call-tree-get-toplevel))
+        'nodups simple-call-tree-nodups))
 
 (defun simple-call-tree-restore-state (state)
   "Restore the *Simple Call Tree* buffer to the state in STATE."
@@ -819,7 +820,8 @@ The toplevel functions will be sorted, and the functions in each branch will be 
     (if (or topfunc thisfunc)
         (simple-call-tree-jump-to-function (or topfunc thisfunc)))
     (if narrowed (simple-call-tree-toggle-narrowing -1))
-    (setq simple-call-tree-current-maxdepth depth)
+    (setq simple-call-tree-current-maxdepth depth
+          simple-call-tree-nodups nodups)
     (if (and level (> level 1) thisfunc)
         (search-forward
          thisfunc
