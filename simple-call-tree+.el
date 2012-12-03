@@ -331,6 +331,7 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
   (define-key simple-call-tree-mode-map (kbd "P") 'simple-call-tree-move-prev-samelevel)
   (define-key simple-call-tree-mode-map (kbd "i") 'simple-call-tree-invert-buffer)
   (define-key simple-call-tree-mode-map (kbd "d") 'simple-call-tree-change-maxdepth)
+  (define-key simple-call-tree-mode-map (kbd "D") 'simple-call-tree-toggle-duplicates)
   (define-key simple-call-tree-mode-map (kbd "/") 'simple-call-tree-toggle-narrowing)
   (define-key simple-call-tree-mode-map (kbd "<") 'simple-call-tree-jump-prev)
   (define-key simple-call-tree-mode-map (kbd ">") 'simple-call-tree-jump-next)
@@ -391,6 +392,9 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
       ["Hide Sublevels" hide-sublevels
        :help "Hide Lower Level Branches"
        :key-sequence "h"]
+      ["Toggle duplicates" simple-call-tree-toggle-duplicates
+       :help "Toggle display of duplicate sub-branches"
+       :key-sequence "D"]
       ["Toggle Follow mode" fm-toggle
        :help "Toggle Follow Mode - auto display of function at point"
        :visible (featurep 'fm)
@@ -815,7 +819,8 @@ The toplevel functions will be sorted, and the functions in each branch will be 
         (topfunc (plist-get state 'topfunc))
         (thisfunc (plist-get state 'thisfunc))
         (level (plist-get state 'level))
-        (narrowed (plist-get state 'narrowed)))
+        (narrowed (plist-get state 'narrowed))
+        (nodups (plist-get state 'nodups)))
     (simple-call-tree-list-callers-and-functions depth tree)
     (if (or topfunc thisfunc)
         (simple-call-tree-jump-to-function (or topfunc thisfunc)))
@@ -1022,6 +1027,13 @@ When narrowed, the buffer will be narrowed to the subtree at point."
         (narrow-to-region (region-beginning) (region-end))
         (let (select-active-regions) (deactivate-mark)))
       (goto-char pos))))
+
+(defun simple-call-tree-toggle-duplicates nil
+  "Toggle the inclusion of duplicate sub-branches in the call tree."
+  (interactive)
+  (setq simple-call-tree-nodups (not simple-call-tree-nodups))
+  (with-current-buffer "*Simple Call Tree*"
+    (simple-call-tree-restore-state (simple-call-tree-store-state))))
 
 (defun simple-call-tree-query-replace (func &optional arg)
   "Perform query-replace on function FUNC.
