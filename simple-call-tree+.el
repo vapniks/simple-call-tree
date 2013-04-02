@@ -38,7 +38,9 @@
 ;; If not, see <http://www.gnu.org/licenses/>.
 
 ;;; Commentary: 
-;; 
+;;
+;; Bitcoin donations gratefully accepted: 1AmWPmshr6i9gajMi1yqHgx7BYzpPKuzMz
+
 ;; This library is based on simple-call-tree.el by Alex Schroeder.
 ;; It displays a buffer containing a call tree for functions in source
 ;; code files. You can easily & quickly navigate the call tree, displaying
