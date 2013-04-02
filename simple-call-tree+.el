@@ -628,6 +628,7 @@ nil."
       (unless (not end)
         (cons end (buffer-substring start end))))))
 
+;;;###autoload
 (defun* simple-call-tree-display-buffer (&optional files)
   "Display call tree for current buffer.
 If optional arg FILES is supplied it specifies a list of files to search for functions
@@ -659,6 +660,7 @@ When called interactively files will be prompted for and only functions in the c
     (setq simple-call-tree-jump-ring (make-ring simple-call-tree-jump-ring-max)
           simple-call-tree-jump-ring-index 0)))
 
+;;;###autoload
 (defun* simple-call-tree-current-function (func &optional wide)
   "Display call tree for function FUNC.
 If called interactively FUNC will be set to the symbol nearest point,
