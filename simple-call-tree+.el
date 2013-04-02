@@ -639,7 +639,12 @@ When called interactively files will be prompted for and only functions in the c
     (or files
         (if (y-or-n-p "Include other files?")
             (whilelast
-             (setq dir (simple-call-tree-read-directory-name "Dir containing files: "))
+             (setq dir
+                   (if (and (featurep 'ido)
+                            (or (eq ido-mode 'file)
+                                (eq ido-mode 'both)))
+                       (ido-read-directory-name "Dir containing files: ")
+                     (read-directory-name "Dir cointaining files: ")))
              (list-directory dir)
              (setq regexp (read-regexp "Regexp matching filenames (RET to finish)"))
              (unless (string= regexp "")
@@ -944,8 +949,10 @@ or if called with a prefix arg it will be prompted for.
 Unless optional arg SKIPRING is non-nil (which will be true if called with a negative
 prefix arg) then the function name will be added to `simple-call-tree-jump-ring'"
   (interactive (list (if current-prefix-arg
-                         (simple-call-tree-completing-read "Jump to function: "
-                                                           (mapcar 'caar simple-call-tree-alist))
+                         (if (and (featurep 'ido)
+                                  (not (nullp ido-mode)))
+                             (ido-completing-read "Jump to function: " (mapcar 'caar simple-call-tree-alist))
+                           (completing-read "Jump to function: " (mapcar 'caar simple-call-tree-alist)))
                        (simple-call-tree-get-function-at-point))
                      (< (prefix-numeric-value current-prefix-arg) 0)))
   (let* ((narrowedp (simple-call-tree-buffer-narrowed-p)))
@@ -1132,26 +1139,6 @@ With a prefix arg, and if the form is a function, instrument it for debugging wi
 (unless (not (featurep 'fm))
   (add-to-list 'fm-modes '(simple-call-tree-mode simple-call-tree-visit-function))
   (add-hook 'simple-call-tree-mode-hook 'fm-start))
-
-(defun simple-call-tree-read-directory-name (prompt &optional dir default-dirname
-                                                    mustmatch initial)
-  "Call `ido-read-directory-name' if ido is in use, else `read-directory-name'."
-  (if (and (featurep 'ido)
-           (or (eq ido-mode 'file)
-               (eq ido-mode 'both)))
-      (ido-read-directory-name prompt dir default-dirname mustmatch initial)
-    (read-directory-name prompt dir default-dirname mustmatch initial)))
-
-(defun simple-call-tree-completing-read (prompt collection &optional predicate
-                                                require-match initial-input hist
-                                                def inherit-input-method)
-  "Call `ido-completing-read' if ido is in use, else `completing-read'."
-  (if (and (featurep 'ido)
-           (not (nullp ido-mode)))
-      (ido-completing-read prompt collection predicate require-match
-                           initial-input hist def inherit-input-method)
-    (completing-read prompt collection predicate require-match
-                     initial-input hist def inherit-input-method)))
 
 (provide 'simple-call-tree+)
 
