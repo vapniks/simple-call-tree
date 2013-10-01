@@ -739,8 +739,7 @@ By default FUNCLIST is set to `simple-call-tree-alist'."
     (setq simple-call-tree-current-maxdepth (max maxdepth 1)
           buffer-read-only t)))
 
-(defun* simple-call-tree-export-org-tree (&optional (maxdepth simple-call-tree-current-maxdepth)
-                                                    (funclist simple-call-tree-alist))
+(defun* simple-call-tree-export-org-tree nil
   "Create an org-tree from the current call tree and put it in an org buffer.
 The style of links used for child headers is controlled by `simple-call-tree-org-link-style'."
   (interactive)
@@ -749,13 +748,14 @@ The style of links used for child headers is controlled by `simple-call-tree-org
     (setq buffer-read-only nil)
     (erase-buffer)
     (org-mode)
-    (let ((maxdepth (max maxdepth 1)))
-      (dolist (item funclist)
-        (simple-call-tree-list-callees-recursively
-         (car item)
-         maxdepth 1 funclist
-         simple-call-tree-inverted
-         'simple-call-tree-insert-org-header)))
+    (dolist (item simple-call-tree-alist)
+      (simple-call-tree-list-callees-recursively
+       (car item)
+       simple-call-tree-current-maxdepth
+       1
+       simple-call-tree-alist
+       simple-call-tree-inverted
+       'simple-call-tree-insert-org-header))
     (org-update-radio-target-regexp)))
 
 (defun* simple-call-tree-list-callees-recursively (item &optional (maxdepth 2)
