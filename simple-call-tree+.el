@@ -283,6 +283,12 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
   :type '(choice (const :tag "internal radio link" radio)
                  (const :tag "link to source code" source)))
 
+(defcustom simple-call-tree-org-todo-state "TODO"
+  "TODO state to add to toplevel headers when exporting org tree using `simple-call-tree-export-org-tree'."
+  :group 'simple-call-tree
+  :type '(choice (const :tag "None" nil)
+                 (string :tag "Value")))
+
 ;; Saves a little typing
 (defmacro whilelast (&rest forms)
   `(while (progn ,@forms)))
@@ -794,9 +800,12 @@ This is a recursive function, and you should not need to set CURDEPTH."
              (eq simple-call-tree-org-link-style 'radio))
         (insert stars " " fname "\n")
       (with-current-buffer (marker-buffer marker)
-        (goto-char (marker-position marker))
-        (call-interactively 'org-store-link))
-      (insert stars " [[" (substring-no-properties (caar org-stored-links)) "][" fname "]]\n")
+        (save-excursion
+          (goto-char (marker-position marker))
+          (call-interactively 'org-store-link)))
+      (insert stars " " (if (and simple-call-tree-org-todo-state (= curdepth 1))
+                            (concat simple-call-tree-org-todo-state " ") "")
+              "[[" (substring-no-properties (caar org-stored-links)) "][" fname "]]\n")
       (if (eq simple-call-tree-org-link-style 'radio)
           (insert "<<<" fname ">>>\n"))
       (setq org-stored-links (cdr org-stored-links)))))
