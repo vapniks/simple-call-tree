@@ -362,10 +362,11 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
   (define-key simple-call-tree-mode-map (kbd "m") 'simple-call-tree-bookmark)
   (define-key simple-call-tree-mode-map (kbd "%") 'simple-call-tree-query-replace)
   (define-key simple-call-tree-mode-map (kbd "C-%") 'simple-call-tree-query-replace-regexp)
+  (define-key simple-call-tree-mode-map (kbd "C-M-x") 'simple-call-tree-eval-defun)
+  (define-key simple-call-tree-mode-map (kbd "!") 'simple-call-tree-apply-command)
   (define-key simple-call-tree-mode-map (kbd "M-p") 'simple-call-tree-jump-prev)
   (define-key simple-call-tree-mode-map (kbd "M-n") 'simple-call-tree-jump-next)
   (define-key simple-call-tree-mode-map (kbd "w") 'widen)
-  (define-key simple-call-tree-mode-map (kbd "C-M-x") 'simple-call-tree-eval-defun)
   (define-key simple-call-tree-mode-map (kbd "R") 'simple-call-tree-build-tree)
   (use-local-map simple-call-tree-mode-map)
   (easy-menu-define nil simple-call-tree-mode-map "test"
@@ -379,14 +380,19 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
        :key "v"]
       ["Visit Function At Point" simple-call-tree-visit-function
        :help "Visit the function at point"]
-      ["Replace String In Function At Point..." simple-call-tree-query-replace
-       :help "Perform query-replace on the function at point"]
-      ["Replace Regexp In Function At Point..." simple-call-tree-query-replace-regexp
-       :help "Perform query-replace-regexp on the function at point"]
-      ["Evaluate function at point" simple-call-tree-eval-defun
-       :help "Evaluate the function at point. With a prefix arg instrument it for debugging."]
-      ["Bookmark Current Position..." simple-call-tree-bookmark
-       :help "Create a bookmark for the position corresponding to the branch at point"]
+      ["Operate on function at point..."
+       (keymap "Operate"
+        (queryreplace menu-item "Replace String..." simple-call-tree-query-replace
+                      :help "Perform query-replace on the function at point")
+        (queryreplaceregex menu-item "Replace Regexp..." simple-call-tree-query-replace-regexp
+                           :help "Perform query-replace-regexp on the function at point")
+        (eval menu-item "Evaluate" simple-call-tree-eval-defun
+              :help "Evaluate the function at point. With a prefix arg instrument it for debugging.")
+        (bookmark menu-item "Add Bookmark" simple-call-tree-bookmark
+                  :help "Create a bookmark for the position corresponding to the function at point")
+        (arbitrary menu-item "Apply Arbitrary Command..." simple-call-tree-apply-command
+                   :help "Apply an arbitrary elisp command to the function at point"))]
+      ["---" "---"]
       ["Jump To Branch At Point" simple-call-tree-jump-to-function
        :help "Goto the toplevel branch for the function at point"]
       ["Jump To Branch..." ,(lambda nil (interactive) (setq current-prefix-arg 1)
@@ -399,6 +405,7 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
        :help "Goto previous function in jump ring"]
       ["Next Jump" simple-call-tree-jump-next
        :help "Goto next function in jump ring"]
+      ["---" "---"]
       ["Parent Branch" simple-call-tree-move-up
        :help "Goto the parent branch of this branch"]
       ["Next Branch" simple-call-tree-move-next
@@ -411,6 +418,7 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
       ["Previous Branch Same Level" simple-call-tree-move-prev-samelevel
        :help "Goto the previous branch at the same level as this one"
        :key "P"]
+      ["---" "---"]
       ["Cycle Tree Visibility" outline-cycle
        :help "Cycle through different tree visibility states"
        :visible (featurep 'outline-magic)
@@ -443,8 +451,7 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
        :help "Invert the tree"
        :style toggle
        :selected simple-call-tree-inverted]
-      ["Sort Tree..." (keymap
-                       "Sort"
+      ["Sort Tree..." (keymap "Sort"
                        (alpha menu-item "Alphabetically" simple-call-tree-sort-alphabetically)
                        (position menu-item "Positionally" simple-call-tree-sort-positionally)
                        (face menu-item "By face" simple-call-tree-sort-by-face))]
@@ -1170,38 +1177,45 @@ When narrowed, the buffer will be narrowed to the subtree at point."
   (with-current-buffer "*Simple Call Tree*"
     (simple-call-tree-restore-state (simple-call-tree-store-state))))
 
-(defun simple-call-tree-query-replace (func &optional arg)
-  "Perform query-replace on function FUNC.
-If called interactively the function at point in the *Simple Call Tree*
-buffer will be used.
-If ARG is non-nil perform query-replace-regexp instead."
-  (interactive (list (simple-call-tree-get-function-at-point)))
+(defun* simple-call-tree-apply-command (cmd &optional (func (simple-call-tree-get-function-at-point)))
+  "Apply command CMD on function FUNC.
+By default FUNC is set to the function at point in the *Simple Call Tree* buffer.
+The command CMD will be called interactively after switching to the source code buffer,
+and narrowing the buffer around FUNC."
+  (interactive (list (read-command "Command: ")
+                     (simple-call-tree-get-function-at-point)))
   (let ((buf (marker-buffer
               (second (car (assoc-if (lambda (x) (string= (car x) func))
                                      simple-call-tree-alist))))))
     (switch-to-buffer-other-window buf)
     (simple-call-tree-narrow-to-function func)
-    (if arg
-        (call-interactively 'query-replace-regexp)
-      (call-interactively 'query-replace))
+    (call-interactively cmd)
     (widen)
     (switch-to-buffer-other-window "*Simple Call Tree*")))
 
-(defun simple-call-tree-query-replace-regexp (func)
-  "Perform query-replace-regexp on function FUNC."
-  (interactive (list (simple-call-tree-get-function-at-point)))
-  (simple-call-tree-query-replace func t))
+(defun simple-call-tree-query-replace nil
+  "Perform query-replace on the function at point in the *Simple Call Tree* buffer.
+This just calls `simple-call-tree-apply-command' with the `query-replace' command."
+  (interactive)
+  (simple-call-tree-apply-command 'query-replace))
+
+(defun simple-call-tree-query-replace-regexp nil
+  "Perform `query-replace-regexp' on the function at point in the *Simple Call Tree* buffer.
+This just calls `simple-call-tree-apply-command' with the `query-replace-regexp' command."
+  (interactive)
+  (simple-call-tree-apply-command 'query-replace-regexp))
+
+(defun simple-call-tree-eval-defun (&optional arg)
+  "Evaluate the function/variable/struct corresponding to the branch at point.
+With a prefix arg, and if the form is a function, instrument it for debugging with edebug."
+  (interactive)
+  (if arg (simple-call-tree-apply-command 'edebug-defun)
+    (simple-call-tree-apply-command 'eval-defun)))
 
 (defun simple-call-tree-bookmark nil
   "Set a bookmark at the position corresponding to the branch at point."
   (interactive)
-  (let* ((funmark (get-text-property (point) 'location))
-         (buf (and funmark (marker-buffer funmark)))
-         (pos (and funmark (marker-position funmark))))
-    (if funmark
-        (with-current-buffer buf
-          (goto-char pos)
-          (call-interactively 'bookmark-set)))))
+  (simple-call-tree-apply-command 'bookmark-set))
 
 (defun simple-call-tree-delete-other-windows nil
   "Make the *Simple Call Tree* buffer fill the frame."
@@ -1211,18 +1225,6 @@ If ARG is non-nil perform query-replace-regexp instead."
     (fm-unhighlight 1)
     (setq fm-working nil))
   (delete-other-windows))
-
-(defun simple-call-tree-eval-defun (&optional arg)
-  "Evaluate the function/variable/struct corresponding to the branch at point.
-With a prefix arg, and if the form is a function, instrument it for debugging with edebug."
-  (interactive "P")
-  (let* ((funmark (get-text-property (point) 'location))
-         (buf (and funmark (marker-buffer funmark)))
-         (pos (and funmark (marker-position funmark))))
-    (if funmark
-        (with-current-buffer buf
-          (goto-char pos)
-          (eval-defun arg)))))
 
 (unless (not (featurep 'fm))
   (add-to-list 'fm-modes '(simple-call-tree-mode simple-call-tree-visit-function))
