@@ -344,6 +344,7 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
   (define-key simple-call-tree-mode-map (kbd "s p") 'simple-call-tree-sort-positionally)
   (define-key simple-call-tree-mode-map (kbd "s f") 'simple-call-tree-sort-by-face)
   (define-key simple-call-tree-mode-map (kbd "s c") 'simple-call-tree-sort-by-num-children)
+  (define-key simple-call-tree-mode-map (kbd "s r") 'simple-call-tree-reverse)
   (if (featurep 'outline-magic)
       (define-key simple-call-tree-mode-map (kbd "<tab>") 'outline-cycle)
     (define-key simple-call-tree-mode-map (kbd "<tab>") 'outline-toggle-children))
@@ -475,7 +476,8 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
                        (alpha menu-item "Alphabetically" simple-call-tree-sort-alphabetically)
                        (position menu-item "Positionally" simple-call-tree-sort-positionally)
                        (numchild menu-item "Number of children" simple-call-tree-sort-by-num-children)
-                       (face menu-item "By face" simple-call-tree-sort-by-face))]
+                       (face menu-item "By face" simple-call-tree-sort-by-face)
+                       (reverse menu-item "Reverse order" simple-call-tree-reverse))]
       ["Change Depth..." simple-call-tree-change-maxdepth
        :help "Change the depth of the tree"]
       ["Toggle Narrowing" simple-call-tree-toggle-narrowing
@@ -495,7 +497,7 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
                                        (case simple-call-tree-current-sort-order
                                          (position "by position|")
                                          (alphabet "alphabetically|")
-                                         (numchild "number of children|")
+                                         (numchild "by number of children|")
                                          (face "by face|")))
                                simple-call-tree-current-maxdepth)))
          (subseq mode-line-format
@@ -907,6 +909,17 @@ narrowing."
         (sort simple-call-tree-inverted-alist
               (lambda (a b)
                 (funcall predicate (car a) (car b))))))
+
+(defun simple-call-tree-reverse nil
+  "Reverse the order of the branches & sub-branches in `simple-call-tree-alist' and `simple-call-tree-inverted-alist'."
+  (interactive)
+  (dolist (branch simple-call-tree-alist)
+    (setcdr branch (reverse (cdr branch))))
+  (setq simple-call-tree-alist (reverse simple-call-tree-alist))
+  (dolist (branch simple-call-tree-inverted-alist)
+    (setcdr branch (reverse (cdr branch))))
+  (setq simple-call-tree-inverted-alist (reverse simple-call-tree-inverted-alist))
+  (simple-call-tree-restore-state (simple-call-tree-store-state)))
 
 (defun simple-call-tree-sort-by-num-children nil
   "Sort the branches in the *Simple Call Tree* buffer by the number of children."
