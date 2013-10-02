@@ -190,6 +190,7 @@ The children of each header will be sorted separately."
   :group 'simple-call-tree
   :type '(choice (const :tag "Sort by position" position)
                  (const :tag "Sort alphabetically" alphabet)
+                 (const :tag "Sort by number of children" numchild)
                  (const :tag "Sort by face" face)))
 
 (defcustom simple-call-tree-default-maxdepth 2
@@ -342,6 +343,7 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
   (define-key simple-call-tree-mode-map (kbd "s a") 'simple-call-tree-sort-alphabetically)
   (define-key simple-call-tree-mode-map (kbd "s p") 'simple-call-tree-sort-positionally)
   (define-key simple-call-tree-mode-map (kbd "s f") 'simple-call-tree-sort-by-face)
+  (define-key simple-call-tree-mode-map (kbd "s c") 'simple-call-tree-sort-by-num-children)
   (if (featurep 'outline-magic)
       (define-key simple-call-tree-mode-map (kbd "<tab>") 'outline-cycle)
     (define-key simple-call-tree-mode-map (kbd "<tab>") 'outline-toggle-children))
@@ -472,6 +474,7 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
       ["Sort Tree..." (keymap "Sort"
                        (alpha menu-item "Alphabetically" simple-call-tree-sort-alphabetically)
                        (position menu-item "Positionally" simple-call-tree-sort-positionally)
+                       (numchild menu-item "Number of children" simple-call-tree-sort-by-num-children)
                        (face menu-item "By face" simple-call-tree-sort-by-face))]
       ["Change Depth..." simple-call-tree-change-maxdepth
        :help "Change the depth of the tree"]
@@ -492,6 +495,7 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
                                        (case simple-call-tree-current-sort-order
                                          (position "by position|")
                                          (alphabet "alphabetically|")
+                                         (numchild "number of children|")
                                          (face "by face|")))
                                simple-call-tree-current-maxdepth)))
          (subseq mode-line-format
@@ -721,6 +725,7 @@ listed in `simple-call-tree-buffers' will be used."
   (case simple-call-tree-default-sort-method
     (alphabet (simple-call-tree-sort-alphabetically))
     (position (simple-call-tree-sort-positionally))
+    (numchild (simple-call-tree-sort-by-face))
     (face (simple-call-tree-sort-by-face)))
   (setq simple-call-tree-inverted nil)
   (simple-call-tree-list-callers-and-functions)
@@ -902,6 +907,18 @@ narrowing."
         (sort simple-call-tree-inverted-alist
               (lambda (a b)
                 (funcall predicate (car a) (car b))))))
+
+(defun simple-call-tree-sort-by-num-children nil
+  "Sort the branches in the *Simple Call Tree* buffer by the number of children."
+  (interactive)
+  (setq simple-call-tree-alist
+        (sort simple-call-tree-alist
+              (lambda (a b) (> (length a) (length b)))))
+  (setq simple-call-tree-inverted-alist
+        (sort simple-call-tree-inverted-alist
+              (lambda (a b) (> (length a) (length b)))))
+  (simple-call-tree-restore-state (simple-call-tree-store-state))
+  (setq simple-call-tree-current-sort-order 'numchild))
 
 (defun simple-call-tree-sort-alphabetically nil
   "Sort the functions in the *Simple Call Tree* buffer alphabetically.
