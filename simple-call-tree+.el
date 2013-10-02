@@ -41,22 +41,23 @@
 ;;
 ;; Bitcoin donations gratefully accepted: 1AmWPmshr6i9gajMi1yqHgx7BYzpPKuzMz
 
+;;;; Introduction:
 ;; This library is based on simple-call-tree.el by Alex Schroeder, but you
 ;; do not need that library to use it (this is a replacement).
 ;; It displays a buffer containing a call tree for functions in source
 ;; code files. You can easily & quickly navigate the call tree, displaying
-;; the code in another window, and perform query-replace on the functions
-;; which may be useful for refactoring.
+;; the code in another window, and apply query-replace or other commands
+;; to individual functions.
 
 ;; When the command `simple-call-tree-display-buffer' is executed
 ;; a call tree for the functions in the current buffer will be created.
-;; The user is also prompted for other files containing functions to be
-;; included in the call tree.
+;; The user is also prompted for other files to include in the call tree.
 ;; The call tree is displayed in a buffer called *Simple Call Tree*,
 ;; which has a dedicated menu in the menu-bar showing various commands
 ;; and their keybindings. Most of these commands are self explanatory
 ;; so try them out.
 
+;;;; Navigation:
 ;; You can navigate the call tree either by moving through consecutive
 ;; headers (n/p or N/P keys) or by jumping to main branches (j for branch
 ;; corresponding to function at point, and J to prompt for a function).
@@ -67,14 +68,23 @@
 ;; jumped to will not be added to the jump-ring.
 ;; If you have fm.el (available here: http://www.damtp.cam.ac.uk/user/sje30/emacs/fm.el)
 ;; you can press f to toggle follow mode on/off.
-;; When follow mode is on, or when you press the v or C-o key the code line
-;; corresponding to the branch under point will be displayed. If it is a
-;; toplevel branch then that function will be displayed, if it is a lower-level
-;; branch then the corresponding function call will be displayed.
-;; You can invert the tree by pressing i, and change the depth by pressing d.
-;; You can toggle narrowing to the current branch by pressing /.
-;; You can perform query-replace or query-replace-regexp on the function at
-;; point by pressing % or C-%
+
+;;;; Display
+;; Normally child branches correspond to functions/variables called by the parent
+;; branch. However, if you invert the tree by pressing i then the child branches
+;; will correspond to functions that call the parent branch.
+;; You can sort the tree in various different ways, and change the depth of the tree.
+;; You can also narrow the tree to the function at point by pressing /
+
+;;;; Exporting:
+;; The tree can be exported in its current state with the `simple-call-tree-export-org-tree'
+;; command, and you can alter the TODO state and types of links using options `simple-call-tree-org-todo-state',
+;; and `simple-call-tree-org-link-style'. This may be useful for project management.
+
+;;;; Refactoring
+;; You can perform `query-replace' or `query-replace-regexp' on the function at
+;; point by pressing % or C-%, or any other arbitrary command by pressing !
+;; This may be useful when refactoring.
 
 ;;; Installation:
 ;;
@@ -94,25 +104,33 @@
 ;; (global-set-key (kbd "C-c S") 'simple-call-tree-display-buffer)
 
 
-
-
-;;; Customize:
+;;; Customizable Options:
 ;;
-;; `simple-call-tree-default-recenter' : How to recenter the window after moving to another function in the "*Simple Call Tree*" 
-;;                                       buffer.
-;; `simple-call-tree-jump-ring-max' : Maximum number of elements in `simple-call-tree-jump-ring', before old elements are removed.
-
+;; Below are customizable option list:
+;;
+;;  `simple-call-tree-default-recenter'
+;;    How to recenter the window after moving to another function in the "*Simple Call Tree*" buffer.
+;;  `simple-call-tree-default-valid-fonts'
+;;    List of fonts to use for finding objects to include in the call tree.
+;;  `simple-call-tree-default-invalid-fonts'
+;;    List of fonts that should not be in the text property of any valid token.
+;;  `simple-call-tree-default-sort-method'
+;;    The default sort method to use when a call tree is newly created.
+;;  `simple-call-tree-default-maxdepth'
+;;    The depth at which new call trees should be displayed.
+;;  `simple-call-tree-major-mode-alist'
+;;    Alist of major modes, and information to use for identifying objects for the simple call tree.
+;;  `simple-call-tree-org-link-style'
+;;    Style used for links of child headers when exporting org tree using `simple-call-tree-export-org-tree'.
+;;  `simple-call-tree-org-todo-state'
+;;    TODO state to add to toplevel headers when exporting org tree using `simple-call-tree-export-org-tree'.
+;;  `simple-call-tree-jump-ring-max'
+;;    Maximum number of elements in `simple-call-tree-jump-ring', before old elements are removed.
 
 ;;
 ;; All of the above can customized by:
 ;;      M-x customize-group RET simple-call-tree+ RET
 ;;
-
-;;; Change log:
-;;	
-;; 2012/11/01
-;;      * First released.
-;; 
 
 ;;; Acknowledgements:
 ;;
@@ -458,9 +476,12 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
       ["Change Depth..." simple-call-tree-change-maxdepth
        :help "Change the depth of the tree"]
       ["Toggle Narrowing" simple-call-tree-toggle-narrowing
-       :help "Toggle between narrowed/wide buffer"
+       :help "Toggle between narrow/wide buffer"
        :style toggle
-       :selected (simple-call-tree-buffer-narrowed-p)]))
+       :selected (simple-call-tree-buffer-narrowed-p)]
+      ["---" "---"]
+      ["Export As Org-Tree" simple-call-tree-export-org-tree
+       :help "Export the call tree to an org-mode buffer"]))
   (setq mode-line-format
         (append
          (subseq mode-line-format 0
