@@ -65,6 +65,27 @@ Features that might be required by this library:
  command, and you can alter the TODO state and types of links using options `simple-call-tree-org-todo-state',
  and `simple-call-tree-org-link-style'. This may be useful for project management.
 
+* Customizable options
+You can customized the following options with: M-x customize-group simple-call-tree RET
+
+ - `simple-call-tree-default-recenter'
+    How to recenter the window after moving to another function in the "*Simple Call Tree*" buffer.
+ - `simple-call-tree-default-valid-fonts'
+    List of fonts to use for finding objects to include in the call tree.
+ - `simple-call-tree-default-invalid-fonts'
+    List of fonts that should not be in the text property of any valid token.
+ - `simple-call-tree-default-sort-method'
+    The default sort method to use when a call tree is newly created.
+ - `simple-call-tree-default-maxdepth'
+    The depth at which new call trees should be displayed.
+ - `simple-call-tree-major-mode-alist'
+    Alist of major modes, and information to use for identifying objects for the simple call tree.
+ - `simple-call-tree-org-link-style'
+    Style used for links of child headers when exporting org tree using `simple-call-tree-export-org-tree'.
+ - `simple-call-tree-org-todo-state'
+    TODO state to add to toplevel headers when exporting org tree using `simple-call-tree-export-org-tree'.
+ - `simple-call-tree-jump-ring-max'
+    Maximum number of elements in `simple-call-tree-jump-ring', before old elements are removed.
 * Installation
 
  - If you have [[http://www.marmalade-repo.org/][marmalade-repo.org]], this simple-call-tree+ is part of the emacs packages you can install.  Just type M-x package-install simple-call-tree+ marmalade 
