@@ -299,7 +299,7 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
                                (function :tag "Other function" :help-echo "Function for finding end of object"))))
   :link '(variable-link simple-call-tree-default-valid-fonts))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE 
 (defcustom simple-call-tree-org-link-style 'radio
   "Style used for links of child headers when exporting org tree using `simple-call-tree-export-org-tree'."
   :group 'simple-call-tree
@@ -307,7 +307,7 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
                  (const :tag "link to source code" source)))
 
 ;; simple-call-tree-info: APPT  
-(defcustom simple-call-tree-org-todo-states nil
+(defcustom simple-call-tree-org-todo-keywords nil
   "List of different TODO keywords, if nil then `org-todo-keywords' will be used."
   ;org-todo-keyword-faces
   ;org-highest-priority
@@ -316,11 +316,17 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
   :group 'simple-call-tree
   :type 'list)
 
-(defun simple-call-tree-org-todo-states nil
+(defcustom simple-call-tree-org-highest-priority org-highest-priority
+  "See `org-highest-priority'")
+
+(defcustom simple-call-tree-org-lowest-priority org-lowest-priority
+  "See `org-lowest-priority'")
+
+(defun simple-call-tree-org-todo-keywords nil
   "Return list of all TODO states.
-If `simple-call-tree-org-todo-states' is nil then the states in `org-todo-keywords' are returned
+If `simple-call-tree-org-todo-keywords' is nil then the states in `org-todo-keywords' are returned
 as a flat list."
-  (or simple-call-tree-org-todo-states
+  (or simple-call-tree-org-todo-keywords
       (remove-if (lambda (x) (or (symbolp x)
                                  (equal x "|")))
                  (mapcan 'identity org-todo-keywords))))
@@ -417,6 +423,8 @@ as a flat list."
   (define-key simple-call-tree-mode-map (kbd "R") 'simple-call-tree-build-tree)
   (define-key simple-call-tree-mode-map (kbd "<S-right>") 'simple-call-tree-next-todo)
   (define-key simple-call-tree-mode-map (kbd "<S-left>") 'simple-call-tree-prev-todo)
+  (define-key simple-call-tree-mode-map (kbd "<S-up>") 'simple-call-tree-up-priority)
+  (define-key simple-call-tree-mode-map (kbd "<S-down>") 'simple-call-tree-down-priority)
   (use-local-map simple-call-tree-mode-map)
   (easy-menu-define nil simple-call-tree-mode-map "test"
     `("Simple Call Tree"
@@ -791,7 +799,7 @@ The LOOKBACK argument indicates how many lines backwards to search and should be
                                          (func (or (simple-call-tree-get-parent)
                                                    (simple-call-tree-get-function-at-point))))
   (interactive (list (org-icompleting-read
-                      "State: " (simple-call-tree-org-todo-states)
+                      "State: " (simple-call-tree-org-todo-keywords)
                       nil t)))
   (simple-call-tree-set-attribute 'todo value func t))
 
@@ -801,11 +809,12 @@ The LOOKBACK argument indicates how many lines backwards to search and should be
   (let* ((func (or (simple-call-tree-get-parent)
                    (simple-call-tree-get-function-at-point)))
          (curtodo (fourth (car (simple-call-tree-get-item func))))
-         (states (simple-call-tree-org-todo-states))
+         (states (simple-call-tree-org-todo-keywords))
          (pos (position curtodo states :test 'equal)))
-    (simple-call-tree-set-todo
+    (simple-call-tree-set-attribute
+     'todo
      (nth (if pos (mod (1+ pos) (length states)) 0) states)
-     func)))
+     func t)))
 
 (defun simple-call-tree-prev-todo nil
   "Move to previous todo state for current function"
@@ -813,18 +822,40 @@ The LOOKBACK argument indicates how many lines backwards to search and should be
   (let* ((func (or (simple-call-tree-get-parent)
                    (simple-call-tree-get-function-at-point)))
          (curtodo (fourth (car (simple-call-tree-get-item func))))
-         (states (simple-call-tree-org-todo-states))
+         (states (simple-call-tree-org-todo-keywords))
          (pos (position curtodo states)))
-    (simple-call-tree-set-todo
+    (simple-call-tree-set-attribute
+     'todo
      (nth (if pos (mod (1- pos) (length states)) 0) states)
-     func)))
+     func t)))
 
-(defun simple-call-tree-set-priority (value &optional
-                                               (func (or (simple-call-tree-get-parent)
-                                                  (simple-call-tree-get-function-at-point))))
-  "Set the priority of the function at point."
-  (interactive (list (ido-completing-read "blah" simple-call-tree-org-priority-levels nil t)))
-  (simple-call-tree-set-attribute 'priority value func t))
+(defun simple-call-tree-up-priority nil
+  "Change current function to the next priority level."
+  (interactive)
+  (let* ((func (or (simple-call-tree-get-parent)
+                   (simple-call-tree-get-function-at-point)))
+         (curpriority (aand (fifth (car (simple-call-tree-get-item func)))
+                            (string-to-char it)))
+         (nextpriority (cond ((not curpriority) simple-call-tree-org-lowest-priority)
+                             ((and (<= curpriority simple-call-tree-org-lowest-priority)
+                                   (> curpriority simple-call-tree-org-highest-priority))
+                              (1- curpriority))
+                             ((= curpriority simple-call-tree-org-highest-priority) nil))))
+    (simple-call-tree-set-attribute 'priority (and nextpriority (char-to-string nextpriority)) func t)))
+
+(defun simple-call-tree-down-priority nil
+  "Change current function to the previous priority level."
+  (interactive)
+  (let* ((func (or (simple-call-tree-get-parent)
+                   (simple-call-tree-get-function-at-point)))
+         (curpriority (aand (fifth (car (simple-call-tree-get-item func)))
+                            (string-to-char it)))
+         (nextpriority (cond ((not curpriority) simple-call-tree-org-highest-priority)
+                             ((and (< curpriority simple-call-tree-org-lowest-priority)
+                                   (>= curpriority simple-call-tree-org-highest-priority))
+                              (1+ curpriority))
+                             ((= curpriority simple-call-tree-org-lowest-priority) nil))))
+    (simple-call-tree-set-attribute 'priority (and nextpriority (char-to-string nextpriority)) func t)))
 
 (defun simple-call-tree-set-tags (tags &optional
                                         (func (or (simple-call-tree-get-parent)
