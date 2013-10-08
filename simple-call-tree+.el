@@ -304,16 +304,24 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
   :type '(choice (const :tag "internal radio link" radio)
                  (const :tag "link to source code" source)))
 
-;; simple-call-tree-info: TODO
+;; simple-call-tree-info: TODO  
 (defcustom simple-call-tree-org-todo-states nil
   "List of different TODO keywords, if nil then `org-todo-keywords' will be used."
-  ;org-todo-keywords
   ;org-todo-keyword-faces
   ;org-highest-priority
   ;org-lowest-priority
   ;org-default-priority
   :group 'simple-call-tree
   :type 'list)
+
+(defun simple-call-tree-org-todo-states nil
+  "Return list of all TODO states.
+If `simple-call-tree-org-todo-states' is nil then the states in `org-todo-keywords' are returned
+as a flat list."
+  (or simple-call-tree-org-todo-states
+      (remove-if (lambda (x) (or (symbolp x)
+                                 (equal x "|")))
+                 (mapcan 'identity org-todo-keywords))))
 
 (defcustom simple-call-tree-org-priority-levels nil
   '("A" "B" "C" "D")
@@ -326,6 +334,10 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
 
 (defmacro whilenotlast (&rest forms)
   `(while (not (progn ,@forms))))
+
+(defmacro simple-call-tree-get-item (func)
+  "Return the item in `simple-call-tree-alist' corresponding with function named FUNC."
+  `(assoc-if (lambda (x) (string= (car x) ,func)) simple-call-tree-alist))
 
 ;; This is still not exactly right: it will match both abc & abc' on abc'
 ;; where ' could be any char in the expression prefix syntax class.
@@ -401,6 +413,8 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
   (define-key simple-call-tree-mode-map (kbd "M-n") 'simple-call-tree-jump-next)
   (define-key simple-call-tree-mode-map (kbd "w") 'widen)
   (define-key simple-call-tree-mode-map (kbd "R") 'simple-call-tree-build-tree)
+  (define-key simple-call-tree-mode-map (kbd "<S-right>") 'simple-call-tree-next-todo)
+  (define-key simple-call-tree-mode-map (kbd "<S-left>") 'simple-call-tree-prev-todo)
   (use-local-map simple-call-tree-mode-map)
   (easy-menu-define nil simple-call-tree-mode-map "test"
     `("Simple Call Tree"
@@ -640,8 +654,7 @@ By default it is set to a list containing the current buffer."
         (dolist (callee callees)
           (let* ((calleename (first callee))
                  (callerpos (second callee))
-                 (calleeitem (car (assoc-if (lambda (x) (string= (car x) calleename))
-                                            simple-call-tree-alist)))
+                 (calleeitem (car (simple-call-tree-get-item calleename)))
                  (elem (assoc-if (lambda (x) (string= (car x) calleename)) result)))
             (if elem
                 (setcdr elem (cons (list callername callerpos) (cdr elem)))
@@ -733,8 +746,7 @@ The LOOKBACK argument indicates how many lines backwards to search and should be
                                                        (simple-call-tree-get-function-at-point)))
                                              (updatesrc t))
   (let* ((item
-          (car (assoc-if (lambda (x) (string= (car x) func))
-                         simple-call-tree-alist)))
+          (car (simple-call-tree-get-item func)))
          (marker (second item))
          (buf (marker-buffer marker))
          (end (marker-position marker))
@@ -772,13 +784,38 @@ The LOOKBACK argument indicates how many lines backwards to search and should be
                  (simple-call-tree-insert-item item 1 nil)))
       (read-only-mode 1))))
 
+;; simple-call-tree-info: APPT  
 (defun* simple-call-tree-set-todo (value &optional
-                                        (func (or (simple-call-tree-get-parent)
-                                                  (simple-call-tree-get-function-at-point))))
-  (interactive (list (ido-completing-read "blah"
-                                          (or simple-call-tree-org-todo-states
-                                              org-todo-keywords) nil t)))
+                                         (func (or (simple-call-tree-get-parent)
+                                                   (simple-call-tree-get-function-at-point))))
+  (interactive (list (org-icompleting-read
+                      "State: " (simple-call-tree-org-todo-states)
+                      nil t)))
   (simple-call-tree-set-attribute 'todo value func t))
+
+(defun simple-call-tree-next-todo nil
+  "Move to next todo state for current function"
+  (interactive)
+  (let* ((func (or (simple-call-tree-get-parent)
+                   (simple-call-tree-get-function-at-point)))
+         (curtodo (fourth (car (simple-call-tree-get-item func))))
+         (states (simple-call-tree-org-todo-states))
+         (pos (position curtodo states :test 'equal)))
+    (simple-call-tree-set-todo
+     (nth (if pos (mod (1+ pos) (length states)) 0) states)
+     func)))
+
+(defun simple-call-tree-prev-todo nil
+  "Move to previous todo state for current function"
+  (interactive)
+  (let* ((func (or (simple-call-tree-get-parent)
+                   (simple-call-tree-get-function-at-point)))
+         (curtodo (fourth (car (simple-call-tree-get-item func))))
+         (states (simple-call-tree-org-todo-states))
+         (pos (position curtodo states)))
+    (simple-call-tree-set-todo
+     (nth (if pos (mod (1- pos) (length states)) 0) states)
+     func)))
 
 (defun simple-call-tree-set-priority (value &optional
                                                (func (or (simple-call-tree-get-parent)
@@ -859,7 +896,7 @@ otherwise it will be narrowed around FUNC."
   (interactive (list (if current-prefix-arg
                          (which-function)
                        (simple-call-tree-get-function-at-point (current-buffer)))))
-  (if (assoc-if (lambda (x) (string= (car x) func)) simple-call-tree-alist)
+  (if (simple-call-tree-get-item func)
       (if (get-buffer "*Simple Call Tree*")
           (switch-to-buffer "*Simple Call Tree*")
         (simple-call-tree-list-callers-and-functions))
@@ -913,7 +950,7 @@ FNAME must be the car of one of the elements of FUNCLIST which is set to `simple
 The optional arguments MAXDEPTH and CURDEPTH specify the maximum and current depth of the tree respectively.
 This is a recursive function, and you should not need to set CURDEPTH."
   (let* ((fname (first item))
-         (callees (cdr (assoc-if (lambda (x) (string= (car x) fname)) funclist)))
+         (callees (cdr (simple-call-tree-get-item fname)))
          done)
     (funcall displayfunc item curdepth inverted)
     (insert "\n")
@@ -924,7 +961,7 @@ This is a recursive function, and you should not need to set CURDEPTH."
           (add-to-list 'done (car callee))))))
 
 ;; Propertize todo, priority & tags appropriately
-;; simple-call-tree-info: TODO
+;; simple-call-tree-info: DELEGATED  
 (defun simple-call-tree-insert-item (item curdepth inverted)
   "Display ITEM at depth CURDEPTH in the call tree."
   (let* ((fname (first item))
@@ -1004,8 +1041,7 @@ If there is no parent, return nil."
   "Narrow the source buffer containing FUNC to that function.
 If optional arg POS is supplied then move point to POS after
 narrowing."
-  (let* ((trio (car (assoc-if (lambda (x) (string= (car x) func))
-                              simple-call-tree-alist)))
+  (let* ((trio (car (simple-call-tree-get-item func)))
          (buf (marker-buffer (second trio)))
          (start (marker-position (second trio)))
          (end (marker-position (third trio))))
@@ -1356,8 +1392,7 @@ and narrowing the buffer around FUNC."
   (interactive (list (read-command "Command: ")
                      (simple-call-tree-get-function-at-point)))
   (let ((buf (marker-buffer
-              (second (car (assoc-if (lambda (x) (string= (car x) func))
-                                     simple-call-tree-alist))))))
+              (second (car (simple-call-tree-get-item func))))))
     (switch-to-buffer-other-window buf)
     (simple-call-tree-narrow-to-function func)
     (call-interactively cmd)
