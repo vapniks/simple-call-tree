@@ -154,6 +154,7 @@
 (require 'org)
 ;;; Code:
 
+;; simple-call-tree-info: DELEGATED  
 (defgroup simple-call-tree nil
   "Simple call tree - display a simple call tree for functions in a buffer."
   :group 'tools
@@ -298,13 +299,14 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
                                (function :tag "Other function" :help-echo "Function for finding end of object"))))
   :link '(variable-link simple-call-tree-default-valid-fonts))
 
+;; simple-call-tree-info: DONE  
 (defcustom simple-call-tree-org-link-style 'radio
   "Style used for links of child headers when exporting org tree using `simple-call-tree-export-org-tree'."
   :group 'simple-call-tree
   :type '(choice (const :tag "internal radio link" radio)
                  (const :tag "link to source code" source)))
 
-;; simple-call-tree-info: TODO  
+;; simple-call-tree-info: APPT  
 (defcustom simple-call-tree-org-todo-states nil
   "List of different TODO keywords, if nil then `org-todo-keywords' will be used."
   ;org-todo-keyword-faces
@@ -745,8 +747,7 @@ The LOOKBACK argument indicates how many lines backwards to search and should be
                                              (func (or (simple-call-tree-get-parent)
                                                        (simple-call-tree-get-function-at-point)))
                                              (updatesrc t))
-  (let* ((item
-          (car (simple-call-tree-get-item func)))
+  (let* ((item (car (simple-call-tree-get-item func)))
          (marker (second item))
          (buf (marker-buffer marker))
          (end (marker-position marker))
@@ -777,14 +778,15 @@ The LOOKBACK argument indicates how many lines backwards to search and should be
     (save-excursion
       (goto-char (point-min))
       (read-only-mode -1)
-      (if (re-search-forward            ;dont be tempted to use `outline-regexp' here!
+      (if (re-search-forward            ;don't be tempted to use `outline-regexp' here!
            (concat "^|\\(\\( \\w+\\)?\\)\\(\\( \\[#.\\]\\)?\\) " func
                    "\\(\\s-*\\(:[a-zA-Z0-9:,;-_]+:\\)?\\)\\s-*$") nil t)
-          (progn (kill-line 0)
+          (progn (show-children)        ;hack! otherwise it doesn't always work properly
+                 (kill-line 0)
                  (simple-call-tree-insert-item item 1 nil)))
       (read-only-mode 1))))
 
-;; simple-call-tree-info: APPT  
+;; simple-call-tree-info: TODO  
 (defun* simple-call-tree-set-todo (value &optional
                                          (func (or (simple-call-tree-get-parent)
                                                    (simple-call-tree-get-function-at-point))))
