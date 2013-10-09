@@ -299,14 +299,14 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
                                (function :tag "Other function" :help-echo "Function for finding end of object"))))
   :link '(variable-link simple-call-tree-default-valid-fonts))
 
-;; simple-call-tree-info: DONE 
+;; simple-call-tree-info: DONE [#A] 
 (defcustom simple-call-tree-org-link-style 'radio
   "Style used for links of child headers when exporting org tree using `simple-call-tree-export-org-tree'."
   :group 'simple-call-tree
   :type '(choice (const :tag "internal radio link" radio)
                  (const :tag "link to source code" source)))
 
-;; simple-call-tree-info: APPT  :this:test:
+;; simple-call-tree-info: APPT [#A] :this:test:
 (defcustom simple-call-tree-org-todo-keywords nil
   "List of different TODO keywords, if nil then `org-todo-keywords' will be used."
   :group 'simple-call-tree
@@ -753,7 +753,7 @@ The LOOKBACK argument indicates how many lines backwards to search and should be
          end t)
         (progn
           (aif (match-string 1) (setq todo (substring-no-properties it)))
-          (aif (match-string 3) (setq priority (substring-no-properties it)))
+          (aif (match-string 3) (setq priority (string-to-char it)))
           (setq tags (simple-call-tree-string-to-tags (match-string 5)))))
     (goto-char end)
     (list todo priority tags)))
@@ -769,24 +769,25 @@ ATTR can be one of: 'todo, 'priority, or 'tags
 VALUE is the corresponding value: a string for 'todo or 'priority (a single letter), or a list of strings for 'tags.
 FUNC is the name of the function corresponding to the item to be updated.
 The *Simple Call Tree* buffer and comments in the source code (just before FUNC) will be updated with the corresponding
-information. If UPDATESRC is nil then don't bother updating the source code.
-"
+information. If UPDATESRC is nil then don't bother updating the source code."
   (let* ((item (car (simple-call-tree-get-item func)))
          (marker (second item))
          (buf (marker-buffer marker))
          (end (marker-position marker))
          srcval)
     (case attr
-      (todo (unless (stringp value) (error "Invalid TODO value"))
-            (setf newval value
-                  srcval (concat value " \\2 \\3")
+      (todo (unless (or (not value) (stringp value))
+              (error "Invalid TODO value"))
+            (setf newval (or value "")
+                  srcval (concat newval " \\2 \\3")
                   (fourth item) value))
-      (priority (unless (and (integerp value)
-                             (>= value simple-call-tree-org-highest-priority)
-                             (<= value simple-call-tree-org-lowest-priority))
+      (priority (unless (or (not value)
+                            (and (integerp value)
+                                 (>= value simple-call-tree-org-highest-priority)
+                                 (<= value simple-call-tree-org-lowest-priority)))
                   (error "Invalid priority value"))
-                (setf newval (char-to-string value)
-                      srcval (concat "\\1" (if value (concat " [#" newval "]") nil) " \\3")
+                (setf newval (if value (concat "[#" (char-to-string value) "]") "")
+                      srcval (concat "\\1 " (if value newval nil) " \\3")
                       (fifth item) value))
       (tags (unless (listp tags) (error "Invalid tags value"))
             (setf newval (simple-call-tree-tags-to-string value)
@@ -804,7 +805,7 @@ information. If UPDATESRC is nil then don't bother updating the source code.
               (goto-char end)
               (forward-line -1)
               (end-of-line)
-              (insert "\nsimple-call-tree-info: " newval)
+              (insert "\nsimple-call-tree-info: " (or newval ""))
               (setq end (point))
               (beginning-of-line)
               (comment-region (point) end)))))
@@ -854,10 +855,24 @@ information. If UPDATESRC is nil then don't bother updating the source code.
      (nth (if pos (mod (1- pos) (length states)) 0) states)
      func t)))
 
-(defun simple-call-tree-set-priority nil
+;; simple-call-tree-info: [#A] 
+(defun* simple-call-tree-set-priority (value &optional
+                                            (func (or (simple-call-tree-get-parent)
+                                                      (simple-call-tree-get-function-at-point))))
   "Set the priority level to VALUE for the function FUNC.
-VALUE should be a letter"
-  )
+VALUE should be a letter, and FUNC should be the name of a function (default = the parent of the function at point).
+When called interactively VALUE is prompted for and FUNC is set to the parent of the function at point."
+  (interactive (progn (message "Priority %c-%c, SPC to remove: "
+                               simple-call-tree-org-highest-priority simple-call-tree-org-lowest-priority)
+                      (list (read-char-exclusive))))
+  (cond ((not value) t)
+        ((equal value ?\ ) (setq value nil))
+        ((or (< (upcase value) simple-call-tree-org-highest-priority)
+             (> (upcase value) simple-call-tree-org-lowest-priority))
+         (user-error "Priority must be between `%c' and `%c'"
+                     simple-call-tree-org-highest-priority
+                     simple-call-tree-org-lowest-priority)))
+  (simple-call-tree-set-attribute 'priority (and value (upcase value)) func t))
 
 (defun simple-call-tree-up-priority nil
   "Change current function to the next priority level."
@@ -1036,7 +1051,7 @@ This is a recursive function, and you should not need to set CURDEPTH."
          (priority (fifth item))
          (tags (simple-call-tree-tags-to-string (sixth item)))
          (pre (concat (if todo (concat " " todo))
-                      (if priority (concat " [#" priority "]"))))
+                      (if priority (concat " [#" (char-to-string priority) "]"))))
          (arrowtail (make-string (* 2 (1- curdepth)) 45))
          (arrow (if inverted (concat (if (> curdepth 1) "<" pre) arrowtail " ")
                   (concat arrowtail (if (> curdepth 1) ">" pre) " ")))
