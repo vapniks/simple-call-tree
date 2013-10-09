@@ -777,11 +777,20 @@ information. If UPDATESRC is nil then don't bother updating the source code.
          (end (marker-position marker))
          srcval)
     (case attr
-      (todo (setf srcval (concat value " \\2 \\3")
+      (todo (unless (stringp value) (error "Invalid TODO value"))
+            (setf newval value
+                  srcval (concat value " \\2 \\3")
                   (fourth item) value))
-      (priority (setf srcval (concat "\\1" (if value (concat " [#" value "]") nil) " \\3")
+      (priority (unless (and (integerp value)
+                             (>= value simple-call-tree-org-highest-priority)
+                             (<= value simple-call-tree-org-lowest-priority))
+                  (error "Invalid priority value"))
+                (setf newval (char-to-string value)
+                      srcval (concat "\\1" (if value (concat " [#" newval "]") nil) " \\3")
                       (fifth item) value))
-      (tags (setf srcval (concat "\\1 \\2 " (simple-call-tree-tags-to-string value))
+      (tags (unless (listp tags) (error "Invalid tags value"))
+            (setf newval (simple-call-tree-tags-to-string value)
+                  srcval (concat "\\1 \\2 " newval)
                   (sixth item) value)))
     (if updatesrc
         (with-current-buffer buf
@@ -795,17 +804,17 @@ information. If UPDATESRC is nil then don't bother updating the source code.
               (goto-char end)
               (forward-line -1)
               (end-of-line)
-              (insert "\nsimple-call-tree-info: " value)
+              (insert "\nsimple-call-tree-info: " newval)
               (setq end (point))
               (beginning-of-line)
               (comment-region (point) end)))))
     (save-excursion
       (goto-char (point-min))
       (read-only-mode -1)
-      (if (re-search-forward            ;don't be tempted to use `outline-regexp' here!
+      (if (re-search-forward ;don't be tempted to use `outline-regexp' here!
            (concat "^|\\(\\( \\w+\\)?\\)\\(\\( \\[#.\\]\\)?\\) " func
                    "\\(\\s-*\\(:[a-zA-Z0-9:,;-_]+:\\)?\\)\\s-*$") nil t)
-          (progn (show-children)        ;hack! otherwise it doesn't always work properly
+          (progn (show-children) ;hack! otherwise it doesn't always work properly
                  (kill-line 0)
                  (simple-call-tree-insert-item item 1 nil)))
       (read-only-mode 1))))
@@ -855,28 +864,26 @@ VALUE should be a letter"
   (interactive)
   (let* ((func (or (simple-call-tree-get-parent)
                    (simple-call-tree-get-function-at-point)))
-         (curpriority (aand (fifth (car (simple-call-tree-get-item func)))
-                            (string-to-char it)))
+         (curpriority (fifth (car (simple-call-tree-get-item func))))
          (nextpriority (cond ((not curpriority) simple-call-tree-org-lowest-priority)
                              ((and (<= curpriority simple-call-tree-org-lowest-priority)
                                    (> curpriority simple-call-tree-org-highest-priority))
                               (1- curpriority))
                              ((= curpriority simple-call-tree-org-highest-priority) nil))))
-    (simple-call-tree-set-attribute 'priority (and nextpriority (char-to-string nextpriority)) func t)))
+    (simple-call-tree-set-attribute 'priority nextpriority func t)))
 
 (defun simple-call-tree-down-priority nil
   "Change current function to the previous priority level."
   (interactive)
   (let* ((func (or (simple-call-tree-get-parent)
                    (simple-call-tree-get-function-at-point)))
-         (curpriority (aand (fifth (car (simple-call-tree-get-item func)))
-                            (string-to-char it)))
+         (curpriority (fifth (car (simple-call-tree-get-item func))))
          (nextpriority (cond ((not curpriority) simple-call-tree-org-highest-priority)
                              ((and (< curpriority simple-call-tree-org-lowest-priority)
                                    (>= curpriority simple-call-tree-org-highest-priority))
                               (1+ curpriority))
                              ((= curpriority simple-call-tree-org-lowest-priority) nil))))
-    (simple-call-tree-set-attribute 'priority (and nextpriority (char-to-string nextpriority)) func t)))
+    (simple-call-tree-set-attribute 'priority nextpriority func t)))
 
 (defun* simple-call-tree-set-tags (value &optional
                                          (func (or (simple-call-tree-get-parent)
