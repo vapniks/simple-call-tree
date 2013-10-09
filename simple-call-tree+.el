@@ -433,6 +433,8 @@ as a flat list."
   (define-key simple-call-tree-mode-map (kbd "<S-down>") 'simple-call-tree-down-priority)
   (define-key simple-call-tree-mode-map (kbd "C-c C-c") 'simple-call-tree-set-tags)
   (define-key simple-call-tree-mode-map (kbd "C-c C-q") 'simple-call-tree-set-tags)
+  (define-key simple-call-tree-mode-map (kbd "C-c C-t") 'simple-call-tree-set-todo)
+  (define-key simple-call-tree-mode-map (kbd "C-c ,") 'simple-call-tree-set-priority)
   (use-local-map simple-call-tree-mode-map)
   (easy-menu-define nil simple-call-tree-mode-map "test"
     `("Simple Call Tree"
@@ -618,7 +620,7 @@ By default it is set to a list containing the current buffer."
   (interactive)
   (setq simple-call-tree-alist nil)
   ;; First add all the functions defined in the buffers to simple-call-tree-alist.
-  (let (pos oldpos count1 pair nextfunc item endtest oldpos startmark endmark tags)
+  (let (pos oldpos count1 pair nextfunc item endtest oldpos startmark endmark attribs)
     (dolist (buf buffers)
       (with-current-buffer buf
         (font-lock-default-fontify-buffer)
@@ -630,7 +632,7 @@ By default it is set to a list containing the current buffer."
                        pos (car pair)
                        nextfunc (cdr pair))
             (goto-char pos)
-            (setq tags (simple-call-tree-get-tags))
+            (setq attribs (simple-call-tree-get-attribs))
             (setq startmark (point-marker))
             (cond ((functionp endtest) (funcall endtest))
                   (endtest (end-of-defun))
@@ -639,9 +641,9 @@ By default it is set to a list containing the current buffer."
                   (t (goto-char (point-max))))
             (setq endmark (point-marker))
             (add-to-list 'simple-call-tree-alist (list (list nextfunc startmark endmark
-                                                             (car tags)
-                                                             (second tags)
-                                                             (third tags))))
+                                                             (car attribs)
+                                                             (second attribs)
+                                                             (third attribs))))
             (setq count1 (1+ count1))
             (message "Identifying functions...%d:%s" count1 nextfunc)))))
     ;; Now find functions called
@@ -741,7 +743,7 @@ nil."
         (cons end (buffer-substring start end))))))
 
 ;; simple-call-tree-info:  
-(defun* simple-call-tree-get-tags (&optional (lookback -5))
+(defun* simple-call-tree-get-attribs (&optional (lookback -5))
   "Extract TODO state, priority, and tags from lines previous to the current one.
 The LOOKBACK argument indicates how many lines backwards to search and should be negative."
   (let ((end (point)) todo priority tags)
@@ -842,6 +844,11 @@ information. If UPDATESRC is nil then don't bother updating the source code.
      'todo
      (nth (if pos (mod (1- pos) (length states)) 0) states)
      func t)))
+
+(defun simple-call-tree-set-priority nil
+  "Set the priority level to VALUE for the function FUNC.
+VALUE should be a letter"
+  )
 
 (defun simple-call-tree-up-priority nil
   "Change current function to the next priority level."
