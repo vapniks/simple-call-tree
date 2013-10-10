@@ -723,11 +723,11 @@ If there is no function on this line of the *Simple Call Tree* buffer, return ni
           (goto-char (line-beginning-position))
           (if (re-search-forward (concat outline-regexp "\\(\\S-+\\)")
                                  (line-end-position) t)
-              (substring-no-properties (match-string 6))
+              (match-string 6)
             (previous-line)
             (re-search-forward (concat outline-regexp "\\(\\S-+\\)")
                                (line-end-position) t)
-            (substring-no-properties (match-string 6))))
+            (match-string 6)))
       (symbol-name (if (functionp 'symbol-nearest-point)
                        (symbol-nearest-point)
                      (symbol-at-point))))))
@@ -1346,6 +1346,7 @@ the source buffer to the function."
         (middle (recenter))
         (bottom (recenter -1))))))
 
+;; simple-call-tree-info: TODO  
 (defun* simple-call-tree-jump-to-function (fnstr &optional skipring)
   "Move cursor to the line corresponding to the function with name FNSTR.
 When called interactively FNSTR will be set to the function name under point,
@@ -1360,11 +1361,17 @@ prefix arg) then the function name will be added to `simple-call-tree-jump-ring'
                        (simple-call-tree-get-function-at-point))
                      (< (prefix-numeric-value current-prefix-arg) 0)))
   (let* ((narrowedp (simple-call-tree-buffer-narrowed-p))
-         (fnregex (regexp-opt (list fnstr))))
+         (fnregex (regexp-opt (list fnstr)))
+         (face (get-text-property 0 'face fnstr)))
     (widen)
     (with-current-buffer "*Simple Call Tree*"
       (goto-char (point-min))
-      (re-search-forward (concat "^|\\( \\w+\\)?\\( \\[#.\\]\\)? " fnregex "\\s-*\\(:.*:\\)?$"))
+      (re-search-forward (concat "^|\\( \\w+\\)?\\( \\[#.\\]\\)? \\(" fnregex "\\)\\s-*\\(:.*:\\)?$"))
+      (while (and face
+                  (not (equal face (get-text-property 0 'face (match-string 3))))
+                  (not (member face (get-text-property 0 'face (match-string 3))))
+                  (not (member (get-text-property 0 'face (match-string 3)) face)))
+        (re-search-forward (concat "^|\\( \\w+\\)?\\( \\[#.\\]\\)? \\(" fnregex "\\)\\s-*\\(:.*:\\)?$")))
       (re-search-backward fnregex)
       (unless skipring (simple-call-tree-jump-ring-add fnstr))
       (if narrowedp (simple-call-tree-toggle-narrowing)
