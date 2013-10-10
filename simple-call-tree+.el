@@ -1359,11 +1359,13 @@ prefix arg) then the function name will be added to `simple-call-tree-jump-ring'
                            (completing-read "Jump to function: " (mapcar 'caar simple-call-tree-alist)))
                        (simple-call-tree-get-function-at-point))
                      (< (prefix-numeric-value current-prefix-arg) 0)))
-  (let* ((narrowedp (simple-call-tree-buffer-narrowed-p)))
+  (let* ((narrowedp (simple-call-tree-buffer-narrowed-p))
+         (fnregex (regexp-opt (list fnstr))))
     (widen)
     (with-current-buffer "*Simple Call Tree*"
       (goto-char (point-min))
-      (re-search-forward (concat "^|\\( \\w+\\)?\\( \\[#.\\]\\)? " (regexp-opt (list fnstr)) "\\s-*$"))
+      (re-search-forward (concat "^|\\( \\w+\\)?\\( \\[#.\\]\\)? " fnregex "\\s-*\\(:.*:\\)?$"))
+      (re-search-backward fnregex)
       (unless skipring (simple-call-tree-jump-ring-add fnstr))
       (if narrowedp (simple-call-tree-toggle-narrowing)
         (case simple-call-tree-default-recenter
