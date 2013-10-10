@@ -201,7 +201,7 @@ The children of each header will be sorted separately."
   :group 'simple-call-tree
   :type 'integer)
 
-;; simple-call-tree-info: TODO [#A] 
+;; simple-call-tree-info:  [#A] 
 (defcustom simple-call-tree-major-mode-alist
   '((emacs-lisp-mode (font-lock-function-name-face
                       font-lock-variable-name-face
@@ -839,38 +839,44 @@ information. If UPDATESRC is nil then don't bother updating the source code."
       (read-only-mode 1))))
 
 ;; simple-call-tree-info:   
-(defun* simple-call-tree-set-todo (value &optional
-                                         (func (or (simple-call-tree-get-parent)
-                                                   (simple-call-tree-get-function-at-point))))
-  (interactive (list (org-icompleting-read
-                      "State: " (simple-call-tree-org-todo-keywords)
-                      nil t)))
-  (simple-call-tree-set-attribute 'todo value func t))
+(defun* simple-call-tree-set-todo nil
+  "Set the TODO state for the function at point.
+If a prefix arg is used then remove the TODO state."
+  (interactive)
+  (let ((value (if current-prefix-arg nil
+                 (org-icompleting-read
+                  "State: " (simple-call-tree-org-todo-keywords)
+                  nil t))))
+    (simple-call-tree-set-attribute 'todo value)))
 
 (defun simple-call-tree-next-todo nil
-  "Move to next todo state for current function"
+  "Move to next todo state for current function."
   (interactive)
   (let* ((func (or (simple-call-tree-get-parent)
                    (simple-call-tree-get-function-at-point)))
          (curtodo (fourth (car (simple-call-tree-get-item func simple-call-tree-alist))))
          (states (simple-call-tree-org-todo-keywords))
+         (len (length states))
          (pos (position curtodo states :test 'equal)))
     (simple-call-tree-set-attribute
      'todo
-     (nth (if pos (mod (1+ pos) (length states)) 0) states)
+     (if pos (if (< pos (1- len)) (nth (1+ pos) states))
+       (car states))     
      func t)))
 
 (defun simple-call-tree-prev-todo nil
-  "Move to previous todo state for current function"
+  "Move to previous todo state for current function."
   (interactive)
   (let* ((func (or (simple-call-tree-get-parent)
                    (simple-call-tree-get-function-at-point)))
          (curtodo (fourth (car (simple-call-tree-get-item func simple-call-tree-alist))))
          (states (simple-call-tree-org-todo-keywords))
+         (len (length states))
          (pos (position curtodo states)))
     (simple-call-tree-set-attribute
      'todo
-     (nth (if pos (mod (1- pos) (length states)) 0) states)
+     (if pos (if (> pos 0) (nth (1- pos) states))
+       (nth (1- len) states))
      func t)))
 
 ;; simple-call-tree-info: TODO  
