@@ -603,6 +603,7 @@ as a flat list."
                  (+ 2 (position 'mode-line-buffer-identification
                                 mode-line-format))))))
 
+;; simple-call-tree-info:   
 (defvar simple-call-tree-alist nil
   "Alist of functions and the functions they call, and markers for their locations.
 Each element is a list of lists. The first list in each element is in the form
@@ -650,6 +651,9 @@ be shown in the tree.")
 (defvar simple-call-tree-tags-regexp
   "simple-call-tree-info:\\s-*\\(\\w+\\)?\\s-*\\(\\[#[A-Z]\\]\\)?\\s-*\\(:[a-zA-Z0-9:,;-_]+:\\)?"
   "Regular expression to match org properties (todo, priority & tags) in source code.")
+
+(defvar simple-call-tree-marked-items nil
+  "List of names of items in the *Simple Call Tree* buffer that are or should be marked.")
 
 ;;; Functions from simple-call-tree.el (some are rewritten)
 (defun simple-call-tree-add (start end alist)
@@ -793,8 +797,8 @@ nil."
         (cons end (buffer-substring start end))))))
 
 ;; simple-call-tree-info:  
-(defun* simple-call-tree-get-attribs (&optional (lookback -5))
-  "Extract TODO state, priority, and tags from lines previous to the current one.
+(defun* simple-call-tree-get-attribs (&optional (lookback -2))
+  "Extract org attributes from item in source code from lines previous to the current one.
 The LOOKBACK argument indicates how many lines backwards to search and should be negative."
   (let ((end (point)) todo priority tags)
     (forward-line lookback)
@@ -862,11 +866,10 @@ information. If UPDATESRC is nil then don't bother updating the source code."
     (save-excursion
       (goto-char (point-min))
       (read-only-mode -1)
-      (if (re-search-forward ;don't be tempted to use `outline-regexp' here!
-           (concat "^|\\(\\( \\w+\\)?\\)\\(\\( \\[#.\\]\\)?\\) " func
-                   "\\(\\s-*\\(:[a-zA-Z0-9:,;-_]+:\\)?\\)\\s-*$") nil t)
+      (if (simple-call-tree-goto-func func)
           (progn (show-children) ;hack! otherwise it doesn't always work properly
-                 (kill-line 0)
+                 (beginning-of-line)
+                 (kill-line)
                  (simple-call-tree-insert-item item 1 nil)))
       (read-only-mode 1))))
 
@@ -1015,7 +1018,8 @@ listed in `simple-call-tree-buffers' will be used."
     (size (simple-call-tree-sort-by-size))
     (priority (simple-call-tree-sort-by-priority))
     (todo (simple-call-tree-sort-by-todo)))
-  (setq simple-call-tree-inverted nil)
+  (setq simple-call-tree-inverted nil
+        simple-call-tree-marked-items nil)
   (simple-call-tree-list-callers-and-functions)
   (setq simple-call-tree-buffers buffers))
 
@@ -1449,6 +1453,26 @@ the source buffer to the function."
         (middle (recenter))
         (bottom (recenter -1))))))
 
+(defun simple-call-tree-goto-func (fnstr)
+  "Move the cursor in the *Simple Call Tree* buffer to the item with name FNSTR.
+If available the 'face property of FNSTR is checked to make sure we have the correct item
+for cases where there are two different types of object with the same name.
+Return the position of the start of the item or nil if it couldn't be found."
+  (let* ((fnregex (regexp-opt (list fnstr)))
+         (lineregex (concat "^|\\( \\w+\\)?\\( \\[#.\\]\\)? \\(" fnregex "\\)\\s-*\\(:.*:\\)?$"))
+         (face (get-text-property 0 'face fnstr))
+         found)
+    (with-current-buffer "*Simple Call Tree*"
+      (widen)
+      (goto-char (point-min))
+      (if (setq found (re-search-forward lineregex nil t))
+          (progn (while (and found face
+                             (not (equal face (get-text-property 0 'face (match-string 3))))
+                             (not (member face (get-text-property 0 'face (match-string 3))))
+                             (not (member (get-text-property 0 'face (match-string 3)) face)))
+                   (setq found (re-search-forward lineregex nil t)))
+                 (if found (re-search-backward fnregex)))))))
+
 ;; simple-call-tree-info:   
 (defun* simple-call-tree-jump-to-function (fnstr &optional skipring)
   "Move cursor to the line corresponding to the function with name FNSTR.
@@ -1463,26 +1487,15 @@ prefix arg) then the function name will be added to `simple-call-tree-jump-ring'
                            (completing-read "Jump to function: " (mapcar 'caar simple-call-tree-alist)))
                        (simple-call-tree-get-function-at-point))
                      (< (prefix-numeric-value current-prefix-arg) 0)))
-  (let* ((narrowedp (simple-call-tree-buffer-narrowed-p))
-         (fnregex (regexp-opt (list fnstr)))
-         (face (get-text-property 0 'face fnstr)))
-    (widen)
-    (with-current-buffer "*Simple Call Tree*"
-      (goto-char (point-min))
-      (re-search-forward (concat "^|\\( \\w+\\)?\\( \\[#.\\]\\)? \\(" fnregex "\\)\\s-*\\(:.*:\\)?$"))
-      (while (and face
-                  (not (equal face (get-text-property 0 'face (match-string 3))))
-                  (not (member face (get-text-property 0 'face (match-string 3))))
-                  (not (member (get-text-property 0 'face (match-string 3)) face)))
-        (re-search-forward (concat "^|\\( \\w+\\)?\\( \\[#.\\]\\)? \\(" fnregex "\\)\\s-*\\(:.*:\\)?$")))
-      (re-search-backward fnregex)
-      (unless skipring (simple-call-tree-jump-ring-add fnstr))
-      (if narrowedp (simple-call-tree-toggle-narrowing)
-        (case simple-call-tree-default-recenter
-          (top (recenter 0))
-          (middle (recenter))
-          (bottom (recenter -1))
-          (t (recenter arg)))))))
+  (let* ((narrowedp (simple-call-tree-buffer-narrowed-p)))
+    (simple-call-tree-goto-func fnstr)
+    (unless skipring (simple-call-tree-jump-ring-add fnstr))
+    (if narrowedp (simple-call-tree-toggle-narrowing -1)
+      (case simple-call-tree-default-recenter
+        (top (recenter 0))
+        (middle (recenter))
+        (bottom (recenter -1))
+        (t (recenter arg))))))
 
 (defun simple-call-tree-jump-prev nil
   "Jump to the previous function in the `simple-call-tree-jump-ring'.
@@ -1652,7 +1665,8 @@ With a prefix arg, and if the form is a function, instrument it for debugging wi
   "Mark the item named FUNC."
   (interactive (list (or (simple-call-tree-get-parent)
                          (simple-call-tree-get-function-at-point))))
-  )
+  (add-to-list simple-call-tree-marked-items func)
+  (simple-call-tree-goto-func func))
 
 ;; simple-call-tree-info: STARTED [#B] 
 (defun simple-call-tree-unmark (func)
