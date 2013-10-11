@@ -194,7 +194,7 @@ The children of each header will be sorted separately."
   :group 'simple-call-tree
   :type '(choice (const :tag "Sort by position" position)
                  (const :tag "Sort by name" name)
-                 (const :tag "Sort by number of children" numchild)
+                 (const :tag "Sort by number of descendants" numdescend)
                  (const :tag "Sort by size" size)
                  (const :tag "Sort by face" face)
                  (const :tag "Sort by TODO state" todo)
@@ -422,10 +422,10 @@ as a flat list."
   (define-key simple-call-tree-mode-map (kbd "q") 'simple-call-tree-quit)
   (define-prefix-command 'simple-call-tree-sort-map)
   (define-key simple-call-tree-mode-map (kbd "s") 'simple-call-tree-sort-map)
-  (define-key simple-call-tree-mode-map (kbd "s a") 'simple-call-tree-sort-by-name)
+  (define-key simple-call-tree-mode-map (kbd "s n") 'simple-call-tree-sort-by-name)
   (define-key simple-call-tree-mode-map (kbd "s p") 'simple-call-tree-sort-by-position)
   (define-key simple-call-tree-mode-map (kbd "s f") 'simple-call-tree-sort-by-face)
-  (define-key simple-call-tree-mode-map (kbd "s c") 'simple-call-tree-sort-by-num-children)
+  (define-key simple-call-tree-mode-map (kbd "s d") 'simple-call-tree-sort-by-num-descendants)
   (define-key simple-call-tree-mode-map (kbd "s s") 'simple-call-tree-sort-by-size)
   (define-key simple-call-tree-mode-map (kbd "s T") 'simple-call-tree-sort-by-todo)
   (define-key simple-call-tree-mode-map (kbd "s P") 'simple-call-tree-sort-by-priority)
@@ -568,7 +568,7 @@ as a flat list."
       ["Sort Tree..." (keymap "Sort"
                        (name menu-item "By name" simple-call-tree-sort-by-name)
                        (position menu-item "By position" simple-call-tree-sort-by-position)
-                       (numchild menu-item "By number of children" simple-call-tree-sort-by-num-children)
+                       (numdescend menu-item "By number of descendants" simple-call-tree-sort-by-num-descendants)
                        (size menu-item "By size" simple-call-tree-sort-by-size)                       
                        (face menu-item "By face/type" simple-call-tree-sort-by-face)
                        (todo menu-item "By TODO state" simple-call-tree-sort-by-todo)
@@ -593,7 +593,7 @@ as a flat list."
                                        (case simple-call-tree-current-sort-order
                                          (position "by position|")
                                          (name "by name|")
-                                         (numchild "by number of children|")
+                                         (numdescend "by number of descendants|")
                                          (size "by size|")
                                          (face "by face|")
                                          (todo "by TODO|")
@@ -913,8 +913,8 @@ If a prefix arg is used then remove the TODO state."
 
 ;; simple-call-tree-info:   
 (defun* simple-call-tree-set-priority (value &optional
-                                            (func (or (simple-call-tree-get-parent)
-                                                      (simple-call-tree-get-function-at-point))))
+                                             (func (or (simple-call-tree-get-parent)
+                                                       (simple-call-tree-get-function-at-point))))
   "Set the priority level to VALUE for the function FUNC.
 VALUE should be a letter, and FUNC should be the name of a function (default = the parent of the function at point).
 When called interactively VALUE is prompted for and FUNC is set to the parent of the function at point."
@@ -1010,8 +1010,11 @@ listed in `simple-call-tree-buffers' will be used."
   (case simple-call-tree-default-sort-method
     (name (simple-call-tree-sort-by-name))
     (position (simple-call-tree-sort-by-position))
-    (numchild (simple-call-tree-sort-by-face))
-    (face (simple-call-tree-sort-by-face)))
+    (numdescend (simple-call-tree-sort-by-num-descendants))
+    (face (simple-call-tree-sort-by-face))
+    (size (simple-call-tree-sort-by-size))
+    (priority (simple-call-tree-sort-by-priority))
+    (todo (simple-call-tree-sort-by-todo)))
   (setq simple-call-tree-inverted nil)
   (simple-call-tree-list-callers-and-functions)
   (setq simple-call-tree-buffers buffers))
@@ -1194,18 +1197,20 @@ narrowing."
 
 (defun simple-call-tree-sort (predicate)
   "Sort the branches and sub-branches of `simple-call-tree-alist' and `simple-call-tree-inverted-alist' by predicate."
-  (dolist (branch simple-call-tree-alist)
-    (setcdr branch (sort (cdr branch) predicate)))
-  (setq simple-call-tree-alist
-        (sort simple-call-tree-alist
-              (lambda (a b)
-                (funcall predicate (car a) (car b)))))
-  (dolist (branch simple-call-tree-inverted-alist)
-    (setcdr branch (sort (cdr branch) predicate)))
-  (setq simple-call-tree-inverted-alist
-        (sort simple-call-tree-inverted-alist
-              (lambda (a b)
-                (funcall predicate (car a) (car b))))))
+  (let ((invertedtree nil))
+    (dolist (branch simple-call-tree-alist)
+      (setcdr branch (sort (cdr branch) predicate)))
+    (setq simple-call-tree-alist
+          (sort simple-call-tree-alist
+                (lambda (a b)
+                  (funcall predicate (car a) (car b)))))
+    (setq invertedtree t)
+    (dolist (branch simple-call-tree-inverted-alist)
+      (setcdr branch (sort (cdr branch) predicate)))
+    (setq simple-call-tree-inverted-alist
+          (sort simple-call-tree-inverted-alist
+                (lambda (a b)
+                  (funcall predicate (car a) (car b)))))))
 
 (defun simple-call-tree-reverse nil
   "Reverse the order of the branches & sub-branches in `simple-call-tree-alist' and `simple-call-tree-inverted-alist'."
@@ -1218,19 +1223,31 @@ narrowing."
   (setq simple-call-tree-inverted-alist (reverse simple-call-tree-inverted-alist))
   (simple-call-tree-restore-state (simple-call-tree-store-state)))
 
-;; Prompt user for depth to count at
-;; simple-call-tree-info: TODO [#A] 
-(defun simple-call-tree-sort-by-num-children nil
-  "Sort the branches in the *Simple Call Tree* buffer by the number of children."
-  (interactive)
-  (setq simple-call-tree-alist
-        (sort simple-call-tree-alist
-              (lambda (a b) (> (length a) (length b)))))
-  (setq simple-call-tree-inverted-alist
-        (sort simple-call-tree-inverted-alist
-              (lambda (a b) (> (length a) (length b)))))
+(defun simple-call-tree-count-descendants (func depth alist)
+  "Count the number of descendents of item named FUNC to depth DEPTH."
+  (let ((item (simple-call-tree-get-item func alist)))
+    (+ (1- (length item))
+       (if (> depth 1)
+           (loop for child in (cdr item)
+                 sum (simple-call-tree-count-descendants (car child) 
+                                                      (1- depth)
+                                                      alist))
+         0))))
+
+;; simple-call-tree-info: DONE  
+(defun simple-call-tree-sort-by-num-descendants (depth)
+  "Sort the branches in the *Simple Call Tree* buffer by the number of descendants to depth DEPTH.
+When call interactively DEPTH is prompted for."
+  (interactive (list (read-number "Depth: " 1)))
+  (let ((normallist (copy-tree simple-call-tree-alist))
+        (invlist (copy-tree simple-call-tree-inverted-alist)))
+    (simple-call-tree-sort
+     (lambda (a b)
+       (let ((alist (if invertedtree invlist normallist)))
+         (> (simple-call-tree-count-descendants (car a) depth alist)
+            (simple-call-tree-count-descendants (car b) depth alist))))))
   (simple-call-tree-restore-state (simple-call-tree-store-state))
-  (setq simple-call-tree-current-sort-order 'numchild))
+  (setq simple-call-tree-current-sort-order 'numdescend))
 
 (defun simple-call-tree-sort-by-name nil
   "Sort the functions in the *Simple Call Tree* buffer alphabetically.
@@ -1630,21 +1647,21 @@ With a prefix arg, and if the form is a function, instrument it for debugging wi
     (setq fm-working nil))
   (delete-other-windows))
 
-;; simple-call-tree-info: TODO [#B] 
+;; simple-call-tree-info: STARTED [#B] 
 (defun simple-call-tree-mark (func)
   "Mark the item named FUNC."
   (interactive (list (or (simple-call-tree-get-parent)
                          (simple-call-tree-get-function-at-point))))
   )
 
-;; simple-call-tree-info: TODO [#B] 
+;; simple-call-tree-info: STARTED [#B] 
 (defun simple-call-tree-unmark (func)
   "Unmark the item named FUNC."
   (interactive (list (or (simple-call-tree-get-parent)
                          (simple-call-tree-get-function-at-point))))
   )
 
-;; simple-call-tree-info: TODO [#B] 
+;; simple-call-tree-info: DONE [#B] 
 (defun simple-call-tree-mark-by-pred (pred &optional unmark)
   "Mark items in `simple-call-tree-alist' that return non-nil when passed as an arg to PRED function.
 If UNMARK is non-nil unmark the items instead."
