@@ -16,7 +16,7 @@
 ;;
 ;; Features that might be required by this library:
 ;;
-;; `anaphora' `thingatpt' `outline-magic' `fm' `org' `cl'
+;; `anaphora' `thingatpt' `outshine' `fm' `org' `cl'
 ;;
 
 ;;; This file is NOT part of GNU Emacs
@@ -147,7 +147,7 @@
 
 ;;; Require
 (require 'thingatpt)
-(require 'outline-magic nil t)
+(require 'outshine nil t)
 (require 'fm nil t)
 (require 'hl-line nil t)
 (require 'anaphora)
@@ -425,13 +425,13 @@ as a flat list."
   (define-key simple-call-tree-mode-map (kbd "s") 'simple-call-tree-sort-map)
   (define-key simple-call-tree-mode-map (kbd "s n") 'simple-call-tree-sort-by-name)
   (define-key simple-call-tree-mode-map (kbd "s p") 'simple-call-tree-sort-by-position)
-  (define-key simple-call-tree-mode-map (kbd "s f") 'simple-call-tree-sort-by-face)
+  (define-key simple-call-tree-mode-map (kbd "s t") 'simple-call-tree-sort-by-face)
   (define-key simple-call-tree-mode-map (kbd "s d") 'simple-call-tree-sort-by-num-descendants)
   (define-key simple-call-tree-mode-map (kbd "s s") 'simple-call-tree-sort-by-size)
   (define-key simple-call-tree-mode-map (kbd "s T") 'simple-call-tree-sort-by-todo)
   (define-key simple-call-tree-mode-map (kbd "s P") 'simple-call-tree-sort-by-priority)
   (define-key simple-call-tree-mode-map (kbd "s r") 'simple-call-tree-reverse)
-  (if (featurep 'outline-magic)
+  (if (featurep 'outshine)
       (define-key simple-call-tree-mode-map (kbd "<tab>") 'outline-cycle)
     (define-key simple-call-tree-mode-map (kbd "<tab>") 'outline-toggle-children))
   (define-key simple-call-tree-mode-map (kbd "<right>") 'show-children)
@@ -540,11 +540,11 @@ as a flat list."
       ["---" "---"]
       ["Cycle Tree Visibility" outline-cycle
        :help "Cycle through different tree visibility states"
-       :visible (featurep 'outline-magic)
+       :visible (featurep 'outshine)
        :keys "<tab>"]
       ["Toggle Children Visibility" outline-toggle-children
        :help "Toggle the visibility of the children of this header"
-       :visible (not (featurep 'outline-magic))
+       :visible (not (featurep 'outshine))
        :keys "<tab>"]
       ["Show All" show-all
        :help "Show All Branches"
@@ -1781,6 +1781,7 @@ If UNMARK is non-nil unmark the items instead."
 ;; simple-call-tree-info: TODO [#A] 
 (defun simple-call-tree-outline-show nil
   "Show next level of hidden branches (if any) for the current subtree."
+  
   )
 
 ;; simple-call-tree-info: TODO [#A] 
