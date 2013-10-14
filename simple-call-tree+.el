@@ -878,13 +878,16 @@ information. If UPDATESRC is nil then don't bother updating the source code."
               (comment-region (point) end)))))
     (save-excursion
       (goto-char (point-min))
-      (read-only-mode -1)
       (if (simple-call-tree-goto-func func)
-          (progn (show-children) ;hack! otherwise it doesn't always work properly
-                 (beginning-of-line)
-                 (kill-line)
-                 (simple-call-tree-insert-item item 1 nil)))
-      (read-only-mode 1))))
+          (let ((hidden (not (= (save-excursion (outline-end-of-heading) (point))
+                                (save-excursion (outline-end-of-subtree) (point))))))
+            (if hidden (show-children))
+            (read-only-mode -1) ;hack! otherwise it doesn't always work properly
+            (beginning-of-line)
+            (kill-line)
+            (simple-call-tree-insert-item item 1 nil)
+            (read-only-mode 1)
+            (if hidden (hide-subtree)))))))
 
 ;; simple-call-tree-info:   
 (defun* simple-call-tree-set-todo nil
