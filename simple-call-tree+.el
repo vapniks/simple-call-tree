@@ -323,7 +323,7 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
                  (const :tag "Use org-todo-keywords" nil)))
 
 ;; simple-call-tree-info:
-(defcustom simple-call-tree-org-not-done-keywords '("TODO" "STARTED" "WAITING")
+(defcustom simple-call-tree-org-not-done-keywords '("TODO" "STARTED" "WAITING" "CHECK")
   "List of TODO keywords representing not done states."
   :group 'simple-call-tree
   :type '(repeat :tag "Choose keywords" (string :tag "Keyword")))
@@ -375,12 +375,6 @@ as a flat list."
       (remove-if (lambda (x) (or (symbolp x)
                                  (equal x "|")))
                  (mapcan 'identity org-todo-keywords))))
-
-;; simple-call-tree-info:   
-(defcustom simple-call-tree-org-priority-levels nil
-  '("A" "B" "C" "D")
-  :group 'simple-call-tree
-  :type 'list)
 
 ;; Saves a little typing
 (defmacro whilelast (&rest forms)
@@ -891,25 +885,28 @@ information. If UPDATESRC is nil then don't bother updating the source code."
       (goto-char (point-min))
       (if (simple-call-tree-goto-func func)
           (let ((hidden (not (= (save-excursion (outline-end-of-heading) (point))
-                                (save-excursion (outline-end-of-subtree) (point))))))
+                                (save-excursion (outline-end-of-subtree) (point)))))
+                (marked (simple-call-tree-marked-p func)))
             (if hidden (show-children)) ;hack! otherwise it doesn't always work properly
             (read-only-mode -1)
             (beginning-of-line)
             (kill-line)
-            (simple-call-tree-insert-item item 1 nil)
+            (simple-call-tree-insert-item item 1 nil marked)
             (read-only-mode 1)
             (if hidden (hide-subtree)))))))
 
 ;; simple-call-tree-info:   
-(defun* simple-call-tree-set-todo nil
+(defun* simple-call-tree-set-todo (value func &optional remove)
   "Set the TODO state for the function at point.
 If a prefix arg is used then remove the TODO state."
-  (interactive)
-  (let ((value (if current-prefix-arg nil
-                 (org-icompleting-read
-                  "State: " (simple-call-tree-org-todo-keywords)
-                  nil t))))
-    (simple-call-tree-set-attribute 'todo value)))
+  (interactive (list (if current-prefix-arg nil
+                       (org-icompleting-read
+                        "State: " (simple-call-tree-org-todo-keywords)
+                        nil t))
+                     (or (simple-call-tree-get-parent)
+                         (simple-call-tree-get-function-at-point))
+                     current-prefix-arg))
+  (simple-call-tree-set-attribute 'todo value func))
 
 (defun simple-call-tree-next-todo nil
   "Move to next todo state for current function."
@@ -945,8 +942,9 @@ If a prefix arg is used then remove the TODO state."
 (defun* simple-call-tree-set-priority (value &optional
                                              (func (or (simple-call-tree-get-parent)
                                                        (simple-call-tree-get-function-at-point))))
-  "Set the priority level to VALUE for the function FUNC.
+  "Set the priority level to VALUE for the function FUNC. 
 VALUE should be a letter, and FUNC should be the name of a function (default = the parent of the function at point).
+If VALUE is nil, remove priority.
 When called interactively VALUE is prompted for and FUNC is set to the parent of the function at point."
   (interactive (progn (message "Priority %c-%c, SPC to remove: "
                                simple-call-tree-org-highest-priority simple-call-tree-org-lowest-priority)
@@ -1397,7 +1395,7 @@ The toplevel functions will be sorted, and the functions in each branch will be 
                      (simple-call-tree-get-toplevel))
         'nodups simple-call-tree-nodups))
 ;; Restore hidden/unhidden state after sorting
-;; simple-call-tree-info: TODO [#C] :IDO:
+;; simple-call-tree-info: DONE  
 (defun simple-call-tree-restore-state (state)
   "Restore the *Simple Call Tree* buffer to the state in STATE."
   (let ((depth (or (plist-get state 'depth)
@@ -1693,7 +1691,7 @@ This just calls `simple-call-tree-apply-command' with the `query-replace' comman
   (interactive)
   (simple-call-tree-apply-command 'query-replace))
 
-;; simple-call-tree-info: :IDO:crypt:
+;; simple-call-tree-info:   
 (defun simple-call-tree-query-replace-regexp nil
   "Perform `query-replace-regexp' on the function at point in the *Simple Call Tree* buffer.
 This just calls `simple-call-tree-apply-command' with the `query-replace-regexp' command."
@@ -1840,35 +1838,58 @@ If UNMARK is non-nil unmark the items instead."
          (eval matcher)))
      unmark)))
 
-;; simple-call-tree-info: TODO [#A] :IDO:crypt:
+;; simple-call-tree-info: CHECK [#C] 
 (defun simple-call-tree-apply-to-marked (cmd)
   "Apply command CMD to all marked items."
-  )
+  (interactive (list (read-command "Command: ")))
+  (dolist (func simple-call-tree-marked-items)
+    (simple-call-tree-apply-command cmd func)))
 
-;; simple-call-tree-info: TODO [#B] :IDO:crypt:
-(defun simple-call-tree-set-todo-marked nil
-  "Set the TODO state of all marked items."
-  )
+;; simple-call-tree-info: DONE  
+(defun simple-call-tree-set-todo-marked (value &optional remove)
+  "Set the TODO state of all marked items.
+If a prefix arg is supplied (so REMOVE is non-nil) remove the TODO state instead."
+  (interactive (list (if current-prefix-arg nil
+                       (org-icompleting-read
+                        "State: " (simple-call-tree-org-todo-keywords)
+                        nil t))
+                     current-prefix-arg))
+  (dolist (func simple-call-tree-marked-items)
+    (simple-call-tree-set-todo value func remove)))
 
-;; simple-call-tree-info: TODO [#B] 
-(defun simple-call-tree-set-priority-marked nil
+;; simple-call-tree-info: DONE  
+(defun simple-call-tree-set-priority-marked (value)
   "Set the priority of all marked items."
-  )
+  (interactive (progn (message "Priority %c-%c, SPC to remove: "
+                               simple-call-tree-org-highest-priority simple-call-tree-org-lowest-priority)
+                      (list (read-char-exclusive))))
+  (dolist (func simple-call-tree-marked-items)
+    (simple-call-tree-set-priority value func)))
 
-;; simple-call-tree-info: TODO [#B] :crypt:
-(defun simple-call-tree-add-tag-marked nil
-  "Add a tag to all marked items."
-  )
+;; simple-call-tree-info: DONE  
+(defun simple-call-tree-add-tags-marked (value &optional remove)
+  "Add tags to all marked items, or remove then if called with a prefix argument.
+When used programmatically, VALUE should be a list of tags."
+  (interactive (list (simple-call-tree-string-to-tags
+                      (org-fast-tag-selection
+                       nil nil
+                       simple-call-tree-org-tag-alist))
+                     current-prefix-arg))
+  (dolist (func simple-call-tree-marked-items)
+    (let* ((currenttags (sixth (car (simple-call-tree-get-item func simple-call-tree-alist))))
+           (newtags (if remove (cl-set-difference currenttags value :test 'equal)
+                      (cl-union value currenttags))))
+      (simple-call-tree-set-attribute 'tags newtags func))))
 
-;; simple-call-tree-info: TODO [#B] 
-(defun simple-call-tree-remove-tag-marked nil
-  "Remove a tag from all marked items."
-  )
-
-;; simple-call-tree-info: TODO [#B] 
-(defun simple-call-tree-set-tags-marked nil
+;; simple-call-tree-info: DONE  
+(defun simple-call-tree-set-tags-marked (value)
   "Set the tags of all marked items (so they will all have the same tags)."
-  )
+  (interactive (list (simple-call-tree-string-to-tags
+                      (org-fast-tag-selection
+                       nil nil
+                       simple-call-tree-org-tag-alist))))
+  (dolist (func simple-call-tree-marked-items)
+    (simple-call-tree-set-attribute 'tags value func)))
 
 (unless (not (featurep 'fm))
   (add-to-list 'fm-modes '(simple-call-tree-mode simple-call-tree-visit-function))
@@ -1876,8 +1897,7 @@ If UNMARK is non-nil unmark the items instead."
 (unless (not (featurep 'hl-line))
   (add-hook 'simple-call-tree-mode-hook
             (lambda nil
-              (hl-line-mode 1)
-              (setq cursor-type nil))))
+              (hl-line-mode 1))))
 
 (provide 'simple-call-tree+)
 
