@@ -1778,18 +1778,6 @@ If UNMARK is non-nil unmark the items instead."
   "Set the tags of all marked items (so they will all have the same tags)."
   )
 
-;; simple-call-tree-info: TODO [#A] 
-(defun simple-call-tree-outline-show nil
-  "Show next level of hidden branches (if any) for the current subtree."
-  
-  )
-
-;; simple-call-tree-info: TODO [#A] 
-(defun simple-call-tree-outline-hide nil
-  "Hide deepest shown branches of current subtree (if any).
-Move cursor up to the parent branch if necessary."
-  )
-
 (unless (not (featurep 'fm))
   (add-to-list 'fm-modes '(simple-call-tree-mode simple-call-tree-visit-function))
   (add-hook 'simple-call-tree-mode-hook 'fm-start))
