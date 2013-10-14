@@ -881,8 +881,8 @@ information. If UPDATESRC is nil then don't bother updating the source code."
       (if (simple-call-tree-goto-func func)
           (let ((hidden (not (= (save-excursion (outline-end-of-heading) (point))
                                 (save-excursion (outline-end-of-subtree) (point))))))
-            (if hidden (show-children))
-            (read-only-mode -1) ;hack! otherwise it doesn't always work properly
+            (if hidden (show-children)) ;hack! otherwise it doesn't always work properly
+            (read-only-mode -1)
             (beginning-of-line)
             (kill-line)
             (simple-call-tree-insert-item item 1 nil)
@@ -1470,11 +1470,13 @@ the source buffer to the function."
         (bottom (recenter -1))))))
 
 (defun simple-call-tree-compare-items (str1 str2)
-  "Check if strings STR1 and STR2 correspond to the same item.
+  "Return non-nil if strings STR1 and STR2 correspond to the same item.
 Check is done by comparing the strings and their faces.
 If either string has no face then they are assumed to be the same item."
-  (let ((face1 (get-text-property 0 'font-lock-face str1))
-        (face2 (get-text-property 0 'font-lock-face str2)))
+  (let ((face1 (or (get-text-property 0 'font-lock-face str1)
+                   (get-text-property 0 'face str1)))
+        (face2 (or (get-text-property 0 'font-lock-face str2)
+                   (get-text-property 0 'face str2))))
     (and (equal str1 str2)
          (or (not face1)
              (not face2)
@@ -1672,6 +1674,7 @@ With a prefix arg, and if the form is a function, instrument it for debugging wi
   (if arg (simple-call-tree-apply-command 'edebug-defun)
     (simple-call-tree-apply-command 'eval-defun)))
 
+;; simple-call-tree-info: DONE  
 (defun simple-call-tree-bookmark nil
   "Set a bookmark at the position corresponding to the branch at point."
   (interactive)
@@ -1686,22 +1689,27 @@ With a prefix arg, and if the form is a function, instrument it for debugging wi
     (setq fm-working nil))
   (delete-other-windows))
 
-;; simple-call-tree-info:   
+;; simple-call-tree-info: DONE  
 (defun simple-call-tree-mark (func)
-  "Mark the item named FUNC."
+  "Mark the item named FUNC.
+If FUNC is nil then mark the current line and add the item to `simple-call-tree-marked-items'."
   (interactive (list (or (simple-call-tree-get-parent)
                          (simple-call-tree-get-function-at-point))))
-  (if (simple-call-tree-goto-func func)
-      (let ((start (line-beginning-position)))
-        (read-only-mode -1)
-        (replace-regexp "[|*]" "*" nil start (1+ start))
-        (read-only-mode 1)
-        (add-to-list 'simple-call-tree-marked-items func
-                     nil 'simple-call-tree-compare-items)
-        (if (called-interactively-p)
-            (simple-call-tree-move-next-samelevel)))))
+  (if (or (not func) (simple-call-tree-goto-func func))
+      (progn (beginning-of-line)
+             (re-search-forward (concat "^\\([|*]\\)\\( +\\w+\\)?\\( \\[#.\\]\\)? \\(\\S-+\\)")
+                                (line-end-position) t)
+             (read-only-mode -1)
+             (replace-match "*" nil t nil 1)
+                                        ;(replace-regexp "[|*]" "*" nil start (1+ start))
+             (read-only-mode 1)
+             (add-to-list 'simple-call-tree-marked-items
+                          (or func (match-string 4))
+                          nil 'simple-call-tree-compare-items)
+             (if (called-interactively-p)
+                 (simple-call-tree-move-next-samelevel)))))
 
-;; simple-call-tree-info:   
+;; simple-call-tree-info: DONE  
 (defun simple-call-tree-unmark (func)
   "Unmark the item named FUNC."
   (interactive (list (or (simple-call-tree-get-parent)
@@ -1717,6 +1725,7 @@ With a prefix arg, and if the form is a function, instrument it for debugging wi
         (if (called-interactively-p)
             (simple-call-tree-move-next-samelevel)))))
 
+;; simple-call-tree-info: DONE  
 (defun simple-call-tree-unmark-all nil
   "Unmark all items."
   (interactive)
@@ -1727,31 +1736,47 @@ With a prefix arg, and if the form is a function, instrument it for debugging wi
     (read-only-mode 1))
   (setq simple-call-tree-marked-items nil))
 
-;; simple-call-tree-info: DONE [#B] 
+;; simple-call-tree-info: DONE  
 (defun simple-call-tree-mark-by-pred (pred &optional unmark)
   "Mark items in `simple-call-tree-alist' that return non-nil when passed as an arg to PRED function.
 If UNMARK is non-nil unmark the items instead."
-  (dolist (item simple-call-tree-alist)
-    (if (funcall pred item)
-        (if unmark
-            (simple-call-tree-unmark (caar item))
-          (simple-call-tree-mark (caar item))))))
+  (save-excursion
+    (dolist (item simple-call-tree-alist)
+      (if (funcall pred item)
+          (if unmark
+              (simple-call-tree-unmark (caar item))
+            (simple-call-tree-mark (caar item)))))))
 
-;; simple-call-tree-info: TODO [#B] 
-(defun simple-call-tree-mark-regexp (regex &optional unmark)
+;; simple-call-tree-info: DONE  
+(defun simple-call-tree-toggle-marks nil
+  "Toggle marks (unmarked become marked and marked become unmarked)."
+  (interactive)
+  (let ((marked (copy-list simple-call-tree-marked-items)))
+    (simple-call-tree-unmark-all)
+    (simple-call-tree-mark-by-pred
+     (lambda (x) (not (member* (caar x) marked :test 'simple-call-tree-compare-items))))))
+  
+;; simple-call-tree-info: DONE  
+(defun simple-call-tree-mark-by-name (regex &optional unmark)
   "Mark all items with names matching regular expression REGEX.
 If UNMARK is non-nil unmark the items instead."
-  )
+  (interactive (list (read-regexp "Regular expression matching name: ")
+                     current-prefix-arg))
+  (simple-call-tree-mark-by-pred (lambda (x) (string-match regex (caar item)))
+                                 unmark))
 
-;; simple-call-tree-info: TODO [#B] 
+;; simple-call-tree-info: STARTED [#A] 
+(defun simple-call-tree-mark-by-source (regex &optional unmark)
+  "Mark all items with source code matching regular expression REGEX.
+If UNMARK is non-nil unmark the items instead."
+  (interactive (list (read-regexp "Regular expression matching name: ")))
+  (simple-call-tree-mark-by-pred
+   (lambda (x) (string-match regex (caar item))))))
+
+;; simple-call-tree-info: TODO [#A] 
 (defun simple-call-tree-mark-tag nil)
 
-;; simple-call-tree-info: TODO [#B] 
-(defun simple-call-tree-get-marked nil
-  "Return a list of all marked items in the *Simple Call Tree* buffer."
-  )
-
-;; simple-call-tree-info: TODO [#B] 
+;; simple-call-tree-info: TODO [#A] 
 (defun simple-call-tree-apply-to-marked (cmd)
   "Apply command CMD to all marked items."
   )
@@ -1766,17 +1791,17 @@ If UNMARK is non-nil unmark the items instead."
   "Set the priority of all marked items."
   )
 
-;; simple-call-tree-info:   
+;; simple-call-tree-info: TODO [#B] 
 (defun simple-call-tree-add-tag-marked nil
   "Add a tag to all marked items."
   )
 
-;; simple-call-tree-info: TODO [#C] 
+;; simple-call-tree-info: TODO [#B] 
 (defun simple-call-tree-remove-tag-marked nil
   "Remove a tag from all marked items."
   )
 
-;; simple-call-tree-info: TODO [#C] 
+;; simple-call-tree-info: TODO [#B] 
 (defun simple-call-tree-set-tags-marked nil
   "Set the tags of all marked items (so they will all have the same tags)."
   )
