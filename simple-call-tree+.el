@@ -161,7 +161,7 @@
   :group 'tools
   :link '(url-link "http://www.emacswiki.org/SimpleCallTree"))
 
-;; simple-call-tree-info: DONE
+;; simple-call-tree-info: DONE  
 (defcustom simple-call-tree-default-recenter 'middle
   "How to recenter the window after moving to another function in the \"*Simple Call Tree*\" buffer.
 Can be one of the following symbols: 'top 'middle 'bottom.
@@ -340,27 +340,6 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
   :group 'simple-call-tree
   :type '(repeat :tag "Choose keywords" (string :tag "Keyword")))
 
-;; simple-call-tree-info: TODO [#B] 
-(defcustom simple-call-tree-org-todo-keyword-faces org-todo-keyword-faces
-  "See `org-todo-keyword-faces'."
-  :group 'simple-call-tree
-  :type '(repeat
-	  (cons
-	   (string :tag "Tag ")
-	   (choice :tag "Face"
-		   (string :tag "Foreground color")
-		   (sexp :tag "Face")))))
-
-;; simple-call-tree-info: TODO [#B] 
-(defcustom simple-call-tree-org-tag-faces org-tag-faces
-  "See `org-tag-faces'"
-  :group 'simple-call-tree)
-
-;; simple-call-tree-info: TODO [#B] 
-(defcustom simple-call-tree-org-priority-faces org-priority-faces
-  "See `org-priority-faces'"
-  :group 'simple-call-tree)
-
 ;; simple-call-tree-info: DONE  
 (defcustom simple-call-tree-org-highest-priority org-highest-priority
   "See `org-highest-priority'."
@@ -407,8 +386,9 @@ as a flat list."
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-tags-to-string (tags)
   (if (> (length tags) 0)
-      (concat ":" (mapconcat 'identity tags ":") ":")
-    ""))
+      (concat ":" (mapconcat (lambda (x)
+                               (propertize x 'font-lock-face (org-get-tag-face x)))
+                             tags ":") ":") ""))
 
 ;; simple-call-tree-info: DONE  
 (defun simple-call-tree-string-to-tags (str)
@@ -715,7 +695,7 @@ The minimum value is 0 which means show top level functions only.")
 (defvar simple-call-tree-jump-ring (make-ring simple-call-tree-jump-ring-max)
   "Ring to hold history of functions jumped to in *Simple Call Tree* buffer.")
 
-;; simple-call-tree-info: DONE
+;; simple-call-tree-info: DONE  
 (defvar simple-call-tree-jump-ring-index 0
   "The current position in the jump ring.")
 
@@ -1194,7 +1174,7 @@ By default FUNCLIST is set to `simple-call-tree-alist'."
     (setq simple-call-tree-current-maxdepth (max maxdepth 1))
     (read-only-mode -1)))
 
-;; simple-call-tree-info: CHANGE [#C] 
+;; simple-call-tree-info: DONE [#C] 
 (defun simple-call-tree-export-org-tree nil
   "Create an org-tree from the currently visible items, and put it in an org buffer.
 The style of links used for child headers is controlled by `simple-call-tree-org-link-style'."
@@ -1247,7 +1227,7 @@ This is a recursive function, and you should not need to set CURDEPTH."
 
 ;; Propertize todo, priority & tags appropriately
 ;; Add invisibility property to text so that `simple-call-tree-hide-marked' works
-;; simple-call-tree-info: CHANGE [#B] 
+;; simple-call-tree-info: DONE  
 (defun simple-call-tree-insert-item (item curdepth &optional inverted marked)
   "Display ITEM at depth CURDEPTH in the call tree.
 If optional arg INVERTED is non-nil reverse the arrow for the item.
@@ -1256,11 +1236,15 @@ If optional arg MARKED is non-nil use a * instead of a |."
          (pos (second item))
          (todo (fourth item))
          (priority (fifth item))
-         (tags (propertize (simple-call-tree-tags-to-string (sixth item))
-                           'font-lock-face 'org-tag))
-         (pre (concat (if todo (concat " " (propertize todo 'font-lock-face 'org-todo)))
+         (tags (simple-call-tree-tags-to-string (sixth item)))
+         (pre (concat (if todo (concat " " (propertize todo 'font-lock-face
+                                                       (org-get-todo-face todo))))
                       (if priority (propertize (concat " [#" (char-to-string priority) "]")
-                                               'font-lock-face 'org-priority))))
+                                               'font-lock-face
+                                               (or (org-face-from-face-or-color
+                                                    'priority 'org-priority
+                                                    (cdr (assoc priority org-priority-faces)))
+                                                   'org-priority)))))
          (arrowtail (make-string (* 2 (1- curdepth)) 45))
          (arrow (if inverted (concat (if (> curdepth 1) "<" pre) arrowtail " ")
                   (concat arrowtail (if (> curdepth 1) ">" pre) " ")))
@@ -1270,8 +1254,7 @@ If optional arg MARKED is non-nil use a * instead of a |."
                                    'font-lock-face (list :inherit fnface :underline t)
                                    'mouse-face 'highlight
                                    'location pos)))
-         (post (concat (make-string (max 0 (- (/ (window-width) 2) (length pre2))) 32)
-                       (propertize tags 'font-lock-face 'org-tag))))
+         (post (concat (make-string (max 0 (- (/ (window-width) 2) (length pre2))) 32) tags)))
     (insert pre2 post)))
 
 ;; simple-call-tree-info: DONE
