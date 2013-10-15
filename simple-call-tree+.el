@@ -239,7 +239,8 @@ The children of each header will be sorted separately."
                     (let ((thistoken (symbol-at-point)))
                       (previous-line)
                       (not (string= (symbol-at-point) thistoken))))
-                  haskell-ds-forward-decl
+                  (lambda nil (haskell-ds-forward-decl)
+                    (unless (= (point) (point-max)) (point)))
                   haskell-ds-forward-decl
                   "\\(:\\|\\_<\\)"
                   "\\s-")
@@ -264,7 +265,15 @@ The children of each header will be sorted separately."
                    (if (eq (get-text-property (point) 'face)
                            font-lock-variable-name-face)
                        (end-of-line)
-                     (end-of-defun)))))
+                     (end-of-defun))))
+    (matlab-mode (font-lock-function-name-face)
+                 nil
+                 (lambda (pos)
+                   (re-search-backward "^function" (line-beginning-position) t))
+                 (lambda nil
+                   (if (re-search-forward "^function\\s-*\\S-+\\s-*=\\s-*" (point-max) t)
+                       (point)))
+                 matlab-end-of-defun))
   "Alist of major modes, and information to use for identifying objects for the simple call tree.
 Each element is a list in the form '(MAJOR-MODE VALID-FONTS INVALID-FONTS START-TEST END-TEST) where:
 
@@ -284,7 +293,8 @@ current token to check, and should return non-nil if it represents a valid objec
 
 NEXT-FUNC is an alternative way of determining the locations of functions.
 It is either nil, meaning the function locations will be determined by fonts and maybe START-TEST,
-or a function of no args which moves point to the start of the next function in the buffer.
+or a function of no args which returns the position of the next function in the buffer, or nil if
+there are no further functions.
 
 END-FUNC indicates how to find the end of the current object when parsing a buffer for the call tree.
 It can be either a function taking no args which moves point to the end of the current function,
@@ -790,8 +800,7 @@ By default it is set to a list containing the current buffer."
                  (message "Identifying functions called...%d/%d" count2 count1)
                  (simple-call-tree-add start end item))))
     (message "Creating inverted list...")
-    (setq simple-call-tree-inverted-alist
-          (simple-call-tree-invert))
+    (setq simple-call-tree-inverted-alist (simple-call-tree-invert))
     (message "simple-call-tree done")))
 
 ;; simple-call-tree-info: DONE  
@@ -863,8 +872,7 @@ nil."
     (if nextfunc
         (save-excursion
           (goto-char start)
-          (funcall nextfunc)
-          (setq start (point)))
+          (setq start (funcall nextfunc)))
       (while (and (not (and (memq (get-text-property start 'face) validfonts)
                             (not (memq (get-text-property start 'face) invalidfonts))
                             (or (not starttest)
@@ -891,6 +899,8 @@ The LOOKBACK argument indicates how many lines backwards to search and should be
     (goto-char end)
     (list todo priority tags)))
 
+;; Need to be able to handle cases where the function starts at the beginning of the file,
+;; (so there are no previous lines).
 ;; simple-call-tree-info: DONE  
 (defun* simple-call-tree-set-attribute (attr value &optional func (updatesrc t))
   "Set the todo, priority, or tags for an item in `simple-call-tree-alist', and update the buffer and source code.
@@ -931,13 +941,9 @@ information. If UPDATESRC is nil then don't bother updating the source code."
                  "simple-call-tree-info:\\s-*\\(\\w+\\)?\\s-*\\(\\[#[A-Z]\\]\\)?\\s-*\\(:[a-zA-Z0-9:,;-_]+:\\)?"
                  end t)
                 (replace-match (concat "simple-call-tree-info: " srcval))
-              (goto-char end)
+              (insert "simple-call-tree-info: " (or newval "") "\n")
               (forward-line -1)
-              (end-of-line)
-              (insert "\nsimple-call-tree-info: " (or newval ""))
-              (setq end (point))
-              (beginning-of-line)
-              (comment-region (point) end)))))
+              (comment-region (line-beginning-position) (line-end-position))))))
     (save-excursion
       (goto-char (point-min))
       (if (simple-call-tree-goto-func func)
@@ -1564,16 +1570,20 @@ The toplevel functions will be sorted, and the functions in each branch will be 
           (floor (abs (read-number "Maximum depth to display: " 2)))))
   (simple-call-tree-restore-state (simple-call-tree-store-state)))
 
-;; simple-call-tree-info: DONE
+;; simple-call-tree-info: DONE  
 (defun simple-call-tree-view-function nil
   "Display the source code corresponding to current header.
 If the current header is a calling or toplevel function then display that function.
 If it is a called function then display the position in the calling function where it is called."
   (interactive)
-  (move-beginning-of-line nil)
+  ;; Following 2 lines are required to get the outline level with `simple-call-tree-outline-level'
+  (beginning-of-line)
   (re-search-forward outline-regexp)
   (let* ((level (simple-call-tree-outline-level))
-         (funmark (get-text-property (point) 'location))
+         (funmark (get-text-property
+                   (next-single-property-change
+                    (line-beginning-position)
+                    'location) 'location))
          (buf (marker-buffer funmark))
          (pos (marker-position funmark)))
     (display-buffer buf)
@@ -1587,7 +1597,7 @@ If it is a called function then display the position in the calling function whe
           (middle (recenter))
           (bottom (recenter -1)))))))
 
-;; simple-call-tree-info: DONE
+;; simple-call-tree-info: DONE  
 (defun* simple-call-tree-visit-function (&optional arg)
   "Visit the source code corresponding to the current header.
 If the current header is a calling or toplevel function then visit that function.
@@ -1595,10 +1605,14 @@ If it is a called function then visit the position in the calling function where
 If ARG is non-nil, or a prefix arg is supplied when called interactively then narrow
 the source buffer to the function."
   (interactive "P")
-  (move-beginning-of-line nil)
+  ;; Following 2 lines are required to get the outline level with `simple-call-tree-outline-level'
+  (beginning-of-line)
   (re-search-forward outline-regexp)
   (let* ((level (simple-call-tree-outline-level))
-         (funmark (get-text-property (point) 'location))
+         (funmark (get-text-property
+                   (next-single-property-change
+                    (line-beginning-position)
+                    'location) 'location))
          (buf (marker-buffer funmark))
          (pos (marker-position funmark))
          (thisfunc (simple-call-tree-get-function-at-point))
