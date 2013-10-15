@@ -1424,7 +1424,7 @@ The toplevel functions will be sorted, and the functions in each branch will be 
   (simple-call-tree-restore-state (simple-call-tree-store-state))
   (setq simple-call-tree-current-sort-order 'position))
 
-;; simple-call-tree-info: DONE
+;; simple-call-tree-info: DONE  
 (defun simple-call-tree-sort-by-face nil
   "Sort the items in the *Simple Call Tree* buffer according to the display face name.
 This should sort the items by type (e.g. function, variable, etc.) since different types are generally displayed
@@ -2013,11 +2013,27 @@ If REGEX is nil or \"\" then mark/unmark items with no TODO state"
 
 ;; Get list of all possible faces by checking `simple-call-tree-major-mode-alist' with first
 ;; element of `simple-call-tree-alist'.
-;; simple-call-tree-info: TODO [#A] 
-(defun simple-call-tree-mark-by-face (face)
+;; simple-call-tree-info: DONE  
+(defun simple-call-tree-mark-by-face (face &optional unmark)
   "Mark all items with display face FACE.
-The toplevel functions will be sorted, and the functions in each branch will be sorted separately."
-  )
+If UNMARK is non-nil unmark the items instead."
+  (interactive (let* ((modevals (with-current-buffer
+                                    (marker-buffer
+                                     (second (caar simple-call-tree-alist)))
+                                  major-mode))
+                      (faces (or (second (assoc modevals simple-call-tree-major-mode-alist))
+                                 simple-call-tree-default-valid-fonts)))
+                 (list (intern-soft (ido-completing-read "Face" (mapcar 'symbol-name faces)))
+                       current-prefix-arg)))
+  (simple-call-tree-mark-by-pred
+   (lambda (x)
+     (let* ((str (caar x))
+            (face2 (or (get-text-property 0 'face str)
+                       (get-text-property 0 'font-lock-face str))))
+       (or (eq face face2)
+           (member face face2)
+           (member face2 face))))
+   unmark))
 
 ;; Hide items by adding altering value of `buffer-invisibility-spec'.
 ;; Need to make sure all items have 'invisibility added to text properties.
