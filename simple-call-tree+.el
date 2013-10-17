@@ -158,13 +158,13 @@
 (comment-normalize-vars)
 ;;; Code:
 
-;; simple-call-tree-info: DONE  :IDO:crypt:
+;; simple-call-tree-info: DONE  
 (defgroup simple-call-tree nil
   "Simple call tree - display a simple call tree for functions in a buffer."
   :group 'tools
   :link '(url-link "http://www.emacswiki.org/SimpleCallTree"))
 
-;; simple-call-tree-info: DONE  :IDO:crypt:
+;; simple-call-tree-info: DONE  
 (defcustom simple-call-tree-default-recenter 'middle
   "How to recenter the window after moving to another function in the \"*Simple Call Tree*\" buffer.
 Can be one of the following symbols: 'top 'middle 'bottom.
@@ -396,19 +396,6 @@ as a flat list."
 ;; simple-call-tree-info: DONE  
 (defun simple-call-tree-string-to-tags (str)
   (aif str (split-string (substring-no-properties it) "[ \f\t\n\r\v,;:]+" t)))
-
-;; This is still not exactly right: it will match both abc & abc' on abc'
-;; where ' could be any char in the expression prefix syntax class.
-;; This happens in haskell mode for example when you have defined two functions
-;; named func and func' for example.
-;; simple-call-tree-info: DONE  
-(defun simple-call-tree-symbol-as-regexp (symbolname)
-  (let* ((modevals (assoc major-mode simple-call-tree-major-mode-alist))
-         (start (seventh modevals))
-         (end (eighth modevals)))
-    (concat (or start "\\_<")
-            (regexp-opt (list symbolname))
-            (or end "\\_>"))))
 
 ;; Major-mode for simple call tree
 ;; simple-call-tree-info: DONE  
@@ -745,22 +732,7 @@ be shown in the tree.")
 (defvar simple-call-tree-marked-items nil
   "List of names of items in the *Simple Call Tree* buffer that are or should be marked.")
 
-;;; Functions from simple-call-tree.el (some are rewritten)
-;; simple-call-tree-info: OPTIMIZE [#C] :IDO:crypt:
-(defun simple-call-tree-add (start end alist)
-  "Add tokens between START and END to ALIST.
-ALIST is an item of simple-call-tree-alist."
-  (dolist (item simple-call-tree-alist)
-    (goto-char start)
-    (while (re-search-forward (simple-call-tree-symbol-as-regexp (caar item))
-                              end t)
-      ;; need to go back so that the text properties are read correctly
-      (left-word 1)
-      (if (simple-call-tree-valid-face-p)
-          (setcdr alist (cons (list (caar item) (point-marker)) (cdr alist))))
-      (right-word 1))))
-
-;; simple-call-tree-info: OPTIMIZE [#C] :test:
+;; simple-call-tree-info: DONE  
 (defun* simple-call-tree-analyze (&optional (buffers (list (current-buffer))))
   "Analyze the current buffer, or the buffers in list BUFFERS.
 The result is stored in `simple-call-tree-alist'.
@@ -793,19 +765,40 @@ By default it is set to a list containing the current buffer."
                                                              (car attribs)
                                                              (second attribs)
                                                              (third attribs))))
-            (setq count1 (1+ count1))
-            (message "Identifying functions...%d:%s" count1 nextfunc)))))
+            (setq count1 (1+ count1))))))
     ;; Now find functions called
-    (loop for item in simple-call-tree-alist
-          for count2 from 1
-          for buf = (marker-buffer (second (car item)))
-          for start = (marker-position (second (car item)))
-          for end = (marker-position (third (car item)))
-          do (with-current-buffer buf
-               (save-excursion
-                 (message "Identifying functions called...%d/%d" count2 count1)
-                 (simple-call-tree-add start end item))))
-    (message "Creating inverted list...")
+    ;; This is still not exactly right: it will match both abc & abc' on abc'
+    ;; where ' could be any char in the expression prefix syntax class.
+    ;; This happens in haskell mode for example when you have defined two functions
+    ;; named func and func' for example.
+    (let* ((mode (with-current-buffer
+                     (marker-buffer (second (caar simple-call-tree-alist)))
+                   major-mode))
+           (modevals (assoc major-mode simple-call-tree-major-mode-alist))
+           (symstart (or (seventh modevals) "\\_<"))
+           (symend (or (eighth modevals) "\\_>"))
+           (regexp (concat symstart
+                           (regexp-opt (mapcar 'caar simple-call-tree-alist) t)
+                           symend))
+           (invalidfonts (or (third (assoc mode simple-call-tree-major-mode-alist))
+                             simple-call-tree-default-invalid-fonts)))
+      (loop for item in simple-call-tree-alist
+            for count2 from 1
+            for itemcar = (car item)
+            do (with-current-buffer (marker-buffer (second itemcar))
+                 (save-excursion
+                   (goto-char (marker-position (second itemcar)))
+                   (while (re-search-forward regexp (marker-position (third itemcar)) t)
+                     ;; need to go back so that the text properties are read correctly
+                     (forward-word -1)
+                     ;; check face is valid
+                     (let ((face (get-text-property (point) 'face)))
+                       (if (listp face)
+                           (if (not (intersection face invalidfonts))
+                               (push (list (match-string 1) (point-marker)) (cdr item)))
+                         (if (not (member face invalidfonts))
+                             (push (list (match-string 1) (point-marker)) (cdr item)))))
+                     (forward-word 1))))))
     (setq simple-call-tree-inverted-alist (simple-call-tree-invert))
     (message "simple-call-tree done")))
 
@@ -814,32 +807,26 @@ By default it is set to a list containing the current buffer."
   "Invert `simple-call-tree-alist' and return the result."
   (let (result)
     (dolist (item simple-call-tree-alist)
-      (let* ((caller (first item))
-             (callername (first caller))
-             (callees (cdr item)))
+      (let* ((caller (car item))
+             (callees (cdr item))
+             (callername (car caller)))
+        (add-to-list 'result (list caller) nil
+                     (lambda (a b)
+                       (simple-call-tree-compare-items (caar a)
+                                                       (caar b))))
         (unless (simple-call-tree-get-item callername result)
-          (push (list (list callername (second caller) (third caller))) result))
+          (push (list caller) result))
         (dolist (callee callees)
-          (let* ((calleename (first callee))
+          (let* ((calleename (car callee))
                  (callerpos (second callee))
                  (calleeitem (car (simple-call-tree-get-item calleename)))
                  (elem (simple-call-tree-get-item calleename result)))
             (if elem
-                (setcdr elem (cons (list callername callerpos) (cdr elem)))
-              (push (list calleeitem (list callername callerpos))
-                    result))))))
+                (push (list callername callerpos) (cdr elem))
+              (push (list calleeitem (list callername callerpos)) result))))))
     result))
 
 ;;; New functions (not in simple-call-tree.el)
-
-;; simple-call-tree-info: DONE  
-(defun simple-call-tree-valid-face-p nil
-  "Return t if face at point is a valid function name face, and nil otherwise."
-  (let ((faces (get-text-property (point) 'face))
-        (invalidfonts (or (third (assoc major-mode simple-call-tree-major-mode-alist))
-                          simple-call-tree-default-invalid-fonts)))
-    (unless (listp faces) (callf list faces))
-    (not (intersection faces invalidfonts))))
 
 ;; simple-call-tree-info: DONE
 (defun* simple-call-tree-get-function-at-point (&optional (buf "*Simple Call Tree*"))
@@ -861,7 +848,7 @@ If there is no function on this line of the *Simple Call Tree* buffer, return ni
                        (symbol-nearest-point)
                      (symbol-at-point))))))
 
-;; simple-call-tree-info: OPTIMIZE [#C] :its:
+;; simple-call-tree-info: DONE  
 (defun simple-call-tree-next-func (start)
   "Find the next function in the current buffer after position START.
 Return a cons cell whose car is the position in the buffer just after the function name,
@@ -879,10 +866,10 @@ nil."
         (save-excursion
           (goto-char start)
           (setq start (funcall nextfunc)))
-      (while (and (not (and (memq (get-text-property start 'face) validfonts)
-                            (not (memq (get-text-property start 'face) invalidfonts))
-                            (or (not starttest)
-                                (save-excursion (funcall starttest start)))))
+      (while (and (or (not (memq (get-text-property start 'face) validfonts))
+                      (memq (get-text-property start 'face) invalidfonts)
+                      (and starttest
+                           (not (save-excursion (funcall starttest start)))))
                   (callf next-single-property-change start 'face))))
     (unless (not start)
       (setq end (next-single-property-change start 'face))
@@ -1140,18 +1127,18 @@ listed in `simple-call-tree-buffers' will be used."
   (interactive)
   (callf or buffers simple-call-tree-buffers)
   (simple-call-tree-analyze buffers)
+  (setq simple-call-tree-inverted nil
+        simple-call-tree-marked-items nil
+        simple-call-tree-buffers buffers)
   (case simple-call-tree-default-sort-method
+    (position (simple-call-tree-reverse))
     (name (simple-call-tree-sort-by-name))
-    (position (simple-call-tree-sort-by-position))
     (numdescend (simple-call-tree-sort-by-num-descendants))
     (face (simple-call-tree-sort-by-face))
     (size (simple-call-tree-sort-by-size))
     (priority (simple-call-tree-sort-by-priority))
     (todo (simple-call-tree-sort-by-todo)))
-  (setq simple-call-tree-inverted nil
-        simple-call-tree-marked-items nil)
-  (simple-call-tree-list-callers-and-functions)
-  (setq simple-call-tree-buffers buffers))
+  (goto-char (point-min)))
 
 ;;;###autoload
 ;; simple-call-tree-info: DONE  
@@ -1185,7 +1172,8 @@ otherwise it will be narrowed around FUNC."
   "List callers and functions in FUNCLIST to depth MAXDEPTH.
 By default FUNCLIST is set to `simple-call-tree-alist'."
   (switch-to-buffer (get-buffer-create "*Simple Call Tree*"))
-  (if (not (equal major-mode 'simple-call-tree-mode)) (simple-call-tree-mode))
+  (if (not (equal major-mode 'simple-call-tree-mode))
+      (simple-call-tree-mode))
   (read-only-mode -1)
   (erase-buffer)
   (let ((maxdepth (max maxdepth 1)))
@@ -1194,9 +1182,10 @@ By default FUNCLIST is set to `simple-call-tree-alist'."
        (car item)
        maxdepth 1 funclist))
     (setq simple-call-tree-current-maxdepth (max maxdepth 1))
+    ;; remove the empty line at the end
+    (delete-char -1)
     (read-only-mode 1)))
 
-;; 
 ;; simple-call-tree-info: DONE  
 (defun simple-call-tree-listed-items nil
   "Return list of items which are currently visible in the *Simple Call Tree* buffer.
