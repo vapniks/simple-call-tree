@@ -6,8 +6,8 @@
 ;; Maintainer: Joe Bloggs <vapniks@yahoo.com>
 ;; Copyleft (Ↄ) 2012, Joe Bloggs, all rites reversed.
 ;; Created: 2012-11-01 21:28:07
-;; Version: 1.4
-;; Last-Updated: 2013-10-02 17:00:00
+;; Version: 1.5
+;; Last-Updated: 2013-10-18 00:30:00
 ;;           By: Joe Bloggs
 ;; URL: http://www.emacswiki.org/emacs/download/simple-call-tree+.el
 ;;      https://github.com/vapniks/simple-call-tree-ext
@@ -16,7 +16,7 @@
 ;;
 ;; Features that might be required by this library:
 ;;
-;; `anaphora' `thingatpt' `outshine' `fm' `org' `cl'
+;; `anaphora' `thingatpt' `outshine' `fm' `org' `cl' `ido' `newcomment'
 ;;
 
 ;;; This file is NOT part of GNU Emacs
@@ -141,9 +141,9 @@
 ;; If anyone wants to implement the following ideas, please do:
 ;; More reliable code for building tree (handle duplicate function names properly).
 ;; Fix code so that we can have several calls to the same function in the same tree.
-;; Code for marking functions (like with files in dired mode) and then applying operations to the marked functions.
-;; Code for rearranging functions.
-;; Code for renaming functions.
+;; Code for managing refactoring commands (to be applied to marked functions).
+;; Multiple query replace command for substituting appropriate lisp macros -
+;; e.g. replace (setq list (remove x list)) with (callf2 remove x list)
 
 ;;; Require
 (require 'thingatpt)
@@ -419,7 +419,7 @@ as a flat list."
   (define-key simple-call-tree-mode-map (kbd "s s") 'simple-call-tree-sort-by-size)
   (define-key simple-call-tree-mode-map (kbd "s T") 'simple-call-tree-sort-by-todo)
   (define-key simple-call-tree-mode-map (kbd "s P") 'simple-call-tree-sort-by-priority)
-  (define-key simple-call-tree-mode-map (kbd "s m") 'simple-call-tree-sort-by-mark)  
+  (define-key simple-call-tree-mode-map (kbd "s *") 'simple-call-tree-sort-by-mark)  
   (define-key simple-call-tree-mode-map (kbd "s r") 'simple-call-tree-reverse)
   (define-key simple-call-tree-mode-map (kbd "<C-S-up>") 'simple-call-tree-move-item-up)
   (define-key simple-call-tree-mode-map (kbd "<C-S-down>") 'simple-call-tree-move-item-down)
@@ -466,10 +466,14 @@ as a flat list."
   (define-key simple-call-tree-mode-map (kbd "p") 'simple-call-tree-move-prev)
   (define-key simple-call-tree-mode-map (kbd "C-f") 'simple-call-tree-move-next-samelevel)
   (define-key simple-call-tree-mode-map (kbd "C-b") 'simple-call-tree-move-prev-samelevel)
-  (define-key simple-call-tree-mode-map (kbd "<S-down>") 'simple-call-tree-move-next-samelevel)
-  (define-key simple-call-tree-mode-map (kbd "<S-up>") 'simple-call-tree-move-prev-samelevel)
   (define-key simple-call-tree-mode-map (kbd "N") 'simple-call-tree-move-next-samelevel)
   (define-key simple-call-tree-mode-map (kbd "P") 'simple-call-tree-move-prev-samelevel)
+  (define-key simple-call-tree-mode-map (kbd "M-g n") 'simple-call-tree-move-next-marked)
+  (define-key simple-call-tree-mode-map (kbd "M-g p") 'simple-call-tree-move-prev-marked)
+  (define-key simple-call-tree-mode-map (kbd "M-g M-n") 'simple-call-tree-move-next-marked)
+  (define-key simple-call-tree-mode-map (kbd "M-g M-p") 'simple-call-tree-move-prev-marked)
+  (define-key simple-call-tree-mode-map (kbd "M-p") 'simple-call-tree-move-prev-marked)
+  (define-key simple-call-tree-mode-map (kbd "M-n") 'simple-call-tree-move-next-marked)
   ;; Jump ring commands
   (define-key simple-call-tree-mode-map (kbd "j") 'simple-call-tree-jump-to-function)
   (define-key simple-call-tree-mode-map (kbd "J") '(lambda nil (interactive)
@@ -481,8 +485,6 @@ as a flat list."
   (define-key simple-call-tree-mode-map (kbd ".") 'simple-call-tree-jump-ring-add)
   (define-key simple-call-tree-mode-map (kbd "<") 'simple-call-tree-jump-prev)
   (define-key simple-call-tree-mode-map (kbd ">") 'simple-call-tree-jump-next)
-  (define-key simple-call-tree-mode-map (kbd "M-p") 'simple-call-tree-jump-prev)
-  (define-key simple-call-tree-mode-map (kbd "M-n") 'simple-call-tree-jump-next)
   ;; Applying commands
   (define-key simple-call-tree-mode-map (kbd "b") 'simple-call-tree-bookmark)
   (define-key simple-call-tree-mode-map (kbd "%") 'simple-call-tree-query-replace)
@@ -1771,11 +1773,9 @@ When called interactively FNSTR will be set to the function name under point,
 or if called with a prefix arg it will be prompted for.
 Unless optional arg SKIPRING is non-nil (which will be true if called with a negative
 prefix arg) then the function name will be added to `simple-call-tree-jump-ring'"
-  (interactive (list (if current-prefix-arg
-                         (if (and (featurep 'ido)
-                                  (not (null ido-mode)))
-                             (ido-completing-read "Jump to function: " (mapcar 'caar simple-call-tree-alist))
-                           (completing-read "Jump to function: " (mapcar 'caar simple-call-tree-alist)))
+  (interactive (list (if (or current-prefix-arg
+                             (not (simple-call-tree-get-parent)))
+                         (ido-completing-read "Jump to function: " (mapcar 'caar simple-call-tree-alist))
                        (simple-call-tree-get-function-at-point))
                      (< (prefix-numeric-value current-prefix-arg) 0)))
   (let* ((narrowedp (simple-call-tree-buffer-narrowed-p)))
@@ -1844,7 +1844,7 @@ When called interactively the name of the function at point is used for FNSTR."
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-move-next nil
-  "Move cursor to the next function."
+  "Move cursor to the next item."
   (interactive)
   (outline-next-visible-heading 1)
   (let ((nextpos (next-single-property-change (point) 'face)))
@@ -1852,24 +1852,38 @@ When called interactively the name of the function at point is used for FNSTR."
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-move-prev nil
-  "Move cursor to the previous function."
+  "Move cursor to the previous item."
   (interactive)
   (outline-previous-visible-heading 1)
   (goto-char (next-single-property-change (point) 'face)))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-move-next-samelevel nil
-  "Move cursor to the next function at the same level as the current one."
+  "Move cursor to the next item at the same level as the current one."
   (interactive)
   (outline-forward-same-level 1)
   (goto-char (next-single-property-change (point) 'face)))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-move-prev-samelevel nil
-  "Move cursor to the previous function at the same level as the current one."  
+  "Move cursor to the previous item at the same level as the current one."  
   (interactive)
   (outline-backward-same-level 1)
   (goto-char (next-single-property-change (point) 'face)))
+
+;; simple-call-tree-info: DONE  
+(defun simple-call-tree-move-next-marked nil
+  "Move cursor to the next marked item."
+  (interactive)
+  (end-of-line)
+  (re-search-forward "^\\*"))
+
+;; simple-call-tree-info: DONE  
+(defun simple-call-tree-move-prev-marked nil
+  "Move cursor to the next marked item."
+  (interactive)
+  (beginning-of-line)
+  (re-search-backward "^\\*"))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-buffer-narrowed-p nil
