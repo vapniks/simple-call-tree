@@ -1319,7 +1319,7 @@ If optional arg MARKED is non-nil use a * instead of a |."
          (fnface (get-text-property 0 'face fname))
          (pre2 (concat (if marked "*" "|") arrow
                        (propertize fname
-                                   'font-lock-face (list :inherit fnface :underline t)
+                                   'font-lock-face (list :inherit (or fnface 'default) :underline t)
                                    'mouse-face 'highlight
                                    'location pos)))
          (post (concat (make-string (max 0 (- (/ (window-width) 2) (length pre2))) 32) tags)))
