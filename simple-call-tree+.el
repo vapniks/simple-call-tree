@@ -144,6 +144,9 @@
 ;; Code for managing refactoring commands (to be applied to marked functions).
 ;; Multiple query replace command for substituting appropriate lisp macros -
 ;; e.g. replace (setq list (remove x list)) with (callf2 remove x list)
+;; Code for finding (and highlighting?) duplicate code and other code smells (difficult).
+;; Idea: break each function down into a list of keywords for the language in question,
+;; and look for common subsequences (not too short) among functions.
 
 ;;; Require
 (require 'thingatpt)
@@ -734,6 +737,9 @@ be shown in the tree.")
 (defvar simple-call-tree-marked-items nil
   "List of names of items in the *Simple Call Tree* buffer that are or should be marked.")
 
+(defvar simple-call-tree-regex-maxlen 10000
+  "Maximum allowed length for regular expressions.")
+
 ;; simple-call-tree-info: DONE  
 (defun* simple-call-tree-analyze (&optional (buffers (list (current-buffer))))
   "Analyze the current buffer, or the buffers in list BUFFERS.
@@ -779,18 +785,35 @@ By default it is set to a list containing the current buffer."
            (modevals (assoc major-mode simple-call-tree-major-mode-alist))
            (symstart (or (seventh modevals) "\\_<"))
            (symend (or (eighth modevals) "\\_>"))
-           (regexp (concat symstart
-                           (regexp-opt (mapcar 'caar simple-call-tree-alist) t)
-                           symend))
+           (names (mapcar 'caar simple-call-tree-alist))
+           ;; May need to make several regexps if there are many names
+           ;; (there is a limit on the size of regexp allowed by `re-search-forward')
+           (lengths (mapcar 'length names))
+           (regexps (mapcar (lambda (lst) (concat symstart
+                                                  (regexp-opt lst t)
+                                                  symend))
+                            (loop for i from 0 to (1- (length lengths))
+                                  with sum = 0
+                                  with start = 0
+                                  if (and (< sum simple-call-tree-regex-maxlen)
+                                          (< i (1- (length lengths))))
+                                  do (setq sum (+ sum (nth i lengths)))
+                                  else
+                                  collect (subseq names start i)
+                                  and do (setq start (1+ i) sum 0))))
            (invalidfonts (or (third (assoc mode simple-call-tree-major-mode-alist))
                              simple-call-tree-default-invalid-fonts)))
       (loop for item in simple-call-tree-alist
             for count2 from 1
-            for itemcar = (car item)
-            do (with-current-buffer (marker-buffer (second itemcar))
+            for buf = (marker-buffer (second (car item)))
+            for startpos = (marker-position (second (car item)))
+            for endpos = (marker-position (third (car item)))
+            do (with-current-buffer buf
                  (save-excursion
-                   (goto-char (marker-position (second itemcar)))
-                   (while (re-search-forward regexp (marker-position (third itemcar)) t)
+                   (goto-char startpos)
+                   (while (dolist (regex regexps)
+                            (if (re-search-forward regex endpos t)
+                                (return t)))
                      ;; need to go back so that the text properties are read correctly
                      (forward-word -1)
                      ;; check face is valid
@@ -804,28 +827,18 @@ By default it is set to a list containing the current buffer."
     (setq simple-call-tree-inverted-alist (simple-call-tree-invert))
     (message "simple-call-tree done")))
 
+;; Unable to get this to go significantly faster 
 ;; simple-call-tree-info: DONE  
 (defun simple-call-tree-invert nil
   "Invert `simple-call-tree-alist' and return the result."
-  (let (result)
+  (let ((result (mapcar (lambda (item) (list (car item)))
+                        simple-call-tree-alist)))
     (dolist (item simple-call-tree-alist)
-      (let* ((caller (car item))
-             (callees (cdr item))
-             (callername (car caller)))
-        (add-to-list 'result (list caller) nil
-                     (lambda (a b)
-                       (simple-call-tree-compare-items (caar a)
-                                                       (caar b))))
-        (unless (simple-call-tree-get-item callername result)
-          (push (list caller) result))
-        (dolist (callee callees)
-          (let* ((calleename (car callee))
-                 (callerpos (second callee))
-                 (calleeitem (car (simple-call-tree-get-item calleename)))
-                 (elem (simple-call-tree-get-item calleename result)))
-            (if elem
-                (push (list callername callerpos) (cdr elem))
-              (push (list calleeitem (list callername callerpos)) result))))))
+      (let* ((caller (car item)))
+        (dolist (callee (cdr item))
+          (let ((elem (simple-call-tree-get-item (car callee) result)))
+            (if elem (push (list (caar item) (second callee))
+                           (cdr elem)))))))
     result))
 
 ;;; New functions (not in simple-call-tree.el)
@@ -1404,6 +1417,7 @@ narrowing."
       (narrow-to-region (point) end)
       (if pos (goto-char pos)))))
 
+;; Only sort visible items
 ;; simple-call-tree-info: DONE  
 (defun simple-call-tree-sort (predicate)
   "Sort the branches and sub-branches of `simple-call-tree-alist' and `simple-call-tree-inverted-alist' by PREDICATE.
@@ -1975,25 +1989,26 @@ This just calls `simple-call-tree-apply-command' with the `query-replace-regexp'
     (setq fm-working nil))
   (delete-other-windows))
 
+;; Change so that it only marks visible items
 ;; simple-call-tree-info: DONE  
 (defun simple-call-tree-mark (func)
   "Mark the item named FUNC.
 If FUNC is nil then mark the current line and add the item to `simple-call-tree-marked-items'."
   (interactive (list (or (simple-call-tree-get-parent)
                          (simple-call-tree-get-function-at-point))))
-  (if (or (not func) (simple-call-tree-goto-func func))
-      (progn (beginning-of-line)
-             (re-search-forward (concat "^\\([|*]\\)\\( +\\w+\\)?\\( \\[#.\\]\\)? \\(\\S-+\\)")
-                                (line-end-position) t)
-             (read-only-mode -1)
-             (replace-match "*" nil t nil 1)
-                                        ;(replace-regexp "[|*]" "*" nil start (1+ start))
-             (read-only-mode 1)
-             (add-to-list 'simple-call-tree-marked-items
-                          (or func (match-string 4))
-                          nil 'simple-call-tree-compare-items)
-             (if (called-interactively-p)
-                 (simple-call-tree-move-next-samelevel)))))
+  (if (and (or (not func) (simple-call-tree-goto-func func))
+           (progn (beginning-of-line)
+                  (re-search-forward "^\\([|*]\\)\\( +\\w+\\)?\\( \\[#.\\]\\)? \\(\\S-+\\)"
+                                     (line-end-position) t)))
+      (progn 
+        (read-only-mode -1)
+        (replace-match "*" nil t nil 1)
+        (read-only-mode 1)
+        (add-to-list 'simple-call-tree-marked-items
+                     (or func (match-string 4))
+                     nil 'simple-call-tree-compare-items)
+        (if (called-interactively-p)
+            (simple-call-tree-move-next-samelevel)))))
 
 ;; simple-call-tree-info: DONE  
 (defun simple-call-tree-unmark (func)
