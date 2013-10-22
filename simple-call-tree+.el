@@ -669,7 +669,7 @@ as a flat list."
 
 ;; simple-call-tree-info: DONE  
 (defcustom simple-call-tree-mark-face (if (featurep 'dired+) diredp-flag-mark-line
-                                        highlight)
+                                        'highlight)
   "Face to use for marked items in the *Simple Call Tree* buffer."
   :group 'simple-call-tree
   :type 'face)
