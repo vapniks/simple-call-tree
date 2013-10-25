@@ -211,7 +211,7 @@ The children of each header will be sorted separately."
                  (const :tag "Sort by mark" mark)))
 
 ;; simple-call-tree-info: DONE  
-(defcustom simple-call-tree-default-maxdepth 2
+(defcustom simple-call-tree-default-maxdepth 1
   "The depth at which new call trees should be displayed."
   :group 'simple-call-tree
   :type 'integer)
