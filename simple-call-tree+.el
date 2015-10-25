@@ -1925,7 +1925,8 @@ When narrowed, the buffer will be narrowed to the subtree at point."
           (re-search-backward "^[|*] "))
         (outline-mark-subtree)
         (narrow-to-region (region-beginning) (region-end))
-        (let (select-active-regions) (deactivate-mark)))
+        (let (select-active-regions) (deactivate-mark))
+	(fit-window-to-buffer))
       (goto-char pos))))
 
 ;; simple-call-tree-info: DONE  
