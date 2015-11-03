@@ -728,6 +728,9 @@ be shown in the tree.")
 (defvar simple-call-tree-buffers nil
   "Buffers analyzed to create the simple-call-tree.")
 
+(defvar simple-call-tree-buffer-name "*Simple Call Tree*"
+  "Name for the simple call tree buffer.")
+
 ;; simple-call-tree-info: DONE
 (defvar simple-call-tree-tags-regexp
   "simple-call-tree-info:\\s-*\\(\\w+\\)?\\s-*\\(\\[#[A-Z]\\]\\)?\\s-*\\(:[a-zA-Z0-9:,;-_]+:\\)?"
@@ -844,12 +847,12 @@ By default it is set to a list containing the current buffer."
 ;;; New functions (not in simple-call-tree.el)
 
 ;; simple-call-tree-info: DONE
-(cl-defun simple-call-tree-get-function-at-point (&optional (buf "*Simple Call Tree*"))
+(cl-defun simple-call-tree-get-function-at-point (&optional (buf simple-call-tree-buffer-name))
   "Return the name of the function nearest point in the *Simple Call Tree* buffer.
 If optional arg BUF is supplied then use BUF instead of the *Simple Call Tree* buffer.
 If there is no function on this line of the *Simple Call Tree* buffer, return nil."
   (with-current-buffer buf
-    (if (equal buf "*Simple Call Tree*")
+    (if (equal buf simple-call-tree-buffer-name)
         (save-excursion
           (move-beginning-of-line nil)
           (if (re-search-forward (concat outline-regexp "\\(\\S-+\\)")
@@ -1129,9 +1132,14 @@ When called interactively files will be prompted for and only functions in the c
       (setq buffers (cl-loop for file in files collect (find-file file))))
     (if (or (not files) (called-interactively-p))
         (add-to-list 'buffers (current-buffer)))
-    (simple-call-tree-build-tree buffers)
-    (setq simple-call-tree-jump-ring (make-ring simple-call-tree-jump-ring-max)
-          simple-call-tree-jump-ring-index 0)))
+    ;; If we already have a call tree for those buffers, just redisplay it
+    (if (and (get-buffer simple-call-tree-buffer-name)
+	     (not (cl-set-exclusive-or
+		   buffers simple-call-tree-buffers)))
+	(switch-to-buffer simple-call-tree-buffer-name)
+      (simple-call-tree-build-tree buffers)
+      (setq simple-call-tree-jump-ring (make-ring simple-call-tree-jump-ring-max)
+	    simple-call-tree-jump-ring-index 0))))
 
 ;;;###autoload
 ;; simple-call-tree-info: DONE  
@@ -1173,8 +1181,8 @@ otherwise it will be narrowed around FUNC."
                          (which-function)
                        (simple-call-tree-get-function-at-point (current-buffer)))))
   (if (simple-call-tree-get-item func)
-      (if (get-buffer "*Simple Call Tree*")
-          (switch-to-buffer "*Simple Call Tree*")
+      (if (get-buffer simple-call-tree-buffer-name)
+          (switch-to-buffer simple-call-tree-buffer-name)
         (simple-call-tree-list-callers-and-functions))
     (simple-call-tree-display-buffer))
   (simple-call-tree-jump-to-function func)
@@ -1186,7 +1194,7 @@ otherwise it will be narrowed around FUNC."
                                                                (funclist simple-call-tree-alist))
   "List callers and functions in FUNCLIST to depth MAXDEPTH.
 By default FUNCLIST is set to `simple-call-tree-alist'."
-  (switch-to-buffer (get-buffer-create "*Simple Call Tree*"))
+  (switch-to-buffer (get-buffer-create simple-call-tree-buffer-name))
   (if (not (equal major-mode 'simple-call-tree-mode))
       (simple-call-tree-mode))
   (read-only-mode -1)
@@ -1206,7 +1214,7 @@ By default FUNCLIST is set to `simple-call-tree-alist'."
   "Return list of items which are currently visible in the *Simple Call Tree* buffer.
 Items returned are elements of `simple-call-tree-alist'"
   (let ((items))
-    (with-current-buffer "*Simple Call Tree*"
+    (with-current-buffer simple-call-tree-buffer-name
       (goto-char (point-min))
       (re-search-forward "^\\([|*]\\)\\( +\\w+\\)?\\( \\[#.\\]\\)? \\(\\S-+\\)")
       (add-to-list 'items
@@ -1373,7 +1381,7 @@ the cursor manually since it depends on the match string from a previous outline
 command. To ensure correct results do a search for `outline-regexp' from the beginning of
 the line first in order to capture the match-string.
 We can't do that in this function as it causes other problems with outline mode commands."
-  (with-current-buffer "*Simple Call Tree*"
+  (with-current-buffer simple-call-tree-buffer-name
     (save-excursion
       (let ((arrowlen (length (match-string 1))))
         (if (= arrowlen 0) 1 (1+ (/ (1- arrowlen) 2)))))))
@@ -1382,7 +1390,7 @@ We can't do that in this function as it causes other problems with outline mode 
 (defun simple-call-tree-get-parent nil
   "Return the name of the parent of the function at point according to the current tree.
 If there is no parent, return nil."
-  (with-current-buffer "*Simple Call Tree*"
+  (with-current-buffer simple-call-tree-buffer-name
     (save-excursion
       (if (condition-case nil
               (simple-call-tree-move-top)
@@ -1392,7 +1400,7 @@ If there is no parent, return nil."
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-get-toplevel nil
   "Return the name of the toplevel parent of the subtree at point."
-  (with-current-buffer "*Simple Call Tree*"
+  (with-current-buffer simple-call-tree-buffer-name
     (save-excursion
       (move-beginning-of-line nil)
       (re-search-forward outline-regexp)
@@ -1572,7 +1580,7 @@ The toplevel functions will be sorted, and the functions in each branch will be 
 ;; simple-call-tree-info: DONE  
 (defun simple-call-tree-move-item-up (&optional arg)
   (interactive (list current-prefix-arg))
-  (with-current-buffer "*Simple Call Tree*"
+  (with-current-buffer simple-call-tree-buffer-name
     (simple-call-tree-move-top)
     (let* ((arg (or (and arg (max arg 1)) 1))
            (item (simple-call-tree-get-item (simple-call-tree-get-function-at-point)))
@@ -1592,7 +1600,7 @@ The toplevel functions will be sorted, and the functions in each branch will be 
 ;; simple-call-tree-info: DONE  
 (defun simple-call-tree-move-item-down (&optional arg)
   (interactive (list current-prefix-arg))
-  (with-current-buffer "*Simple Call Tree*"
+  (with-current-buffer simple-call-tree-buffer-name
     (simple-call-tree-move-top)
     (let* ((arg (or (and arg (max arg 1)) 1))
            (item (simple-call-tree-get-item (simple-call-tree-get-function-at-point)))
@@ -1615,17 +1623,17 @@ The toplevel functions will be sorted, and the functions in each branch will be 
   (or (re-search-forward outline-regexp nil t)
       (progn (simple-call-tree-move-prev)
              (re-search-forward outline-regexp nil t)))
-  (list 'narrowed (if (get-buffer "*Simple Call Tree*")
+  (list 'narrowed (if (get-buffer simple-call-tree-buffer-name)
                       (simple-call-tree-buffer-narrowed-p))
         'depth simple-call-tree-current-maxdepth
-        'level (if (get-buffer "*Simple Call Tree*")
+        'level (if (get-buffer simple-call-tree-buffer-name)
                    (simple-call-tree-outline-level))
         'tree (if simple-call-tree-inverted
                   simple-call-tree-inverted-alist
                 simple-call-tree-alist)
-        'thisfunc (if (get-buffer "*Simple Call Tree*")
+        'thisfunc (if (get-buffer simple-call-tree-buffer-name)
                       (simple-call-tree-get-function-at-point))
-        'topfunc (if (get-buffer "*Simple Call Tree*")
+        'topfunc (if (get-buffer simple-call-tree-buffer-name)
                      (simple-call-tree-get-toplevel))
         'nodups simple-call-tree-nodups))
 ;; Restore hidden/unhidden state after sorting
@@ -1657,7 +1665,7 @@ The toplevel functions will be sorted, and the functions in each branch will be 
 (defun simple-call-tree-quit nil
   "Quit the *Simple Call Tree* buffer."
   (interactive)
-  (let ((win (get-buffer-window "*Simple Call Tree*")))
+  (let ((win (get-buffer-window simple-call-tree-buffer-name)))
     (if win (with-selected-window win
               (unless (not (featurep 'fm))
                 (if fm-working (fm-toggle))
@@ -1772,7 +1780,7 @@ Return the position of the start of the item or nil if it couldn't be found."
          (lineregex (concat "^[|*]\\( \\w+\\)?\\( \\[#.\\]\\)? \\("
                             fnregex "\\)\\s-*\\(:.*:\\)?$"))
          found)
-    (with-current-buffer "*Simple Call Tree*"
+    (with-current-buffer simple-call-tree-buffer-name
       (widen)
       (goto-char (point-min))
       (if (setq found (re-search-forward lineregex nil t))
@@ -1851,7 +1859,7 @@ When called interactively the name of the function at point is used for FNSTR."
 (defun simple-call-tree-move-top nil
   "Move cursor to the parent of this function."
   (interactive)
-  (with-current-buffer "*Simple Call Tree*"
+  (with-current-buffer simple-call-tree-buffer-name
     (condition-case err
         (outline-up-heading simple-call-tree-current-maxdepth)
       (error nil))))
@@ -1902,7 +1910,7 @@ When called interactively the name of the function at point is used for FNSTR."
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-buffer-narrowed-p nil
   "Return non-nil if *Simple Call Tree* buffer is narrowed."
-  (with-current-buffer "*Simple Call Tree*"
+  (with-current-buffer simple-call-tree-buffer-name
     (or (/= (point-min) 1)
         (/= (point-max) (1+ (buffer-size))))))
 
@@ -1915,7 +1923,7 @@ prefix arg then narrow the buffer.
 Otherwise toggle the buffer between narrow and wide state.
 When narrowed, the buffer will be narrowed to the subtree at point."
   (interactive "P")
-  (with-current-buffer "*Simple Call Tree*"
+  (with-current-buffer simple-call-tree-buffer-name
     (let ((pos (point)))
       (if (or (and state (> (prefix-numeric-value state) 0))
               (and (not state) (simple-call-tree-buffer-narrowed-p)))
@@ -1934,7 +1942,7 @@ When narrowed, the buffer will be narrowed to the subtree at point."
   "Toggle the inclusion of duplicate sub-branches in the call tree."
   (interactive)
   (callf not simple-call-tree-nodups)
-  (with-current-buffer "*Simple Call Tree*"
+  (with-current-buffer simple-call-tree-buffer-name
     (simple-call-tree-revert)))
 
 ;; simple-call-tree-info: DONE  
@@ -1958,7 +1966,7 @@ and narrowing the buffer around the function."
             (call-interactively cmd))
         ((quit error) nil))
       (widen)))
-  (switch-to-buffer-other-window "*Simple Call Tree*"))
+  (switch-to-buffer-other-window simple-call-tree-buffer-name))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-query-replace nil
