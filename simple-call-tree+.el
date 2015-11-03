@@ -385,7 +385,7 @@ as a flat list."
   `(while (not (progn ,@forms))))
 
 ;; simple-call-tree-info: DONE  
-(defun* simple-call-tree-get-item (func &optional (alist simple-call-tree-alist))
+(cl-defun simple-call-tree-get-item (func &optional (alist simple-call-tree-alist))
   "Return the item in `simple-call-tree-alist' corresponding with function named FUNC."
   (assoc-if (lambda (x) (simple-call-tree-compare-items (car x) func)) alist))
 
@@ -741,7 +741,7 @@ be shown in the tree.")
   "Maximum allowed length for regular expressions.")
 
 ;; simple-call-tree-info: DONE  
-(defun* simple-call-tree-analyze (&optional (buffers (list (current-buffer))))
+(cl-defun simple-call-tree-analyze (&optional (buffers (list (current-buffer))))
   "Analyze the current buffer, or the buffers in list BUFFERS.
 The result is stored in `simple-call-tree-alist'.
 Optional arg BUFFERS is a list of buffers to analyze together.
@@ -844,7 +844,7 @@ By default it is set to a list containing the current buffer."
 ;;; New functions (not in simple-call-tree.el)
 
 ;; simple-call-tree-info: DONE
-(defun* simple-call-tree-get-function-at-point (&optional (buf "*Simple Call Tree*"))
+(cl-defun simple-call-tree-get-function-at-point (&optional (buf "*Simple Call Tree*"))
   "Return the name of the function nearest point in the *Simple Call Tree* buffer.
 If optional arg BUF is supplied then use BUF instead of the *Simple Call Tree* buffer.
 If there is no function on this line of the *Simple Call Tree* buffer, return nil."
@@ -892,7 +892,7 @@ nil."
         (cons end (buffer-substring start end))))))
 
 ;; simple-call-tree-info: DONE  
-(defun* simple-call-tree-get-attribs (&optional (lookback -2))
+(cl-defun simple-call-tree-get-attribs (&optional (lookback -2))
   "Extract org attributes from item in source code from lines previous to the current one.
 The LOOKBACK argument indicates how many lines backwards to search and should be negative."
   (let ((end (point)) todo priority tags)
@@ -910,7 +910,7 @@ The LOOKBACK argument indicates how many lines backwards to search and should be
 ;; Need to be able to handle cases where the function starts at the beginning of the file,
 ;; (so there are no previous lines).
 ;; simple-call-tree-info: DONE  
-(defun* simple-call-tree-set-attribute (attr value &optional func (updatesrc t))
+(cl-defun simple-call-tree-set-attribute (attr value &optional func (updatesrc t))
   "Set the todo, priority, or tags for an item in `simple-call-tree-alist', and update the buffer and source code.
 ATTR can be one of: 'todo, 'priority, or 'tags
 VALUE is the corresponding value: a string for 'todo or 'priority (a single letter), or a list of strings for 'tags.
@@ -969,7 +969,7 @@ information. If UPDATESRC is nil then don't bother updating the source code."
             (if hidden (hide-subtree)))))))
 
 ;; simple-call-tree-info: DONE  
-(defun* simple-call-tree-set-todo (value funcs &optional remove)
+(cl-defun simple-call-tree-set-todo (value funcs &optional remove)
   "Set the TODO state for the function(s) FUNCS.
 By default FUNCS is set to the list of marked items or the function at point if there are no marked items.
 If a prefix arg is used (or REMOVE is non-nil) then remove the TODO state."
@@ -1016,7 +1016,7 @@ If a prefix arg is used (or REMOVE is non-nil) then remove the TODO state."
      func t)))
 
 ;; simple-call-tree-info: DONE  
-(defun* simple-call-tree-set-priority (value funcs)
+(cl-defun simple-call-tree-set-priority (value funcs)
   "Set the priority level to VALUE for the function(s) FUNCS.
 By default FUNCS is set to the list of marked items or the function at point if there are no marked items."
   (interactive (progn (message "Priority %c-%c, SPC to remove: "
@@ -1064,7 +1064,7 @@ By default FUNCS is set to the list of marked items or the function at point if 
     (simple-call-tree-set-attribute 'priority nextpriority func t)))
 
 ;; simple-call-tree-info: DONE  
-(defun* simple-call-tree-set-tags (value funcs)
+(cl-defun simple-call-tree-set-tags (value funcs)
   "Set the org tags for the function(s) FUNCS.
 By default FUNCS is set to the list of marked items or the function at point if there are no marked items."
   (interactive (let* ((funcs (or simple-call-tree-marked-items
@@ -1104,7 +1104,7 @@ If REMOVE is non-nil remove the tags instead."
 
 ;;;###autoload
 ;; simple-call-tree-info: DONE  
-(defun* simple-call-tree-display-buffer (&optional files)
+(cl-defun simple-call-tree-display-buffer (&optional files)
   "Display call tree for current buffer.
 If optional arg FILES is supplied it specifies a list of files to search for functions to display in the tree.
 When called interactively files will be prompted for and only functions in the current buffer will be used."
@@ -1157,7 +1157,7 @@ listed in `simple-call-tree-buffers' will be used."
 
 ;;;###autoload
 ;; simple-call-tree-info: DONE  
-(defun* simple-call-tree-current-function (func &optional wide)
+(cl-defun simple-call-tree-current-function (func &optional wide)
   "Display call tree for function FUNC.
 If called interactively FUNC will be set to the symbol nearest point,
 unless a prefix arg is used in which case the function returned by `which-function'
@@ -1182,7 +1182,7 @@ otherwise it will be narrowed around FUNC."
     (simple-call-tree-toggle-narrowing -1)))
 
 ;; simple-call-tree-info: DONE  
-(defun* simple-call-tree-list-callers-and-functions (&optional (maxdepth simple-call-tree-default-maxdepth)
+(cl-defun simple-call-tree-list-callers-and-functions (&optional (maxdepth simple-call-tree-default-maxdepth)
                                                                (funclist simple-call-tree-alist))
   "List callers and functions in FUNCLIST to depth MAXDEPTH.
 By default FUNCLIST is set to `simple-call-tree-alist'."
@@ -1269,7 +1269,7 @@ The style of links used for child headers is controlled by `simple-call-tree-org
     (if display (switch-to-buffer exportbuf))))
 
 ;; simple-call-tree-info: DONE  
-(defun* simple-call-tree-list-callees-recursively (item &optional (maxdepth 2)
+(cl-defun simple-call-tree-list-callees-recursively (item &optional (maxdepth 2)
                                                         (curdepth 1)
                                                         (funclist simple-call-tree-alist)
                                                         (inverted simple-call-tree-inverted)
@@ -1711,7 +1711,7 @@ If it is a called function then display the position in the calling function whe
           (bottom (recenter -1)))))))
 
 ;; simple-call-tree-info: DONE  
-(defun* simple-call-tree-visit-function (&optional arg)
+(cl-defun simple-call-tree-visit-function (&optional arg)
   "Visit the source code corresponding to the current header.
 If the current header is a calling or toplevel function then visit that function.
 If it is a called function then visit the position in the calling function where it is called.
@@ -1781,7 +1781,7 @@ Return the position of the start of the item or nil if it couldn't be found."
                  (if found (re-search-backward fnregex)))))))
 
 ;; simple-call-tree-info: DONE  
-(defun* simple-call-tree-jump-to-function (fnstr &optional skipring)
+(cl-defun simple-call-tree-jump-to-function (fnstr &optional skipring)
   "Move cursor to the line corresponding to the function with name FNSTR.
 When called interactively FNSTR will be set to the function name under point,
 or if called with a prefix arg it will be prompted for.
@@ -1938,7 +1938,7 @@ When narrowed, the buffer will be narrowed to the subtree at point."
     (simple-call-tree-revert)))
 
 ;; simple-call-tree-info: DONE  
-(defun* simple-call-tree-apply-command (cmd &optional
+(cl-defun simple-call-tree-apply-command (cmd &optional
                                             (funcs (or simple-call-tree-marked-items
                                                        (list (or (unless simple-call-tree-inverted
                                                                    (simple-call-tree-get-parent))
@@ -2028,7 +2028,7 @@ If FUNC is nil then mark the current line and add the item to `simple-call-tree-
 
 ;; Easier to remember the function name than the raw code.
 ;; simple-call-tree-info: DONE
-(defun* simple-call-tree-marked-p (str &optional (alist simple-call-tree-marked-items))
+(cl-defun simple-call-tree-marked-p (str &optional (alist simple-call-tree-marked-items))
   "Return non-nil if STR is in `simple-call-tree-marked-items'.
 Membership is checked by the contents and font of STR.
 If optional arg ALIST is supplied then use alist instead of `simple-call-tree-marked-items'."
