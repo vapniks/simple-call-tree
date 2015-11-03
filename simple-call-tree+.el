@@ -792,38 +792,38 @@ By default it is set to a list containing the current buffer."
            (regexps (mapcar (lambda (lst) (concat symstart
                                                   (regexp-opt lst t)
                                                   symend))
-                            (loop for i from 0 to (1- (length lengths))
-                                  with sum = 0
-                                  with start = 0
-                                  if (and (< sum simple-call-tree-regex-maxlen)
-                                          (< i (1- (length lengths))))
-                                  do (setq sum (+ sum (nth i lengths)))
-                                  else
-                                  collect (subseq names start i)
-                                  and do (setq start (1+ i) sum 0))))
+                            (cl-loop for i from 0 to (1- (length lengths))
+				     with sum = 0
+				     with start = 0
+				     if (and (< sum simple-call-tree-regex-maxlen)
+					     (< i (1- (length lengths))))
+				     do (setq sum (+ sum (nth i lengths)))
+				     else
+				     collect (subseq names start i)
+				     and do (setq start (1+ i) sum 0))))
            (invalidfonts (or (third (assoc mode simple-call-tree-major-mode-alist))
                              simple-call-tree-default-invalid-fonts)))
-      (loop for item in simple-call-tree-alist
-            for count2 from 1
-            for buf = (marker-buffer (second (car item)))
-            for startpos = (marker-position (second (car item)))
-            for endpos = (marker-position (third (car item)))
-            do (with-current-buffer buf
-                 (save-excursion
-                   (goto-char startpos)
-                   (while (dolist (regex regexps)
-                            (if (re-search-forward regex endpos t)
-                                (return t)))
-                     ;; need to go back so that the text properties are read correctly
-                     (forward-word -1)
-                     ;; check face is valid
-                     (let ((face (get-text-property (point) 'face)))
-                       (if (listp face)
-                           (if (not (intersection face invalidfonts))
-                               (push (list (match-string 1) (point-marker)) (cdr item)))
-                         (if (not (member face invalidfonts))
-                             (push (list (match-string 1) (point-marker)) (cdr item)))))
-                     (forward-word 1))))))
+      (cl-loop for item in simple-call-tree-alist
+	       for count2 from 1
+	       for buf = (marker-buffer (second (car item)))
+	       for startpos = (marker-position (second (car item)))
+	       for endpos = (marker-position (third (car item)))
+	       do (with-current-buffer buf
+		    (save-excursion
+		      (goto-char startpos)
+		      (while (dolist (regex regexps)
+			       (if (re-search-forward regex endpos t)
+				   (return t)))
+			;; need to go back so that the text properties are read correctly
+			(forward-word -1)
+			;; check face is valid
+			(let ((face (get-text-property (point) 'face)))
+			  (if (listp face)
+			      (if (not (intersection face invalidfonts))
+				  (push (list (match-string 1) (point-marker)) (cdr item)))
+			    (if (not (member face invalidfonts))
+				(push (list (match-string 1) (point-marker)) (cdr item)))))
+			(forward-word 1))))))
     (setq simple-call-tree-inverted-alist (simple-call-tree-invert))
     (message "simple-call-tree done")))
 
@@ -1126,7 +1126,7 @@ When called interactively files will be prompted for and only functions in the c
                                         (add-to-list 'files (concat dir name))))
                      (directory-files dir))))))
     (save-excursion
-      (setq buffers (loop for file in files collect (find-file file))))
+      (setq buffers (cl-loop for file in files collect (find-file file))))
     (if (or (not files) (called-interactively-p))
         (add-to-list 'buffers (current-buffer)))
     (simple-call-tree-build-tree buffers)
@@ -1455,10 +1455,10 @@ and when sorting the branches of those items the items in the cdr are passed."
   (let ((item (simple-call-tree-get-item func alist)))
     (+ (1- (length item))
        (if (> depth 1)
-           (loop for child in (cdr item)
-                 sum (simple-call-tree-count-descendants (car child) 
-                                                      (1- depth)
-                                                      alist))
+           (cl-loop for child in (cdr item)
+		    sum (simple-call-tree-count-descendants (car child) 
+							    (1- depth)
+							    alist))
          0))))
 
 ;; simple-call-tree-info: DONE  
