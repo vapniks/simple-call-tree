@@ -1,16 +1,16 @@
-;;; simple-call-tree+.el --- Extensions to simple-call-tree
+;;; simple-call-tree.el --- analyze source code based on font-lock text-properties
 
-;; Filename: simple-call-tree+.el
-;; Description: extensions to simple-call-tree
+;; Filename: simple-call-tree.el
+;; Description: analyze source code based on font-lock text-properties
 ;; Author: Joe Bloggs <vapniks@yahoo.com>
 ;; Maintainer: Joe Bloggs <vapniks@yahoo.com>
 ;; Copyleft (Ↄ) 2012, Joe Bloggs, all rites reversed.
 ;; Created: 2012-11-01 21:28:07
-;; Version: 1.5
-;; Last-Updated: 2013-10-18 00:30:00
+;; Version: 20151116.1603
+;; Last-Updated: Mon Nov 16 16:03:18 2015
 ;;           By: Joe Bloggs
-;; URL: http://www.emacswiki.org/emacs/download/simple-call-tree+.el
-;;      https://github.com/vapniks/simple-call-tree-ext
+;; URL: http://www.emacswiki.org/emacs/download/simple-call-tree.el
+;;      https://github.com/vapniks/simple-call-tree
 ;; Keywords: programming
 ;; Compatibility: GNU Emacs 24.2.1
 ;;
@@ -86,9 +86,214 @@
 ;; point by pressing % or C-%, or any other arbitrary command by pressing !
 ;; This may be useful when refactoring.
 
+;;; Commands:
+;;
+;; Below is a complete list of commands:
+;;
+;;  `simple-call-tree-mode'
+;;    The major-mode for the one-key menu buffer.
+;;    Keybinding: M-x simple-call-tree-mode
+;;  `simple-call-tree-next-todo'
+;;    Move to next todo state for current function.
+;;    Keybinding: <S-right>
+;;  `simple-call-tree-prev-todo'
+;;    Move to previous todo state for current function.
+;;    Keybinding: <S-left>
+;;  `simple-call-tree-up-priority'
+;;    Change current function to the next priority level.
+;;    Keybinding: <S-up>
+;;  `simple-call-tree-down-priority'
+;;    Change current function to the previous priority level.
+;;    Keybinding: <S-down>
+;;  `simple-call-tree-add-tags'
+;;    Add tags in VALUE to the function(s) FUNCS.
+;;    Keybinding: C-c C-a
+;;  `simple-call-tree-build-tree'
+;;    Build the simple-call-tree and display it in the "*Simple Call Tree*" buffer.
+;;    Keybinding: R
+;;  `simple-call-tree-export-org-tree'
+;;    Create an org-tree from the currently visible items, and put it in an org buffer.
+;;    Keybinding: M-x simple-call-tree-export-org-tree
+;;  `simple-call-tree-export-items'
+;;    Export the currently visible items into a buffer.
+;;    Keybinding: M-x simple-call-tree-export-items
+;;  `simple-call-tree-reverse'
+;;    Reverse the order of the branches & sub-branches in `simple-call-tree-alist' and `simple-call-tree-inverted-alist'.
+;;    Keybinding: r
+;;  `simple-call-tree-sort-by-num-descendants'
+;;    Sort the branches in the *Simple Call Tree* buffer by the number of descendants to depth DEPTH.
+;;    Keybinding: d
+;;  `simple-call-tree-sort-by-name'
+;;    Sort the functions in the *Simple Call Tree* buffer alphabetically.
+;;    Keybinding: n
+;;  `simple-call-tree-sort-by-position'
+;;    Sort the functions in the *Simple Call Tree* buffer by position.
+;;    Keybinding: p
+;;  `simple-call-tree-sort-by-face'
+;;    Sort the items in the *Simple Call Tree* buffer according to the display face name.
+;;    Keybinding: f
+;;  `simple-call-tree-sort-by-todo'
+;;    Sort the items in the *Simple Call Tree* buffer by TODO state.
+;;    Keybinding: T
+;;  `simple-call-tree-sort-by-priority'
+;;    Sort the items in the *Simple Call Tree* buffer by priority level.
+;;    Keybinding: P
+;;  `simple-call-tree-sort-by-size'
+;;    Sort the items in the *Simple Call Tree* buffer by size.
+;;    Keybinding: s
+;;  `simple-call-tree-sort-by-mark'
+;;    Sort the marked items in the *Simple Call Tree* buffer before the unmarked ones.
+;;    Keybinding: *
+;;  `simple-call-tree-quit'
+;;    Quit the *Simple Call Tree* buffer.
+;;    Keybinding: q
+;;  `simple-call-tree-invert-buffer'
+;;    Invert the tree in *Simple Call Tree* buffer.
+;;    Keybinding: i
+;;  `simple-call-tree-change-maxdepth'
+;;    Alter the maximum tree depth in the *Simple Call Tree* buffer.
+;;    Keybinding: M-x simple-call-tree-change-maxdepth
+;;  `simple-call-tree-view-function'
+;;    Display the source code corresponding to current header.
+;;    Keybinding: C-o
+;;  `simple-call-tree-jump-prev'
+;;    Jump to the previous function in the `simple-call-tree-jump-ring'.
+;;    Keybinding: <
+;;  `simple-call-tree-jump-next'
+;;    Jump to the next function in the `simple-call-tree-jump-ring'.
+;;    Keybinding: >
+;;  `simple-call-tree-jump-ring-add'
+;;    Add the function at point to the jump-ring.
+;;    Keybinding: .
+;;  `simple-call-tree-move-top'
+;;    Move cursor to the parent of this function.
+;;    Keybinding: ^
+;;  `simple-call-tree-move-next'
+;;    Move cursor to the next item.
+;;    Keybinding: M-x simple-call-tree-move-next
+;;  `simple-call-tree-move-prev'
+;;    Move cursor to the previous item.
+;;    Keybinding: M-x simple-call-tree-move-prev
+;;  `simple-call-tree-move-next-samelevel'
+;;    Move cursor to the next item at the same level as the current one.
+;;    Keybinding: C-f
+;;  `simple-call-tree-move-prev-samelevel'
+;;    Move cursor to the previous item at the same level as the current one.
+;;    Keybinding: C-b
+;;  `simple-call-tree-move-next-marked'
+;;    Move cursor to the next marked item.
+;;    Keybinding: M-n
+;;  `simple-call-tree-move-prev-marked'
+;;    Move cursor to the next marked item.
+;;    Keybinding: M-p
+;;  `simple-call-tree-toggle-narrowing'
+;;    Toggle narrowing of *Simple Call Tree* buffer.
+;;    Keybinding: /
+;;  `simple-call-tree-toggle-duplicates'
+;;    Toggle the inclusion of duplicate sub-branches in the call tree.
+;;    Keybinding: D
+;;  `simple-call-tree-query-replace'
+;;    Perform query-replace on the marked items or the item at point in the *Simple Call Tree* buffer.
+;;    Keybinding: %
+;;  `simple-call-tree-query-replace-regexp'
+;;    Perform `query-replace-regexp' on the marked items or the item at point in the *Simple Call Tree* buffer.
+;;    Keybinding: C-%
+;;  `simple-call-tree-bookmark'
+;;    Set bookmarks the marked items or the item at point in the *Simple Call Tree* buffer.
+;;    Keybinding: M-x simple-call-tree-bookmark
+;;  `simple-call-tree-delete-other-windows'
+;;    Make the *Simple Call Tree* buffer fill the frame.
+;;    Keybinding: 1
+;;  `simple-call-tree-mark'
+;;    Mark the item named FUNC.
+;;    Keybinding: m
+;;  `simple-call-tree-unmark'
+;;    Unmark the item named FUNC.
+;;    Keybinding: u
+;;  `simple-call-tree-unmark-all'
+;;    Unmark all items.
+;;    Keybinding: U
+;;  `simple-call-tree-toggle-marks'
+;;    Toggle marks (unmarked become marked and marked become unmarked).
+;;    Keybinding: M-x simple-call-tree-toggle-marks
+;;  `simple-call-tree-mark-by-name'
+;;    Mark all items with names matching regular expression REGEX.
+;;    Keybinding: M-x simple-call-tree-mark-by-name
+;;  `simple-call-tree-mark-by-source'
+;;    Mark all items with source code matching regular expression REGEX.
+;;    Keybinding: M-x simple-call-tree-mark-by-source
+;;  `simple-call-tree-mark-by-tag-match'
+;;    Mark all items with code matching regular expression REGEX.
+;;    Keybinding: t
+;;  `simple-call-tree-mark-by-priority'
+;;    Mark all items with priority VALUE.
+;;    Keybinding: M-x simple-call-tree-mark-by-priority
+;;  `simple-call-tree-mark-by-todo'
+;;    Mark all items with TODO state matching regular expression REGEX.
+;;    Keybinding: M-x simple-call-tree-mark-by-todo
+;;  `simple-call-tree-mark-by-face'
+;;    Mark all items with display face FACE.
+;;    Keybinding: M-x simple-call-tree-mark-by-face
+;;  `simple-call-tree-mark-by-buffer'
+;;    Mark all items corresponding to source code in buffer BUF.
+;;    Keybinding: b
+;;  `simple-call-tree-kill-marked'
+;;    Remove all marked items from the *Simple Call Tree* buffer.
+;;    Keybinding: k
+;;  `simple-call-tree-revert'
+;;    Redisplay the *Simple Call Tree* buffer.
+;;    Keybinding: g
+;;
+;;; Customizable Options:
+;;
+;; Below is a list of customizable options:
+;;
+;;  `simple-call-tree-default-recenter'
+;;    How to recenter the window after moving to another function in the "*Simple Call Tree*" buffer.
+;;    default = (quote middle)
+;;  `simple-call-tree-default-valid-fonts'
+;;    List of fonts to use for finding objects to include in the call tree.
+;;    default = (quote (font-lock-function-name-face font-lock-variable-name-face))
+;;  `simple-call-tree-default-invalid-fonts'
+;;    List of fonts that should not be in the text property of any valid token.
+;;    default = (quote (font-lock-comment-face font-lock-string-face font-lock-doc-face font-lock-keyword-face font-lock-warning-face ...))
+;;  `simple-call-tree-default-sort-method'
+;;    The default sort method to use when a call tree is newly created.
+;;    default = (quote position)
+;;  `simple-call-tree-default-maxdepth'
+;;    The depth at which new call trees should be displayed.
+;;    default = 2
+;;  `simple-call-tree-major-mode-alist'
+;;    Alist of major modes, and information to use for identifying objects for the simple call tree.
+;;    default = (quote ((emacs-lisp-mode ... nil ... nil ...) (cperl-mode nil nil ... nil ...) (haskell-mode nil ... ... ... ...) (perl-mode nil nil ... nil ...) (python-mode ... nil ... nil ...) ...))
+;;  `simple-call-tree-org-link-style'
+;;    Style used for links of child headers when exporting org tree using `simple-call-tree-export-org-tree'.
+;;    default = (quote radio)
+;;  `simple-call-tree-org-todo-keywords'
+;;    List of different TODO keywords, if nil then the keywords in `org-todo-keywords' will be used.
+;;    default = nil
+;;  `simple-call-tree-org-not-done-keywords'
+;;    List of TODO keywords representing not done states.
+;;    default = (quote ("TODO" "STARTED" "WAITING" "CHECK"))
+;;  `simple-call-tree-org-highest-priority'
+;;    See `org-highest-priority'.
+;;    default = org-highest-priority
+;;  `simple-call-tree-org-lowest-priority'
+;;    See `org-lowest-priority'.
+;;    default = org-lowest-priority
+;;  `simple-call-tree-org-tag-alist'
+;;    See `org-tag-alist'.
+;;    default = org-tag-alist
+;;  `simple-call-tree-mark-face'
+;;    Face to use for marked items in the *Simple Call Tree* buffer.
+;;    default = (if (featurep (quote dired+)) diredp-flag-mark-line (quote highlight))
+;;  `simple-call-tree-jump-ring-max'
+;;    Maximum number of elements in `simple-call-tree-jump-ring', before old elements are removed.
+;;    default = 20
+
 ;;; Installation:
 ;;
-;; Put simple-call-tree+.el in a directory in your load-path, e.g. ~/.emacs.d/
+;; Put simple-call-tree.el in a directory in your load-path, e.g. ~/.emacs.d/
 ;; You can add a directory to your load-path with the following line in ~/.emacs
 ;; (add-to-list 'load-path (expand-file-name "~/elisp"))
 ;; where ~/elisp is the directory you want to add 
@@ -103,37 +308,10 @@
 ;;
 ;; (global-set-key (kbd "C-c S") 'simple-call-tree-display-buffer)
 
-
-;;; Customizable Options:
-;;
-;; Below are customizable option list:
-;;
-;;  `simple-call-tree-default-recenter'
-;;    How to recenter the window after moving to another function in the "*Simple Call Tree*" buffer.
-;;  `simple-call-tree-default-valid-fonts'
-;;    List of fonts to use for finding objects to include in the call tree.
-;;  `simple-call-tree-default-invalid-fonts'
-;;    List of fonts that should not be in the text property of any valid token.
-;;  `simple-call-tree-default-sort-method'
-;;    The default sort method to use when a call tree is newly created.
-;;  `simple-call-tree-default-maxdepth'
-;;    The depth at which new call trees should be displayed.
-;;  `simple-call-tree-major-mode-alist'
-;;    Alist of major modes, and information to use for identifying objects for the simple call tree.
-;;  `simple-call-tree-org-link-style'
-;;    Style used for links of child headers when exporting org tree using `simple-call-tree-export-org-tree'.
-;;  `simple-call-tree-jump-ring-max'
-;;    Maximum number of elements in `simple-call-tree-jump-ring', before old elements are removed.
-
-;;
-;; All of the above can customized by:
-;;      M-x customize-group RET simple-call-tree+ RET
-;;
-
 ;;; Acknowledgements:
 ;;
 ;; Alex Schroeder - the creator of the original simple-call-tree.el
-;;                  (available here: http://www.emacswiki.org/emacs/simple-call-tree.el)
+;;                  
 ;;
 
 ;;; TODO
@@ -2215,8 +2393,8 @@ If UNMARK is non-nil unmark the items instead."
 
 (provide 'simple-call-tree+)
 
-;;; simple-call-tree+.el ends here
+;;; simple-call-tree.el ends here
 
 ;; (magit-push)
-;; (yaoddmuse-post "EmacsWiki" "simple-call-tree+.el" (buffer-name) (buffer-string) "update")
+;; (yaoddmuse-post "EmacsWiki" "simple-call-tree.el" (buffer-name) (buffer-string) "update")
 
