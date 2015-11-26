@@ -357,19 +357,21 @@ and by `simple-call-tree-visit-function' and `simple-call-tree-view-function'."
                  (const :tag "Bottom" bottom)))
 
 ;; simple-call-tree-info: DONE  
-(defcustom simple-call-tree-default-valid-fonts '(font-lock-function-name-face
-                                                  font-lock-variable-name-face)
+(defcustom simple-call-tree-default-valid-fonts
+  '(font-lock-function-name-face
+    font-lock-variable-name-face)
   "List of fonts to use for finding objects to include in the call tree."
   :group 'simple-call-tree
   :type '(repeat face))
 
 ;; simple-call-tree-info: DONE  
-(defcustom simple-call-tree-default-invalid-fonts '(font-lock-comment-face
-                                                    font-lock-string-face
-                                                    font-lock-doc-face
-                                                    font-lock-keyword-face
-                                                    font-lock-warning-face
-                                                    font-lock-preprocessor-face)
+(defcustom simple-call-tree-default-invalid-fonts
+  '(font-lock-comment-face
+    font-lock-string-face
+    font-lock-doc-face
+    font-lock-keyword-face
+    font-lock-warning-face
+    font-lock-preprocessor-face)
   "List of fonts that should not be in the text property of any valid token."
   :group 'simple-call-tree
   :type '(repeat face))
