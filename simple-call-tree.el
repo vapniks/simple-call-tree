@@ -7,12 +7,13 @@
 ;; Copyleft (Ↄ) 2012, Joe Bloggs, all rites reversed.
 ;; Created: 2012-11-01 21:28:07
 ;; Version: 20151116.1603
+;; Package-Requires: ((emacs "24.3"))
 ;; Last-Updated: Mon Nov 16 16:03:18 2015
 ;;           By: Joe Bloggs
 ;; URL: http://www.emacswiki.org/emacs/download/simple-call-tree.el
 ;;      https://github.com/vapniks/simple-call-tree
 ;; Keywords: programming
-;; Compatibility: GNU Emacs 24.2.1
+;; Compatibility: GNU Emacs 24.3
 ;;
 ;; Features that might be required by this library:
 ;;
@@ -332,7 +333,7 @@
 (require 'fm nil t)
 (require 'hl-line nil t)
 (require 'anaphora)
-(eval-when-compile (require 'cl))
+(require 'cl-lib)
 (require 'org)
 (require 'ido)
 (require 'newcomment)
@@ -549,9 +550,9 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
 If `simple-call-tree-org-todo-keywords' is nil then the states in `org-todo-keywords' are returned
 as a flat list."
   (or simple-call-tree-org-todo-keywords
-      (remove-if (lambda (x) (or (symbolp x)
-                                 (equal x "|")))
-                 (mapcan 'identity org-todo-keywords))))
+      (cl-remove-if (lambda (x) (or (symbolp x)
+                                    (equal x "|")))
+                    (cl-mapcan 'identity org-todo-keywords))))
 
 ;; Saves a little typing
 ;; simple-call-tree-info: DONE  
@@ -565,7 +566,7 @@ as a flat list."
 ;; simple-call-tree-info: DONE  
 (cl-defun simple-call-tree-get-item (func &optional (alist simple-call-tree-alist))
   "Return the item in `simple-call-tree-alist' corresponding with function named FUNC."
-  (assoc-if (lambda (x) (simple-call-tree-compare-items (car x) func)) alist))
+  (cl-assoc-if (lambda (x) (simple-call-tree-compare-items (car x) func)) alist))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-tags-to-string (tags)
@@ -698,7 +699,7 @@ as a flat list."
        :help "Visit the function at point"]
       ["Sort items..." (keymap "Sort"
                                (name menu-item "By name" simple-call-tree-sort-by-name)
-                               (position menu-item "By position" simple-call-tree-sort-by-position)
+                               (cl-position menu-item "By position" simple-call-tree-sort-by-position)
                                (numdescend menu-item "By number of descendants" simple-call-tree-sort-by-num-descendants)
                                (size menu-item "By size" simple-call-tree-sort-by-size)                       
                                (face menu-item "By face/type" simple-call-tree-sort-by-face)
@@ -824,13 +825,13 @@ as a flat list."
       ["---" "---"]))
   (setq mode-line-format
         (append
-         (subseq mode-line-format 0
-                 (1+ (position 'mode-line-buffer-identification
-                               mode-line-format)))
+         (cl-subseq mode-line-format 0
+                    (1+ (cl-position 'mode-line-buffer-identification
+                                     mode-line-format)))
          (list '(:eval (format (concat "|Maxdepth=%d|"
                                        "Sorted "
-                                       (case simple-call-tree-current-sort-order
-                                         (position "by position|")
+                                       (cl-case simple-call-tree-current-sort-order
+                                         (cl-position "by position|")
                                          (name "by name|")
                                          (numdescend "by number of descendants|")
                                          (size "by size|")
@@ -839,9 +840,9 @@ as a flat list."
                                          (priority "by priority|")
                                          (mark "by mark|")))
                                simple-call-tree-current-maxdepth)))
-         (subseq mode-line-format
-                 (+ 2 (position 'mode-line-buffer-identification
-                                mode-line-format))))
+         (cl-subseq mode-line-format
+                    (+ 2 (cl-position 'mode-line-buffer-identification
+                                   mode-line-format))))
         font-lock-defaults '((("^\\(\\*.*$\\)" 1 simple-call-tree-mark-face t)))
         org-not-done-keywords simple-call-tree-org-not-done-keywords))
 
@@ -980,7 +981,7 @@ By default it is set to a list containing the current buffer."
 					     (< i (1- (length lengths))))
 				     do (setq sum (+ sum (nth i lengths)))
 				     else
-				     collect (subseq names start i)
+				     collect (cl-subseq names start i)
 				     and do (setq start (1+ i) sum 0))))
            (invalidfonts (or (third (assoc mode simple-call-tree-major-mode-alist))
                              simple-call-tree-default-invalid-fonts)))
@@ -1000,7 +1001,7 @@ By default it is set to a list containing the current buffer."
 			;; check face is valid
 			(let ((face (get-text-property (point) 'face)))
 			  (if (listp face)
-			      (if (not (intersection face invalidfonts))
+			      (if (not (cl-intersection face invalidfonts))
 				  (push (list (match-string 1) (point-marker)) (cdr item)))
 			    (if (not (member face invalidfonts))
 				(push (list (match-string 1) (point-marker)) (cdr item)))))
@@ -1103,7 +1104,7 @@ information. If UPDATESRC is nil then don't bother updating the source code."
          (buf (marker-buffer marker))
          (end (marker-position marker))
          srcval)
-    (case attr
+    (cl-case attr
       (todo (unless (or (not value) (stringp value))
               (error "Invalid TODO value"))
             (setf newval (or value "")
@@ -1173,7 +1174,7 @@ If a prefix arg is used (or REMOVE is non-nil) then remove the TODO state."
          (curtodo (fourth (car (simple-call-tree-get-item func))))
          (states (simple-call-tree-org-todo-keywords))
          (len (length states))
-         (pos (position curtodo states :test 'equal)))
+         (pos (cl-position curtodo states :test 'equal)))
     (simple-call-tree-set-attribute
      'todo
      (if pos (if (< pos (1- len)) (nth (1+ pos) states))
@@ -1189,7 +1190,7 @@ If a prefix arg is used (or REMOVE is non-nil) then remove the TODO state."
          (curtodo (fourth (car (simple-call-tree-get-item func))))
          (states (simple-call-tree-org-todo-keywords))
          (len (length states))
-         (pos (position curtodo states)))
+         (pos (cl-position curtodo states)))
     (simple-call-tree-set-attribute
      'todo
      (if pos (if (> pos 0) (nth (1- pos) states))
@@ -1331,8 +1332,8 @@ listed in `simple-call-tree-buffers' will be used."
   (setq simple-call-tree-inverted nil
         simple-call-tree-marked-items nil
         simple-call-tree-buffers buffers)
-  (case simple-call-tree-default-sort-method
-    (position (simple-call-tree-reverse))
+  (cl-case simple-call-tree-default-sort-method
+    (cl-position (simple-call-tree-reverse))
     (name (simple-call-tree-sort-by-name))
     (numdescend (simple-call-tree-sort-by-num-descendants))
     (face (simple-call-tree-sort-by-face))
@@ -1707,8 +1708,8 @@ The toplevel functions will be sorted, and the functions in each branch will be 
        (if todoa
            (if todob
                (let ((all (simple-call-tree-org-todo-keywords)))
-                 (< (position todoa all :test 'equal)
-                    (position todob all :test 'equal)))
+                 (< (cl-position todoa all :test 'equal)
+                    (cl-position todob all :test 'equal)))
              t)))))
   (simple-call-tree-revert)
   (setq simple-call-tree-current-sort-order 'todo))
@@ -1762,15 +1763,15 @@ The toplevel functions will be sorted, and the functions in each branch will be 
     (simple-call-tree-move-top)
     (let* ((arg (or (and arg (max arg 1)) 1))
            (item (simple-call-tree-get-item (simple-call-tree-get-function-at-point)))
-           (pos (position item simple-call-tree-alist :test 'equal))
+           (pos (cl-position item simple-call-tree-alist :test 'equal))
            (newpos (- pos arg)))
       (if (>= newpos 0)
           (progn
             (setq simple-call-tree-alist
-                  (append (subseq simple-call-tree-alist 0 newpos)
+                  (append (cl-subseq simple-call-tree-alist 0 newpos)
                           (list item)                                 
-                          (subseq simple-call-tree-alist newpos pos)
-                          (subseq simple-call-tree-alist (1+ pos))))
+                          (cl-subseq simple-call-tree-alist newpos pos)
+                          (cl-subseq simple-call-tree-alist (1+ pos))))
             (read-only-mode -1)
             (outline-move-subtree-up arg)
             (read-only-mode 1))))))
@@ -1782,14 +1783,14 @@ The toplevel functions will be sorted, and the functions in each branch will be 
     (simple-call-tree-move-top)
     (let* ((arg (or (and arg (max arg 1)) 1))
            (item (simple-call-tree-get-item (simple-call-tree-get-function-at-point)))
-           (pos (position item simple-call-tree-alist :test 'equal))
+           (pos (cl-position item simple-call-tree-alist :test 'equal))
            (newpos (+ pos arg 1)))
       (if (< newpos (length simple-call-tree-alist))
           (progn (setq simple-call-tree-alist
-                       (append (subseq simple-call-tree-alist 0 pos)
-                               (subseq simple-call-tree-alist (1+ pos) newpos)
+                       (append (cl-subseq simple-call-tree-alist 0 pos)
+                               (cl-subseq simple-call-tree-alist (1+ pos) newpos)
                                (list item)
-                               (subseq simple-call-tree-alist newpos)))
+                               (cl-subseq simple-call-tree-alist newpos)))
                  (read-only-mode -1)
                  (outline-move-subtree-down arg)
                  (read-only-mode 1))))))
@@ -1891,7 +1892,7 @@ If it is a called function then display the position in the calling function whe
       (if (featurep 'fm) (fm-highlight 1 (line-beginning-position) (line-end-position)))
       (if (eq level 1)
           (recenter 1)
-        (case simple-call-tree-default-recenter
+        (cl-case simple-call-tree-default-recenter
           (top (recenter 0))
           (middle (recenter))
           (bottom (recenter -1)))))))
@@ -1927,7 +1928,7 @@ the source buffer to the function."
     (if arg (simple-call-tree-narrow-to-function visitfunc pos))
     (if (eq level 1)
         (recenter 1)
-      (case simple-call-tree-default-recenter
+      (cl-case simple-call-tree-default-recenter
         (top (recenter 0))
         (middle (recenter))
         (bottom (recenter -1))))))
@@ -1982,7 +1983,7 @@ prefix arg) then the function name will be added to `simple-call-tree-jump-ring'
     (simple-call-tree-goto-func fnstr)
     (unless skipring (simple-call-tree-jump-ring-add fnstr))
     (if narrowedp (simple-call-tree-toggle-narrowing -1)
-      (case simple-call-tree-default-recenter
+      (cl-case simple-call-tree-default-recenter
         (top (recenter 0))
         (middle (recenter))
         (bottom (recenter -1))
@@ -2207,7 +2208,7 @@ If FUNC is nil then mark the current line and add the item to `simple-call-tree-
         (read-only-mode -1)
         (replace-regexp "\\*" "|" nil start (1+ start))
         (read-only-mode 1)
-        (callf2 remove* func simple-call-tree-marked-items
+        (cl-callf2 cl-remove func simple-call-tree-marked-items
           :test 'simple-call-tree-compare-items)
         (if (called-interactively-p)
             (simple-call-tree-move-next-samelevel)))))
@@ -2218,7 +2219,7 @@ If FUNC is nil then mark the current line and add the item to `simple-call-tree-
   "Return non-nil if STR is in `simple-call-tree-marked-items'.
 Membership is checked by the contents and font of STR.
 If optional arg ALIST is supplied then use alist instead of `simple-call-tree-marked-items'."
-  (member* str alist :test 'simple-call-tree-compare-items))
+  (cl-member str alist :test 'simple-call-tree-compare-items))
 
 ;; simple-call-tree-info: DONE  
 (defun simple-call-tree-unmark-all nil
@@ -2247,7 +2248,7 @@ PRED should be a function which takes an item from `simple-call-tree-alist' as i
 (defun simple-call-tree-toggle-marks nil
   "Toggle marks (unmarked become marked and marked become unmarked)."
   (interactive)
-  (let ((marked (copy-list simple-call-tree-marked-items)))
+  (let ((marked (cl-copy-list simple-call-tree-marked-items)))
     (simple-call-tree-unmark-all)
     (simple-call-tree-mark-by-pred
      (lambda (x) (not (simple-call-tree-marked-p (caar x) marked))))))
