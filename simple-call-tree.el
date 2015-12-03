@@ -301,7 +301,7 @@
 ;;
 ;; Add the following to your ~/.emacs startup file.
 ;;
-;; (require 'simple-call-tree+)
+;; (require 'simple-call-tree)
 ;;
 ;; You might also want to define a key for creating the call tree, 
 ;; e.g. like this:
