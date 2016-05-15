@@ -701,7 +701,7 @@ as a flat list."
        :help "Visit the function at point"]
       ["Sort items..." (keymap "Sort"
                                (name menu-item "By name" simple-call-tree-sort-by-name)
-                               (cl-position menu-item "By position" simple-call-tree-sort-by-position)
+                               (position menu-item "By position" simple-call-tree-sort-by-position)
                                (numdescend menu-item "By number of descendants" simple-call-tree-sort-by-num-descendants)
                                (size menu-item "By size" simple-call-tree-sort-by-size)
                                (face menu-item "By face/type" simple-call-tree-sort-by-face)
@@ -833,7 +833,7 @@ as a flat list."
          (list '(:eval (format (concat "|Maxdepth=%d|"
                                        "Sorted "
                                        (cl-case simple-call-tree-current-sort-order
-                                         (cl-position "by position|")
+                                         (position "by position|")
                                          (name "by name|")
                                          (numdescend "by number of descendants|")
                                          (size "by size|")
@@ -1335,7 +1335,7 @@ listed in `simple-call-tree-buffers' will be used."
         simple-call-tree-marked-items nil
         simple-call-tree-buffers buffers)
   (cl-case simple-call-tree-default-sort-method
-    (cl-position (simple-call-tree-reverse))
+    (position (simple-call-tree-reverse))
     (name (simple-call-tree-sort-by-name))
     (numdescend (simple-call-tree-sort-by-num-descendants))
     (face (simple-call-tree-sort-by-face))
