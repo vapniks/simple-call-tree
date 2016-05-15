@@ -38,7 +38,7 @@
 ;; along with this program; see the file COPYING.
 ;; If not, see <http://www.gnu.org/licenses/>.
 
-;;; Commentary: 
+;;; Commentary:
 ;;
 ;; Bitcoin donations gratefully accepted: 1AmWPmshr6i9gajMi1yqHgx7BYzpPKuzMz
 
@@ -297,14 +297,14 @@
 ;; Put simple-call-tree.el in a directory in your load-path, e.g. ~/.emacs.d/
 ;; You can add a directory to your load-path with the following line in ~/.emacs
 ;; (add-to-list 'load-path (expand-file-name "~/elisp"))
-;; where ~/elisp is the directory you want to add 
+;; where ~/elisp is the directory you want to add
 ;; (you don't need to do this for ~/.emacs.d - it's added by default).
 ;;
 ;; Add the following to your ~/.emacs startup file.
 ;;
 ;; (require 'simple-call-tree)
 ;;
-;; You might also want to define a key for creating the call tree, 
+;; You might also want to define a key for creating the call tree,
 ;; e.g. like this:
 ;;
 ;; (global-set-key (kbd "C-c S") 'simple-call-tree-display-buffer)
@@ -312,7 +312,7 @@
 ;;; Acknowledgements:
 ;;
 ;; Alex Schroeder - the creator of the original simple-call-tree.el
-;;                  
+;;
 ;;
 
 ;;; TODO
@@ -340,13 +340,13 @@
 (comment-normalize-vars)
 ;;; Code:
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defgroup simple-call-tree nil
   "Simple call tree - display a simple call tree for functions in a buffer."
   :group 'tools
   :link '(url-link "http://www.emacswiki.org/SimpleCallTree"))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defcustom simple-call-tree-default-recenter 'middle
   "How to recenter the window after moving to another function in the \"*Simple Call Tree*\" buffer.
 Can be one of the following symbols: 'top 'middle 'bottom.
@@ -357,7 +357,7 @@ and by `simple-call-tree-visit-function' and `simple-call-tree-view-function'."
                  (const :tag "Middle" middle)
                  (const :tag "Bottom" bottom)))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defcustom simple-call-tree-default-valid-fonts
   '(font-lock-function-name-face
     font-lock-variable-name-face)
@@ -365,7 +365,7 @@ and by `simple-call-tree-visit-function' and `simple-call-tree-view-function'."
   :group 'simple-call-tree
   :type '(repeat face))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defcustom simple-call-tree-default-invalid-fonts
   '(font-lock-comment-face
     font-lock-string-face
@@ -377,7 +377,7 @@ and by `simple-call-tree-visit-function' and `simple-call-tree-view-function'."
   :group 'simple-call-tree
   :type '(repeat face))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defcustom simple-call-tree-default-sort-method 'position
   "The default sort method to use when a call tree is newly created.
 The children of each header will be sorted separately."
@@ -391,13 +391,13 @@ The children of each header will be sorted separately."
                  (const :tag "Sort by priority" priority)
                  (const :tag "Sort by mark" mark)))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defcustom simple-call-tree-default-maxdepth 2
   "The depth at which new call trees should be displayed."
   :group 'simple-call-tree
   :type 'integer)
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defcustom simple-call-tree-major-mode-alist
   '((emacs-lisp-mode (font-lock-function-name-face
                       font-lock-variable-name-face
@@ -507,46 +507,46 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
                                (function :tag "Other function" :help-echo "Function for finding end of object"))))
   :link '(variable-link simple-call-tree-default-valid-fonts))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defcustom simple-call-tree-org-link-style 'radio
   "Style used for links of child headers when exporting org tree using `simple-call-tree-export-org-tree'."
   :group 'simple-call-tree
   :type '(choice (const :tag "internal radio link" radio)
                  (const :tag "link to source code" source)))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defcustom simple-call-tree-org-todo-keywords nil
   "List of different TODO keywords, if nil then the keywords in `org-todo-keywords' will be used."
   :group 'simple-call-tree
   :type '(choice (repeat :tag "Choose keywords" (string :tag "Keyword"))
                  (const :tag "Use org-todo-keywords" nil)))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defcustom simple-call-tree-org-not-done-keywords '("TODO" "STARTED" "WAITING" "CHECK")
   "List of TODO keywords representing not done states."
   :group 'simple-call-tree
   :type '(repeat :tag "Choose keywords" (string :tag "Keyword")))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defcustom simple-call-tree-org-highest-priority org-highest-priority
   "See `org-highest-priority'."
   :group 'simple-call-tree
   :type 'character)
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defcustom simple-call-tree-org-lowest-priority org-lowest-priority
   "See `org-lowest-priority'."
   :group 'simple-call-tree
   :type 'character)
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defcustom simple-call-tree-org-tag-alist org-tag-alist
   "See `org-tag-alist'."
   :group 'simple-call-tree
   :type '(alist :key-type (string :tag "Tag name")
                 :value-type (character :tag "Access char")))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-org-todo-keywords nil
   "Return list of all TODO states.
 If `simple-call-tree-org-todo-keywords' is nil then the states in `org-todo-keywords' are returned
@@ -557,15 +557,15 @@ as a flat list."
                     (cl-mapcan 'identity org-todo-keywords))))
 
 ;; Saves a little typing
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defmacro whilelast (&rest forms)
   `(while (progn ,@forms)))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defmacro whilenotlast (&rest forms)
   `(while (not (progn ,@forms))))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (cl-defun simple-call-tree-get-item (func &optional (alist simple-call-tree-alist))
   "Return the item in `simple-call-tree-alist' corresponding with function named FUNC."
   (cl-assoc-if (lambda (x) (simple-call-tree-compare-items (car x) func)) alist))
@@ -577,12 +577,12 @@ as a flat list."
                                (propertize x 'font-lock-face (org-get-tag-face x)))
                              tags ":") ":") ""))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-string-to-tags (str)
   (aif str (split-string (substring-no-properties it) "[ \f\t\n\r\v,;:]+" t)))
 
 ;; Major-mode for simple call tree
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (define-derived-mode simple-call-tree-mode outline-mode "Simple Call Tree"
   "The major-mode for the one-key menu buffer."
   :group 'simple-call-tree
@@ -603,7 +603,7 @@ as a flat list."
   (define-key simple-call-tree-mode-map (kbd "s s") 'simple-call-tree-sort-by-size)
   (define-key simple-call-tree-mode-map (kbd "s T") 'simple-call-tree-sort-by-todo)
   (define-key simple-call-tree-mode-map (kbd "s P") 'simple-call-tree-sort-by-priority)
-  (define-key simple-call-tree-mode-map (kbd "s *") 'simple-call-tree-sort-by-mark)  
+  (define-key simple-call-tree-mode-map (kbd "s *") 'simple-call-tree-sort-by-mark)
   (define-key simple-call-tree-mode-map (kbd "s r") 'simple-call-tree-reverse)
   (define-key simple-call-tree-mode-map (kbd "<C-S-up>") 'simple-call-tree-move-item-up)
   (define-key simple-call-tree-mode-map (kbd "<C-S-down>") 'simple-call-tree-move-item-down)
@@ -703,7 +703,7 @@ as a flat list."
                                (name menu-item "By name" simple-call-tree-sort-by-name)
                                (cl-position menu-item "By position" simple-call-tree-sort-by-position)
                                (numdescend menu-item "By number of descendants" simple-call-tree-sort-by-num-descendants)
-                               (size menu-item "By size" simple-call-tree-sort-by-size)                       
+                               (size menu-item "By size" simple-call-tree-sort-by-size)
                                (face menu-item "By face/type" simple-call-tree-sort-by-face)
                                (todo menu-item "By TODO state" simple-call-tree-sort-by-todo)
                                (priority menu-item "By priority" simple-call-tree-sort-by-priority)
@@ -848,14 +848,14 @@ as a flat list."
         font-lock-defaults '((("^\\(\\*.*$\\)" 1 simple-call-tree-mark-face t)))
         org-not-done-keywords simple-call-tree-org-not-done-keywords))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defcustom simple-call-tree-mark-face (if (featurep 'dired+) diredp-flag-mark-line
                                         'highlight)
   "Face to use for marked items in the *Simple Call Tree* buffer."
   :group 'simple-call-tree
   :type 'face)
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defvar simple-call-tree-alist nil
   "Alist of functions and the functions they call, and markers for their locations.
 Each element is a list of lists. The first list in each element is in the form
@@ -890,7 +890,7 @@ The minimum value is 0 which means show top level functions only.")
 (defvar simple-call-tree-jump-ring (make-ring simple-call-tree-jump-ring-max)
   "Ring to hold history of functions jumped to in *Simple Call Tree* buffer.")
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defvar simple-call-tree-jump-ring-index 0
   "The current position in the jump ring.")
 
@@ -924,7 +924,7 @@ be shown in the tree.")
 (defvar simple-call-tree-regex-maxlen 10000
   "Maximum allowed length for regular expressions.")
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (cl-defun simple-call-tree-analyze (&optional (buffers (list (current-buffer))))
   "Analyze the current buffer, or the buffers in list BUFFERS.
 The result is stored in `simple-call-tree-alist'.
@@ -1011,8 +1011,8 @@ By default it is set to a list containing the current buffer."
     (setq simple-call-tree-inverted-alist (simple-call-tree-invert))
     (message "simple-call-tree done")))
 
-;; Unable to get this to go significantly faster 
-;; simple-call-tree-info: DONE  
+;; Unable to get this to go significantly faster
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-invert nil
   "Invert `simple-call-tree-alist' and return the result."
   (let ((result (mapcar (lambda (item) (list (car item)))
@@ -1047,7 +1047,7 @@ If there is no function on this line of the *Simple Call Tree* buffer, return ni
                        (symbol-nearest-point)
                      (symbol-at-point))))))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-next-func (start)
   "Find the next function in the current buffer after position START.
 Return a cons cell whose car is the position in the buffer just after the function name,
@@ -1075,7 +1075,7 @@ nil."
       (unless (not end)
         (cons end (buffer-substring start end))))))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (cl-defun simple-call-tree-get-attribs (&optional (lookback -2))
   "Extract org attributes from item in source code from lines previous to the current one.
 The LOOKBACK argument indicates how many lines backwards to search and should be negative."
@@ -1093,7 +1093,7 @@ The LOOKBACK argument indicates how many lines backwards to search and should be
 
 ;; Need to be able to handle cases where the function starts at the beginning of the file,
 ;; (so there are no previous lines).
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (cl-defun simple-call-tree-set-attribute (attr value &optional func (updatesrc t))
   "Set the todo, priority, or tags for an item in `simple-call-tree-alist', and update the buffer and source code.
 ATTR can be one of: 'todo, 'priority, or 'tags
@@ -1152,7 +1152,7 @@ information. If UPDATESRC is nil then don't bother updating the source code."
             (read-only-mode 1)
             (if hidden (hide-subtree)))))))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (cl-defun simple-call-tree-set-todo (value funcs &optional remove)
   "Set the TODO state for the function(s) FUNCS.
 By default FUNCS is set to the list of marked items or the function at point if there are no marked items.
@@ -1180,7 +1180,7 @@ If a prefix arg is used (or REMOVE is non-nil) then remove the TODO state."
     (simple-call-tree-set-attribute
      'todo
      (if pos (if (< pos (1- len)) (nth (1+ pos) states))
-       (car states))     
+       (car states))
      func t)))
 
 ;; simple-call-tree-info: DONE
@@ -1199,7 +1199,7 @@ If a prefix arg is used (or REMOVE is non-nil) then remove the TODO state."
        (nth (1- len) states))
      func t)))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (cl-defun simple-call-tree-set-priority (value funcs)
   "Set the priority level to VALUE for the function(s) FUNCS.
 By default FUNCS is set to the list of marked items or the function at point if there are no marked items."
@@ -1247,7 +1247,7 @@ By default FUNCS is set to the list of marked items or the function at point if 
                              ((= curpriority simple-call-tree-org-lowest-priority) nil))))
     (simple-call-tree-set-attribute 'priority nextpriority func t)))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (cl-defun simple-call-tree-set-tags (value funcs)
   "Set the org tags for the function(s) FUNCS.
 By default FUNCS is set to the list of marked items or the function at point if there are no marked items."
@@ -1264,7 +1264,7 @@ By default FUNCS is set to the list of marked items or the function at point if 
   (dolist (func funcs)
     (simple-call-tree-set-attribute 'tags value func t)))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-add-tags (value funcs &optional remove)
   "Add tags in VALUE to the function(s) FUNCS.
 By default FUNCS is set to the list of marked items or the function at point if there are no marked items.
@@ -1287,7 +1287,7 @@ If REMOVE is non-nil remove the tags instead."
       (simple-call-tree-set-attribute 'tags newtags func))))
 
 ;;;###autoload
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (cl-defun simple-call-tree-display-buffer (&optional files)
   "Display call tree for current buffer.
 If optional arg FILES is supplied it specifies a list of files to search for functions to display in the tree.
@@ -1323,7 +1323,7 @@ When called interactively files will be prompted for and only functions in the c
 	    simple-call-tree-jump-ring-index 0))))
 
 ;;;###autoload
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-build-tree (&optional buffers)
   "Build the simple-call-tree and display it in the \"*Simple Call Tree*\" buffer.
 If BUFFERS is supplied it should be a list of buffer to analyze, otherwise the buffers
@@ -1345,7 +1345,7 @@ listed in `simple-call-tree-buffers' will be used."
   (goto-char (point-min)))
 
 ;;;###autoload
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (cl-defun simple-call-tree-current-function (func &optional wide)
   "Display call tree for function FUNC.
 If called interactively FUNC will be set to the symbol nearest point,
@@ -1370,7 +1370,7 @@ otherwise it will be narrowed around FUNC."
   (if wide (simple-call-tree-toggle-narrowing 1)
     (simple-call-tree-toggle-narrowing -1)))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (cl-defun simple-call-tree-list-callers-and-functions (&optional (maxdepth simple-call-tree-default-maxdepth)
                                                                (funclist simple-call-tree-alist))
   "List callers and functions in FUNCLIST to depth MAXDEPTH.
@@ -1390,7 +1390,7 @@ By default FUNCLIST is set to `simple-call-tree-alist'."
     (delete-char -1)
     (read-only-mode 1)))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-listed-items nil
   "Return list of items which are currently visible in the *Simple Call Tree* buffer.
 Items returned are elements of `simple-call-tree-alist'"
@@ -1409,7 +1409,7 @@ Items returned are elements of `simple-call-tree-alist'"
                       (simple-call-tree-get-function-at-point)))))
     (reverse items)))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-export-org-tree (buf &optional display)
   "Create an org-tree from the currently visible items, and put it in an org buffer.
 The style of links used for child headers is controlled by `simple-call-tree-org-link-style'."
@@ -1430,7 +1430,7 @@ The style of links used for child headers is controlled by `simple-call-tree-org
       (org-update-radio-target-regexp))
     (if display (switch-to-buffer exportbuf))))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-export-items (buf &optional display)
   "Export the currently visible items into a buffer."
   (interactive (list (ido-read-buffer "Append to buffer: " "*Simple Call Tree Export*")
@@ -1457,7 +1457,7 @@ The style of links used for child headers is controlled by `simple-call-tree-org
           (insert text))))
     (if display (switch-to-buffer exportbuf))))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (cl-defun simple-call-tree-list-callees-recursively (item &optional (maxdepth 2)
                                                         (curdepth 1)
                                                         (funclist simple-call-tree-alist)
@@ -1484,7 +1484,7 @@ This is a recursive function, and you should not need to set CURDEPTH."
 
 ;; Propertize todo, priority & tags appropriately
 ;; Add invisibility property to text so that `simple-call-tree-hide-marked' works
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-insert-item (item curdepth &optional inverted marked)
   "Display ITEM at depth CURDEPTH in the call tree.
 If optional arg INVERTED is non-nil reverse the arrow for the item.
@@ -1514,7 +1514,7 @@ If optional arg MARKED is non-nil use a * instead of a |."
          (post (concat (make-string (max 0 (- (/ (window-width) 2) (length pre2))) 32) tags)))
     (insert pre2 post)))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-insert-org-header (item curdepth &optional inverted marked)
   "Display ITEM at depth CURDEPTH in the call tree.
 Ignore optional args INVERTED and MARKED; they are just for compatibility with `simple-call-tree-list-callees-recursively'."
@@ -1567,7 +1567,7 @@ We can't do that in this function as it causes other problems with outline mode 
       (let ((arrowlen (length (match-string 1))))
         (if (= arrowlen 0) 1 (1+ (/ (1- arrowlen) 2)))))))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-get-parent nil
   "Return the name of the parent of the function at point according to the current tree.
 If there is no parent, return nil."
@@ -1607,7 +1607,7 @@ narrowing."
       (if pos (goto-char pos)))))
 
 ;; Only sort visible items
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-sort (predicate)
   "Sort the branches and sub-branches of `simple-call-tree-alist' and `simple-call-tree-inverted-alist' by PREDICATE.
 PREDICATE should be a function taking two arguments and returning non-nil if the first one should sort before the second.
@@ -1626,7 +1626,7 @@ and when sorting the branches of those items the items in the cdr are passed."
       (lambda (a b)
         (funcall predicate (car a) (car b))))))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-reverse nil
   "Reverse the order of the branches & sub-branches in `simple-call-tree-alist' and `simple-call-tree-inverted-alist'."
   (interactive)
@@ -1645,12 +1645,12 @@ and when sorting the branches of those items the items in the cdr are passed."
     (+ (1- (length item))
        (if (> depth 1)
            (cl-loop for child in (cdr item)
-		    sum (simple-call-tree-count-descendants (car child) 
+		    sum (simple-call-tree-count-descendants (car child)
 							    (1- depth)
 							    alist))
          0))))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-sort-by-num-descendants (depth)
   "Sort the branches in the *Simple Call Tree* buffer by the number of descendants to depth DEPTH.
 When call interactively DEPTH is prompted for."
@@ -1687,7 +1687,7 @@ The toplevel functions will be sorted, and the functions in each branch will be 
   (simple-call-tree-revert)
   (setq simple-call-tree-current-sort-order 'position))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-sort-by-face nil
   "Sort the items in the *Simple Call Tree* buffer according to the display face name.
 This should sort the items by type (e.g. function, variable, etc.) since different types are generally displayed
@@ -1747,7 +1747,7 @@ The toplevel functions will be sorted, and the functions in each branch will be 
   (simple-call-tree-revert)
   (setq simple-call-tree-current-sort-order 'size))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-sort-by-mark nil
   "Sort the marked items in the *Simple Call Tree* buffer before the unmarked ones."
   (interactive)
@@ -1758,7 +1758,7 @@ The toplevel functions will be sorted, and the functions in each branch will be 
   (simple-call-tree-revert)
   (setq simple-call-tree-current-sort-order 'mark))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-move-item-up (&optional arg)
   (interactive (list current-prefix-arg))
   (with-current-buffer simple-call-tree-buffer-name
@@ -1771,14 +1771,14 @@ The toplevel functions will be sorted, and the functions in each branch will be 
           (progn
             (setq simple-call-tree-alist
                   (append (cl-subseq simple-call-tree-alist 0 newpos)
-                          (list item)                                 
+                          (list item)
                           (cl-subseq simple-call-tree-alist newpos pos)
                           (cl-subseq simple-call-tree-alist (1+ pos))))
             (read-only-mode -1)
             (outline-move-subtree-up arg)
             (read-only-mode 1))))))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-move-item-down (&optional arg)
   (interactive (list current-prefix-arg))
   (with-current-buffer simple-call-tree-buffer-name
@@ -1818,7 +1818,7 @@ The toplevel functions will be sorted, and the functions in each branch will be 
                      (simple-call-tree-get-toplevel))
         'nodups simple-call-tree-nodups))
 ;; Restore hidden/unhidden state after sorting
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-restore-state (state)
   "Restore the *Simple Call Tree* buffer to the state in STATE."
   (let ((depth (or (plist-get state 'depth)
@@ -1856,7 +1856,7 @@ The toplevel functions will be sorted, and the functions in each branch will be 
                   (delete-window)
                 (bury-buffer))))))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-invert-buffer nil
   "Invert the tree in *Simple Call Tree* buffer."
   (interactive)
@@ -1872,7 +1872,7 @@ The toplevel functions will be sorted, and the functions in each branch will be 
           (floor (abs (read-number "Maximum depth to display: " 2)))))
   (simple-call-tree-revert))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-view-function nil
   "Display the source code corresponding to current header.
 If the current header is a calling or toplevel function then display that function.
@@ -1899,7 +1899,7 @@ If it is a called function then display the position in the calling function whe
           (middle (recenter))
           (bottom (recenter -1)))))))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (cl-defun simple-call-tree-visit-function (&optional arg)
   "Visit the source code corresponding to the current header.
 If the current header is a calling or toplevel function then visit that function.
@@ -1969,7 +1969,7 @@ Return the position of the start of the item or nil if it couldn't be found."
                    (setq found (re-search-forward lineregex nil t)))
                  (if found (re-search-backward fnregex)))))))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (cl-defun simple-call-tree-jump-to-function (fnstr &optional skipring)
   "Move cursor to the line corresponding to the function with name FNSTR.
 When called interactively FNSTR will be set to the function name under point,
@@ -2069,19 +2069,19 @@ When called interactively the name of the function at point is used for FNSTR."
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-move-prev-samelevel nil
-  "Move cursor to the previous item at the same level as the current one."  
+  "Move cursor to the previous item at the same level as the current one."
   (interactive)
   (outline-backward-same-level 1)
   (goto-char (next-single-property-change (point) 'face)))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-move-next-marked nil
   "Move cursor to the next marked item."
   (interactive)
   (end-of-line)
   (re-search-forward "^\\*"))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-move-prev-marked nil
   "Move cursor to the next marked item."
   (interactive)
@@ -2095,7 +2095,7 @@ When called interactively the name of the function at point is used for FNSTR."
     (or (/= (point-min) 1)
         (/= (point-max) (1+ (buffer-size))))))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-toggle-narrowing (&optional state)
   "Toggle narrowing of *Simple Call Tree* buffer.
 If optional arg STATE is > 0, or if called interactively with a positive prefix arg,
@@ -2118,7 +2118,7 @@ When narrowed, the buffer will be narrowed to the subtree at point."
 	(fit-window-to-buffer))
       (goto-char pos))))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-toggle-duplicates nil
   "Toggle the inclusion of duplicate sub-branches in the call tree."
   (interactive)
@@ -2126,7 +2126,7 @@ When narrowed, the buffer will be narrowed to the subtree at point."
   (with-current-buffer simple-call-tree-buffer-name
     (simple-call-tree-revert)))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (cl-defun simple-call-tree-apply-command (cmd &optional
                                             (funcs (or simple-call-tree-marked-items
                                                        (list (or (unless simple-call-tree-inverted
@@ -2156,14 +2156,14 @@ This just calls `simple-call-tree-apply-command' with the `query-replace' comman
   (interactive)
   (simple-call-tree-apply-command 'query-replace))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-query-replace-regexp nil
   "Perform `query-replace-regexp' on the marked items or the item at point in the *Simple Call Tree* buffer.
 This just calls `simple-call-tree-apply-command' with the `query-replace-regexp' command."
   (interactive)
   (simple-call-tree-apply-command 'query-replace-regexp))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-bookmark nil
   "Set bookmarks the marked items or the item at point in the *Simple Call Tree* buffer."
   (interactive)
@@ -2180,7 +2180,7 @@ This just calls `simple-call-tree-apply-command' with the `query-replace-regexp'
   (delete-other-windows))
 
 ;; Change so that it only marks visible items
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-mark (func)
   "Mark the item named FUNC.
 If FUNC is nil then mark the current line and add the item to `simple-call-tree-marked-items'."
@@ -2190,7 +2190,7 @@ If FUNC is nil then mark the current line and add the item to `simple-call-tree-
            (progn (beginning-of-line)
                   (re-search-forward "^\\([|*]\\)\\( +\\w+\\)?\\( \\[#.\\]\\)? \\(\\S-+\\)"
                                      (line-end-position) t)))
-      (progn 
+      (progn
         (read-only-mode -1)
         (replace-match "*" nil t nil 1)
         (read-only-mode 1)
@@ -2200,7 +2200,7 @@ If FUNC is nil then mark the current line and add the item to `simple-call-tree-
         (if (called-interactively-p)
             (simple-call-tree-move-next-samelevel)))))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-unmark (func)
   "Unmark the item named FUNC."
   (interactive (list (or (simple-call-tree-get-parent)
@@ -2223,7 +2223,7 @@ Membership is checked by the contents and font of STR.
 If optional arg ALIST is supplied then use alist instead of `simple-call-tree-marked-items'."
   (cl-member str alist :test 'simple-call-tree-compare-items))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-unmark-all nil
   "Unmark all items."
   (interactive)
@@ -2234,7 +2234,7 @@ If optional arg ALIST is supplied then use alist instead of `simple-call-tree-ma
     (read-only-mode 1))
   (setq simple-call-tree-marked-items nil))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-mark-by-pred (pred &optional unmark)
   "Mark items in `simple-call-tree-alist' that return non-nil when passed as an arg to PRED function.
 If UNMARK is non-nil unmark the items instead.
@@ -2246,7 +2246,7 @@ PRED should be a function which takes an item from `simple-call-tree-alist' as i
               (simple-call-tree-unmark (caar item))
             (simple-call-tree-mark (caar item)))))))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-toggle-marks nil
   "Toggle marks (unmarked become marked and marked become unmarked)."
   (interactive)
@@ -2254,8 +2254,8 @@ PRED should be a function which takes an item from `simple-call-tree-alist' as i
     (simple-call-tree-unmark-all)
     (simple-call-tree-mark-by-pred
      (lambda (x) (not (simple-call-tree-marked-p (caar x) marked))))))
-  
-;; simple-call-tree-info: DONE  
+
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-mark-by-name (regex &optional unmark)
   "Mark all items with names matching regular expression REGEX.
 If UNMARK is non-nil unmark the items instead."
@@ -2265,7 +2265,7 @@ If UNMARK is non-nil unmark the items instead."
    (lambda (x) (string-match regex (caar x)))
    unmark))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-mark-by-source (regex &optional unmark)
   "Mark all items with source code matching regular expression REGEX.
 If UNMARK is non-nil unmark the items instead."
@@ -2282,7 +2282,7 @@ If UNMARK is non-nil unmark the items instead."
            (re-search-forward regex end t)))))
    unmark))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-mark-by-tag-match (match &optional todo-only unmark)
   "Mark all items with code matching regular expression REGEX.
 If UNMARK is non-nil unmark the items instead."
@@ -2297,7 +2297,7 @@ If UNMARK is non-nil unmark the items instead."
          (eval matcher)))
      unmark)))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-mark-by-priority (value &optional unmark)
   "Mark all items with priority VALUE.
 If UNMARK is non-nil unmark the items instead."
@@ -2326,7 +2326,7 @@ If REGEX is nil or \"\" then mark/unmark items with no TODO state"
 
 ;; Get list of all possible faces by checking `simple-call-tree-major-mode-alist' with first
 ;; element of `simple-call-tree-alist'.
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-mark-by-face (face &optional unmark)
   "Mark all items with display face FACE.
 If UNMARK is non-nil unmark the items instead."
@@ -2348,7 +2348,7 @@ If UNMARK is non-nil unmark the items instead."
            (member face2 face))))
    unmark))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-mark-by-buffer (buf &optional unmark)
   "Mark all items corresponding to source code in buffer BUF.
 BUF may be a buffer object or the name of a buffer.
@@ -2366,11 +2366,11 @@ If UNMARK is non-nil unmark the items instead."
                       (if (stringp buf) buf (buffer-name buf))))
    unmark))
 
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-kill-marked nil
   "Remove all marked items from the *Simple Call Tree* buffer."
   (interactive)
-  (read-only-mode -1)  
+  (read-only-mode -1)
   (dolist (func simple-call-tree-marked-items)
     (simple-call-tree-goto-func func)
     (outline-mark-subtree)
@@ -2380,7 +2380,7 @@ If UNMARK is non-nil unmark the items instead."
   (read-only-mode 1))
 
 ;; This command should be bound to g key for compatibility with dired.
-;; simple-call-tree-info: DONE  
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-revert nil
   "Redisplay the *Simple Call Tree* buffer."
   (interactive)
@@ -2400,4 +2400,3 @@ If UNMARK is non-nil unmark the items instead."
 
 ;; (magit-push)
 ;; (yaoddmuse-post "EmacsWiki" "simple-call-tree.el" (buffer-name) (buffer-string) "update")
-
