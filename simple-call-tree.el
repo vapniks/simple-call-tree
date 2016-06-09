@@ -154,6 +154,9 @@
 ;;  `simple-call-tree-change-maxdepth'
 ;;    Alter the maximum tree depth in the *Simple Call Tree* buffer.
 ;;    Keybinding: M-x simple-call-tree-change-maxdepth
+;;  `simple-call-tree-change-default-view'
+;;    Change the values of `simple-call-tree-default-view' and `simple-call-tree-default-recenter'.
+;;    Keybinding: C-c C-v
 ;;  `simple-call-tree-view-function'
 ;;    Display the source code corresponding to current header.
 ;;    Keybinding: C-o
@@ -251,6 +254,9 @@
 ;;
 ;;  `simple-call-tree-default-recenter'
 ;;    How to recenter the window after moving to another function in the "*Simple Call Tree*" buffer.
+;;    default = (quote middle)
+;;  `simple-call-tree-default-view'
+;;    How to recenter the window after viewing a toplevel header.
 ;;    default = (quote middle)
 ;;  `simple-call-tree-default-valid-fonts'
 ;;    List of fonts to use for finding objects to include in the call tree.
