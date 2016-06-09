@@ -351,7 +351,19 @@
   "How to recenter the window after moving to another function in the \"*Simple Call Tree*\" buffer.
 Can be one of the following symbols: 'top 'middle 'bottom.
 This variable is used by the `simple-call-tree-jump-to-function' function when no prefix arg is given,
-and by `simple-call-tree-visit-function' and `simple-call-tree-view-function'."
+and by `simple-call-tree-visit-function' and `simple-call-tree-view-function' (for non-toplevel headers)."
+  :group 'simple-call-tree
+  :type '(choice (const :tag "Top" top)
+                 (const :tag "Middle" middle)
+                 (const :tag "Bottom" bottom)))
+
+;; simple-call-tree-info: DONE
+(defcustom simple-call-tree-default-view 'middle
+  "How to recenter the window after viewing a toplevel header.
+This applied to viewing with `simple-call-tree-view-function', and with `simple-call-tree-visit-function'
+in follow-mode. It can be one of the following symbols: 'top 'middle 'bottom. 
+You can change it's value temporarily with the `simple-call-tree-change-default-view' command.
+This only applies to toplevel headers, see `simple-call-tree-default-recenter' for other headers."
   :group 'simple-call-tree
   :type '(choice (const :tag "Top" top)
                  (const :tag "Middle" middle)
@@ -642,6 +654,7 @@ as a flat list."
   (define-key simple-call-tree-mode-map (kbd "SPC") 'simple-call-tree-view-function)
   (define-key simple-call-tree-mode-map (kbd "C-o") 'simple-call-tree-view-function)
   (define-key simple-call-tree-mode-map (kbd "v") 'simple-call-tree-view-function)
+  (define-key simple-call-tree-mode-map (kbd "V") (lambda nil (interactive) (simple-call-tree-view-function t)))
   (define-key simple-call-tree-mode-map (kbd "<return>") 'simple-call-tree-visit-function)
   (define-key simple-call-tree-mode-map (kbd "o") 'simple-call-tree-visit-function)
   ;; Movement commands
@@ -684,6 +697,7 @@ as a flat list."
   (define-key simple-call-tree-mode-map (kbd "C-c C-q") 'simple-call-tree-set-tags)
   (define-key simple-call-tree-mode-map (kbd "C-c C-a") 'simple-call-tree-add-tags)
   (define-key simple-call-tree-mode-map (kbd "C-c C-t") 'simple-call-tree-set-todo)
+  (define-key simple-call-tree-mode-map (kbd "C-c C-v") 'simple-call-tree-change-default-view)
   (define-key simple-call-tree-mode-map (kbd "C-c ,") 'simple-call-tree-set-priority)
   ;; Set the keymap
   (use-local-map simple-call-tree-mode-map)
@@ -697,6 +711,8 @@ as a flat list."
       ["View Function At Point" simple-call-tree-view-function
        :help "View the function at point"
        :key "v"]
+      ["Change Default View" simple-call-tree-change-default-view
+       :help "Change which part of a function is viewed by default"]
       ["Visit Function At Point" simple-call-tree-visit-function
        :help "Visit the function at point"]
       ["Sort items..." (keymap "Sort"
@@ -732,7 +748,7 @@ as a flat list."
                (tagmatch menu-item "By tag-match..." simple-call-tree-mark-by-tag-match
                          :help "Mark items with matching tags")
                (buffer menu-item "By source buffer..." simple-call-tree-mark-by-buffer
-                         :help "Mark items with source code in matching buffer"))]
+		       :help "Mark items with source code in matching buffer"))]
       ["Operate on items..."
        (keymap "Operate"
                (kill menu-item "Kill marked items" simple-call-tree-kill
@@ -844,7 +860,7 @@ as a flat list."
                                simple-call-tree-current-maxdepth)))
          (cl-subseq mode-line-format
                     (+ 2 (cl-position 'mode-line-buffer-identification
-                                   mode-line-format))))
+				      mode-line-format))))
         font-lock-defaults '((("^\\(\\*.*$\\)" 1 simple-call-tree-mark-face t)))
         org-not-done-keywords simple-call-tree-org-not-done-keywords))
 
@@ -1873,11 +1889,23 @@ The toplevel functions will be sorted, and the functions in each branch will be 
   (simple-call-tree-revert))
 
 ;; simple-call-tree-info: DONE
-(defun simple-call-tree-view-function nil
+(defun simple-call-tree-change-default-view (view1 view2)
+  "Change the values of `simple-call-tree-default-view' and `simple-call-tree-default-recenter'.
+VIEW1 is the value for `simple-call-tree-default-view', and VIEW2 is the value for `simple-call-tree-default-recenter'."
+  (interactive (list (intern (ido-completing-read "Default view for toplevel headers: " '("top" "middle" "bottom")))
+		     (intern (ido-completing-read "Default view for other headers: " '("top" "middle" "bottom")))))
+  (setq simple-call-tree-default-view view1
+	simple-call-tree-default-recenter view2))
+
+;; simple-call-tree-info: DONE
+(defun simple-call-tree-view-function (&optional arg)
   "Display the source code corresponding to current header.
 If the current header is a calling or toplevel function then display that function.
-If it is a called function then display the position in the calling function where it is called."
-  (interactive)
+If it is a called function then display the position in the calling function where it is called.
+The part of the function that is shown depends on the value of `simple-call-tree-default-view' 
+for toplevel headers, or `simple-call-tree-default-recenter' for other headers.
+If called with a prefix ARG the portion viewed will be the opposite to normal (e.g. 'top instead of 'bottom)."
+  (interactive "P")
   ;; Following 2 lines are required to get the outline level with `simple-call-tree-outline-level'
   (beginning-of-line)
   (re-search-forward outline-regexp)
@@ -1893,7 +1921,10 @@ If it is a called function then display the position in the calling function whe
       (goto-char pos)
       (if (featurep 'fm) (fm-highlight 1 (line-beginning-position) (line-end-position)))
       (if (eq level 1)
-          (recenter 1)
+	  (cl-case simple-call-tree-default-view
+	    (top (recenter (if arg -1 0)))
+	    (middle (recenter (if arg -1)))
+	    (bottom (recenter (if arg 0 -1))))
         (cl-case simple-call-tree-default-recenter
           (top (recenter 0))
           (middle (recenter))
@@ -1929,11 +1960,14 @@ the source buffer to the function."
       (fm-unhighlight 1))
     (if arg (simple-call-tree-narrow-to-function visitfunc pos))
     (if (eq level 1)
-        (recenter 1)
+	(cl-case simple-call-tree-default-view
+	  (top (recenter (if arg -1 0)))
+	  (middle (recenter (if arg -1)))
+	  (bottom (recenter (if arg 0 -1))))
       (cl-case simple-call-tree-default-recenter
-        (top (recenter 0))
-        (middle (recenter))
-        (bottom (recenter -1))))))
+	(top (recenter 0))
+	(middle (recenter))
+	(bottom (recenter -1))))))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-compare-items (str1 str2)
