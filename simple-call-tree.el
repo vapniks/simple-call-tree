@@ -323,6 +323,9 @@
 
 ;;; TODO
 ;;
+;; Use / key for filtering headers by name (for consistency with other modes such as gnus & dired)
+;; and use a different key for narrowing to the current header.
+;;
 ;; If anyone wants to implement the following ideas, please do:
 ;; More reliable code for building tree (handle duplicate function names properly).
 ;; Fix code so that we can have several calls to the same function in the same tree.
@@ -2427,7 +2430,7 @@ If UNMARK is non-nil unmark the items instead."
   (simple-call-tree-restore-state (simple-call-tree-store-state)))
 
 (unless (not (featurep 'fm))
-  (add-to-list 'fm-modes '(simple-call-tree-mode simple-call-tree-visit-function))
+  (add-to-list 'fm-modes '(simple-call-tree-mode . simple-call-tree-visit-function))
   (add-hook 'simple-call-tree-mode-hook 'fm-start))
 (unless (not (featurep 'hl-line))
   (add-hook 'simple-call-tree-mode-hook
