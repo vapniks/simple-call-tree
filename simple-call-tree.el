@@ -1183,9 +1183,7 @@ information. If UPDATESRC is nil then don't bother updating the source code."
 By default FUNCS is set to the list of marked items or the function at point if there are no marked items.
 If a prefix arg is used (or REMOVE is non-nil) then remove the TODO state."
   (interactive (list (if current-prefix-arg nil
-                       (org-icompleting-read
-                        "State: " (simple-call-tree-org-todo-keywords)
-                        nil t))
+                       (completing-read "State: " (simple-call-tree-org-todo-keywords) nil))
                      (or simple-call-tree-marked-items
                          (simple-call-tree-get-parent)
                          (simple-call-tree-get-function-at-point))))
