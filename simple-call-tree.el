@@ -1185,8 +1185,10 @@ If a prefix arg is used (or REMOVE is non-nil) then remove the TODO state."
   (interactive (list (if current-prefix-arg nil
                        (completing-read "State: " (simple-call-tree-org-todo-keywords) nil))
                      (or simple-call-tree-marked-items
-                         (simple-call-tree-get-parent)
-                         (simple-call-tree-get-function-at-point))))
+                         (--if-let (simple-call-tree-get-parent)
+			     (list it))
+                         (--if-let (simple-call-tree-get-function-at-point)
+			     (list it)))))
   (dolist (func funcs)
     (simple-call-tree-set-attribute 'todo value func)))
 
