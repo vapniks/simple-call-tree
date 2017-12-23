@@ -1879,7 +1879,7 @@ The toplevel functions will be sorted, and the functions in each branch will be 
                 (fm-unhighlight 1))
               (if (> (length (window-list)) 1)
                   (delete-window)
-                (bury-buffer))))))
+		(switch-to-buffer (other-buffer)))))))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-invert-buffer nil
