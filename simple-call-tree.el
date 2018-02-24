@@ -608,7 +608,8 @@ as a flat list."
   "The major-mode for the one-key menu buffer."
   :group 'simple-call-tree
   (setq simple-call-tree-mode-map (make-keymap)
-        buffer-read-only nil)
+        buffer-read-only nil
+	comment-start ";")
   (outline-minor-mode 1)
   (setq outline-regexp "^[|*]\\([-<>]*\\)\\(\\( +\\w+\\)?\\)\\(\\( \\[#.\\]\\)?\\) "
         outline-level 'simple-call-tree-outline-level)
