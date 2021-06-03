@@ -1108,7 +1108,7 @@ The LOOKBACK argument indicates how many lines backwards to search and should be
   (let ((end (point)) todo priority tags)
     (forward-line lookback)
     (if (re-search-forward
-         "simple-call-tree-info:\\s-*\\(\\w+\\)?\\(\\s-*\\[#\\([A-Z]\\)\\]\\)?\\(\\s-*\\(:[a-zA-Z0-9:,;-_]+:\\)\\)?\\s-*$"
+         "simple-call-tree-info:\\s-*\\(\\w+\\)?\\(\\s-*\\[#\\([A-Z]\\)\\]\\)?\\(\\s-*\\(:[a-zA-Z0-9:,;-_]+:\\)\\)?\\s-*"
          end t)
         (progn
           (aif (match-string 1) (setq todo (substring-no-properties it)))
