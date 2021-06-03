@@ -761,7 +761,7 @@ as a flat list."
 		       :help "Mark items with source code in matching buffer"))]
       ["Operate on items..."
        (keymap "Operate"
-               (kill menu-item "Kill marked items" simple-call-tree-kill
+               (kill menu-item "Kill marked items" simple-call-tree-kill-marked
                      :help "Remove marked items from the buffer")
                (todo menu-item "Set TODO state..." simple-call-tree-set-todo
                      :help "Set TODO state of current/marked items (with prefix arg remove TODO)")
