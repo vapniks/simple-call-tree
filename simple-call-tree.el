@@ -1853,8 +1853,8 @@ The toplevel functions will be sorted, and the functions in each branch will be 
         (narrowed (plist-get state 'narrowed))
         (nodups (plist-get state 'nodups)))
     (simple-call-tree-list-callers-and-functions depth tree)
-    (if (or topfunc thisfunc)
-        (simple-call-tree-jump-to-function (or topfunc thisfunc) t))
+    (aif (or topfunc thisfunc)
+        (simple-call-tree-jump-to-function it t))
     (if narrowed (simple-call-tree-toggle-narrowing -1))
     (setq simple-call-tree-current-maxdepth depth
           simple-call-tree-nodups nodups)
