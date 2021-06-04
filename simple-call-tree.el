@@ -429,11 +429,12 @@ The children of each header will be sorted separately."
                        (backward-word)
                        (eq (get-text-property (point) 'face)
                            'font-lock-keyword-face))
-                     nil end-of-defun)
+                     nil t nil nil)
     (cperl-mode nil nil (lambda (pos)
                           (goto-char pos)
                           (beginning-of-line)
-                          (looking-at "sub")) nil nil)
+                          (looking-at "sub"))
+		nil nil nil nil)
     (haskell-mode nil (font-lock-function-name-face
                        font-lock-comment-face
                        font-lock-string-face
@@ -449,14 +450,14 @@ The children of each header will be sorted separately."
                       (not (string= (symbol-at-point) thistoken))))
                   (lambda nil (haskell-ds-forward-decl)
                     (unless (= (point) (point-max)) (point)))
-                  haskell-ds-forward-decl
+		  t
                   "\\(:\\|\\_<\\)"
                   "\\s-")
     (perl-mode nil nil (lambda (pos)
                          (goto-char pos)
                          (beginning-of-line)
                          (looking-at "sub"))
-               nil nil)
+               nil nil nil nil)
     (python-mode (font-lock-function-name-face
                   font-lock-variable-name-face
                   font-lock-type-face)
@@ -473,7 +474,8 @@ The children of each header will be sorted separately."
                    (if (eq (get-text-property (point) 'face)
                            font-lock-variable-name-face)
                        (end-of-line)
-                     (end-of-defun))))
+                     (end-of-defun)))
+		 nil nil)
     (matlab-mode (font-lock-function-name-face)
                  nil
                  (lambda (pos)
@@ -481,7 +483,8 @@ The children of each header will be sorted separately."
                  (lambda nil
                    (if (re-search-forward "^function\\s-*\\S-+\\s-*=\\s-*" (point-max) t)
                        (point)))
-                 matlab-end-of-defun))
+                 matlab-end-of-defun
+		 nil nil))
   "Alist of major modes, and information to use for identifying objects for the simple call tree.
 Each element is a list in the form '(MAJOR-MODE VALID-FONTS INVALID-FONTS START-TEST END-TEST) where:
 
@@ -501,7 +504,7 @@ current token to check, and should return non-nil if it represents a valid objec
 
 NEXT-FUNC is an alternative way of determining the locations of functions.
 It is either nil, meaning the function locations will be determined by fonts and maybe START-TEST,
-or a function of no args which returns the position of the next function in the buffer, or nil if
+or a function of no args which returns the position of the next function in the buffer or nil if
 there are no further functions.
 
 END-FUNC indicates how to find the end of the current object when parsing a buffer for the call tree.
@@ -515,17 +518,33 @@ By default it is \"\\_<\".
 END-REGEXP a regular expression to match the end of a token, by default this is \"\\_>\"."
   :group 'simple-call-tree
   :type '(repeat (list (symbol :tag "major-mode symbol")
-                       (repeat :tag "Faces"
-                               (face :help-echo "List of faces corresponding to items to include in the call tree."))
+                       (repeat :tag "Include faces"
+			       :doc "List of faces corresponding to items to include in the call tree."
+                               (face :help-echo "Face of items to include in the call tree."))
+		       (repeat :tag "Exclude faces"
+                               (face :help-echo "Face of items to exclude from the call tree."))
                        (choice :tag "Start test"
                                (const :tag "Font only" nil)
                                (function
-                                :tag "Function:"
+                                :tag "Function"
                                 :help-echo "Function that evaluates to true when point is at beginning of function name."))
+		       (choice :tag "Next function test"
+                               (const :tag "Font only" nil)
+                               (function
+                                :tag "Function"
+                                :help-echo "Function to return position of next function in the buffer."))
                        (choice :tag "End test"
                                (const :tag "Font only" nil)
                                (const :tag "end-of-defun function" t)
-                               (function :tag "Other function" :help-echo "Function for finding end of object"))))
+                               (function :tag "Other function" :help-echo "Function for finding end of object"))
+		       (choice :tag "Start regexp"
+			       (const :tag "Use default value (\"\\_<\")" nil)
+			       (regexp :tag "Start regexp"
+				       :help-echo "regexp to match the beginning of a token"))
+		       (choice :tag "End regexp"
+			       (const :tag "Use default value (\"\\_>\")" nil)
+			       (regexp :tag "End regexp"
+				       :help-echo "regexp to match the end of a token"))))
   :link '(variable-link simple-call-tree-default-valid-fonts))
 
 ;; simple-call-tree-info: DONE
