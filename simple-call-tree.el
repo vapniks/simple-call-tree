@@ -896,7 +896,7 @@ of the called function and POS is the position of the call.")
 This is an inverted version of `simple-call-tree-alist'.")
 
 ;; simple-call-tree-info: DONE
-(defvar simple-call-tree-inverted nil
+(defvar-local simple-call-tree-inverted nil
   "Indicates if the *Simple Call Tree* buffer is currently inverted or not.
 If non-nil then children correspond to callers of parents in the outline tree.
 Otherwise it's the other way around.")
@@ -917,16 +917,16 @@ The minimum value is 0 which means show top level functions only.")
   "Ring to hold history of functions jumped to in *Simple Call Tree* buffer.")
 
 ;; simple-call-tree-info: DONE
-(defvar simple-call-tree-jump-ring-index 0
+(defvar-local simple-call-tree-jump-ring-index 0
   "The current position in the jump ring.")
 
 ;; simple-call-tree-info: DONE
-(defvar simple-call-tree-current-sort-order simple-call-tree-default-sort-method
+(defvar-local simple-call-tree-current-sort-order simple-call-tree-default-sort-method
   "The current sort order of the call tree.
 See `simple-call-tree-default-sort-method' for possible values.")
 
 ;; simple-call-tree-info: DONE
-(defvar simple-call-tree-nodups nil
+(defvar-local simple-call-tree-nodups nil
   "If non-nil then duplicate sub-branches will not be included in the tree.
 I.e. if a function makes multiple calls to the same function then only one of these calls will
 be shown in the tree.")
@@ -944,11 +944,11 @@ be shown in the tree.")
   "Regular expression to match org properties (todo, priority & tags) in source code.")
 
 ;; simple-call-tree-info: DONE
-(defvar simple-call-tree-marked-items nil
+(defvar-local simple-call-tree-marked-items nil
   "List of names of items in the *Simple Call Tree* buffer that are or should be marked.")
 
-;; simple-call-tree-info: TODO make buffer local
-(defvar simple-call-tree-killed-items nil
+;; simple-call-tree-info: TODO
+(defvar-local simple-call-tree-killed-items nil
   "List of names of items in the *Simple Call Tree* buffer that have been killed.")
 
 (defvar simple-call-tree-regex-maxlen 10000
