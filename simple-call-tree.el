@@ -1029,15 +1029,15 @@ By default it is set to a list containing the current buffer."
            (regexps (mapcar (lambda (lst) (concat symstart
                                                   (regexp-opt lst t)
                                                   symend))
-                            (cl-loop for i from 0 to (1- (length lengths))
+                            (cl-loop for i from 0 to (length lengths)
 				     with sum = 0
 				     with start = 0
 				     if (and (< sum simple-call-tree-regex-maxlen)
-					     (< i (1- (length lengths))))
+					     (< i (length lengths)))
 				     do (setq sum (+ sum (nth i lengths)))
 				     else
 				     collect (cl-subseq names start i)
-				     and do (setq start (1+ i) sum 0))))
+				     and do (setq start i sum (nth i lengths)))))
            (invalidfonts (or (third (assoc mode simple-call-tree-major-mode-alist))
                              simple-call-tree-default-invalid-fonts)))
       (cl-loop for item in simple-call-tree-alist
