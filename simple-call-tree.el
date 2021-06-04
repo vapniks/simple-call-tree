@@ -947,6 +947,10 @@ be shown in the tree.")
 (defvar simple-call-tree-marked-items nil
   "List of names of items in the *Simple Call Tree* buffer that are or should be marked.")
 
+;; simple-call-tree-info: TODO make buffer local
+(defvar simple-call-tree-killed-items nil
+  "List of names of items in the *Simple Call Tree* buffer that have been killed.")
+
 (defvar simple-call-tree-regex-maxlen 10000
   "Maximum allowed length for regular expressions.")
 
@@ -1356,7 +1360,8 @@ listed in `simple-call-tree-buffers' will be used."
   (simple-call-tree-analyze buffers)
   (setq simple-call-tree-inverted nil
         simple-call-tree-marked-items nil
-        simple-call-tree-buffers buffers)
+        simple-call-tree-buffers buffers
+	simple-call-tree-killed-items nil)
   (cl-case simple-call-tree-default-sort-method
     (position (simple-call-tree-reverse))
     (name (simple-call-tree-sort-by-name))
@@ -1659,7 +1664,7 @@ and when sorting the branches of those items the items in the cdr are passed."
   (dolist (branch simple-call-tree-inverted-alist)
     (setcdr branch (reverse (cdr branch))))
   (callf reverse simple-call-tree-inverted-alist)
-  (simple-call-tree-revert))
+  (simple-call-tree-revert 1))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-count-descendants (func depth alist)
@@ -1685,7 +1690,7 @@ When call interactively DEPTH is prompted for."
        (let ((alist (if simple-call-tree-inverted invlist normallist)))
          (> (simple-call-tree-count-descendants (car a) depth alist)
             (simple-call-tree-count-descendants (car b) depth alist))))))
-  (simple-call-tree-revert)
+  (simple-call-tree-revert 1)
   (setq simple-call-tree-current-sort-order 'numdescend))
 
 ;; simple-call-tree-info: DONE
@@ -1694,7 +1699,7 @@ When call interactively DEPTH is prompted for."
 The toplevel functions will be sorted, and the functions in each branch will be sorted separately."
   (interactive)
   (simple-call-tree-sort (lambda (a b) (string< (car a) (car b))))
-  (simple-call-tree-revert)
+  (simple-call-tree-revert 1)
   (setq simple-call-tree-current-sort-order 'name))
 
 ;; simple-call-tree-info: DONE
@@ -1707,7 +1712,7 @@ The toplevel functions will be sorted, and the functions in each branch will be 
                                         (buffer-name (marker-buffer (second b))))
                                (< (marker-position (second a))
                                   (marker-position (second b))))))
-  (simple-call-tree-revert)
+  (simple-call-tree-revert 1)
   (setq simple-call-tree-current-sort-order 'position))
 
 ;; simple-call-tree-info: DONE
@@ -1719,7 +1724,7 @@ The toplevel functions will be sorted, and the functions in each branch will be 
   (interactive)
   (simple-call-tree-sort (lambda (a b) (string< (symbol-name (get-text-property 0 'face (car a)))
                                                 (symbol-name (get-text-property 0 'face (car b))))))
-  (simple-call-tree-revert)
+  (simple-call-tree-revert 1)
   (setq simple-call-tree-current-sort-order 'face))
 
 ;; simple-call-tree-info: DONE
@@ -1736,7 +1741,7 @@ The toplevel functions will be sorted, and the functions in each branch will be 
                  (< (cl-position todoa all :test 'equal)
                     (cl-position todob all :test 'equal)))
              t)))))
-  (simple-call-tree-revert)
+  (simple-call-tree-revert 1)
   (setq simple-call-tree-current-sort-order 'todo))
 
 ;; simple-call-tree-info: DONE
@@ -1751,7 +1756,7 @@ The toplevel functions will be sorted, and the functions in each branch will be 
            (if priob
                (< prioa priob)
              t)))))
-  (simple-call-tree-revert)
+  (simple-call-tree-revert 1)
   (setq simple-call-tree-current-sort-order 'priority))
 
 ;; simple-call-tree-info: DONE
@@ -1767,7 +1772,7 @@ The toplevel functions will be sorted, and the functions in each branch will be 
                (marker-position (second itema)))
             (- (marker-position (third itemb))
                (marker-position (second itemb))))))))
-  (simple-call-tree-revert)
+  (simple-call-tree-revert 1)
   (setq simple-call-tree-current-sort-order 'size))
 
 ;; simple-call-tree-info: DONE
@@ -1778,7 +1783,7 @@ The toplevel functions will be sorted, and the functions in each branch will be 
    (lambda (a b)
      (or (simple-call-tree-marked-p (car a))
          (not (simple-call-tree-marked-p (car b))))))
-  (simple-call-tree-revert)
+  (simple-call-tree-revert 1)
   (setq simple-call-tree-current-sort-order 'mark))
 
 ;; simple-call-tree-info: DONE
@@ -1853,6 +1858,10 @@ The toplevel functions will be sorted, and the functions in each branch will be 
         (narrowed (plist-get state 'narrowed))
         (nodups (plist-get state 'nodups)))
     (simple-call-tree-list-callers-and-functions depth tree)
+    (read-only-mode -1)
+    (dolist (func simple-call-tree-killed-items)
+      (simple-call-tree-kill func))
+    (read-only-mode 1)
     (aif (or topfunc thisfunc)
         (simple-call-tree-jump-to-function it t))
     (if narrowed (simple-call-tree-toggle-narrowing -1))
@@ -1884,7 +1893,7 @@ The toplevel functions will be sorted, and the functions in each branch will be 
   "Invert the tree in *Simple Call Tree* buffer."
   (interactive)
   (callf not simple-call-tree-inverted)
-  (simple-call-tree-revert))
+  (simple-call-tree-revert 1))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-change-maxdepth (maxdepth)
@@ -1893,7 +1902,7 @@ The toplevel functions will be sorted, and the functions in each branch will be 
   (setq simple-call-tree-current-maxdepth
         (if current-prefix-arg (prefix-numeric-value current-prefix-arg)
           (floor (abs (read-number "Maximum depth to display: " 2)))))
-  (simple-call-tree-revert))
+  (simple-call-tree-revert 1))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-change-default-view (view1 view2)
@@ -2165,7 +2174,7 @@ When narrowed, the buffer will be narrowed to the subtree at point."
   (interactive)
   (callf not simple-call-tree-nodups)
   (with-current-buffer simple-call-tree-buffer-name
-    (simple-call-tree-revert)))
+    (simple-call-tree-revert 1)))
 
 ;; simple-call-tree-info: DONE
 (cl-defun simple-call-tree-apply-command (cmd &optional
@@ -2411,24 +2420,34 @@ If UNMARK is non-nil unmark the items instead."
                       (if (stringp buf) buf (buffer-name buf))))
    unmark))
 
+(defun simple-call-tree-kill (func)
+  "Remove FUNC from the *Simple Call Tree* buffer.
+Note: you should make sure buffer is not read-only before calling this function."
+  (simple-call-tree-goto-func func)
+  (outline-mark-subtree)
+  (kill-region (region-beginning) (region-end))
+  (condition-case err (kill-line) (error nil))
+  (add-to-list 'simple-call-tree-killed-items
+	       func nil 'simple-call-tree-compare-items))
+
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-kill-marked nil
   "Remove all marked items from the *Simple Call Tree* buffer."
   (interactive)
   (read-only-mode -1)
   (dolist (func simple-call-tree-marked-items)
-    (simple-call-tree-goto-func func)
-    (outline-mark-subtree)
-    (kill-region (region-beginning) (region-end))
-    (condition-case err (kill-line) (error nil))
+    (simple-call-tree-kill func)
     (callf2 remove func simple-call-tree-marked-items))
   (read-only-mode 1))
 
 ;; This command should be bound to g key for compatibility with dired.
 ;; simple-call-tree-info: DONE
-(defun simple-call-tree-revert nil
-  "Redisplay the *Simple Call Tree* buffer."
-  (interactive)
+(defun simple-call-tree-revert (killp)
+  "Redisplay the *Simple Call Tree* buffer.
+If KILLP is non-nil (or if called interactively with a prefix arg) then
+killed items will stay killed."
+  (interactive "P")
+  (unless killp (setq simple-call-tree-killed-items nil))
   (simple-call-tree-restore-state (simple-call-tree-store-state)))
 
 (unless (not (featurep 'fm))
