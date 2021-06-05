@@ -2113,7 +2113,7 @@ When called interactively the name of the function at point is used for FNSTR."
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-move-top nil
-  "Move cursor to the parent of this function."
+  "Move cursor to the toplevel parent of this function."
   (interactive)
   (with-current-buffer simple-call-tree-buffer-name
     (condition-case err
