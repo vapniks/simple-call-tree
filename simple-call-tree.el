@@ -1631,7 +1631,9 @@ If there is no parent, return nil."
 		 (error nil))
 	  (setq lst (cons (simple-call-tree-get-function-at-point)
 			  lst)))))
-    lst))
+    (if simple-call-tree-inverted
+	(nreverse lst)
+      lst)))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-get-toplevel nil
