@@ -1880,6 +1880,7 @@ The toplevel functions will be sorted, and the functions in each branch will be 
         (level (plist-get state 'level))
         (narrowed (plist-get state 'narrowed))
         (nodups (plist-get state 'nodups)))
+    (setq simple-call-tree-nodups nodups)
     (simple-call-tree-list-callers-and-functions depth tree)
     (read-only-mode -1)
     (dolist (func simple-call-tree-killed-items)
@@ -1888,8 +1889,7 @@ The toplevel functions will be sorted, and the functions in each branch will be 
     (aif (or topfunc thisfunc)
         (simple-call-tree-jump-to-function it t))
     (if narrowed (simple-call-tree-toggle-narrowing -1))
-    (setq simple-call-tree-current-maxdepth depth
-          simple-call-tree-nodups nodups)
+    (setq simple-call-tree-current-maxdepth depth)
     (if (and level (> level 1) thisfunc)
         (search-forward
          thisfunc
