@@ -1623,17 +1623,17 @@ We can't do that in this function as it causes other problems with outline mode 
 (defun simple-call-tree-get-chain nil
   "Return a list of the function at point and it's parents.
 If there is no parent, return nil."
-  (let ((lst (list (simple-call-tree-get-function-at-point))))
+  (let ((chain (list (simple-call-tree-get-function-at-point))))
     (with-current-buffer simple-call-tree-buffer-name
       (save-excursion
 	(while (condition-case nil
 		   (outline-up-heading 1)
 		 (error nil))
-	  (setq lst (cons (simple-call-tree-get-function-at-point)
-			  lst)))))
+	  (setq chain (cons (simple-call-tree-get-function-at-point)
+			    chain)))))
     (if simple-call-tree-inverted
-	(nreverse lst)
-      lst)))
+	(nreverse chain)
+      chain)))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-get-toplevel nil
