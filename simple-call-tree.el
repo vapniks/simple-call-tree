@@ -687,16 +687,16 @@ as a flat list."
   (define-key simple-call-tree-mode-map (kbd "o") 'simple-call-tree-visit-function)
   ;; Movement commands
   (define-key simple-call-tree-mode-map (kbd "^") 'simple-call-tree-move-top)
-  (define-key simple-call-tree-mode-map (kbd "n") 'simple-call-tree-move-next-marked)
-  (define-key simple-call-tree-mode-map (kbd "p") 'simple-call-tree-move-prev-marked)
-  (define-key simple-call-tree-mode-map (kbd "N") 'simple-call-tree-move-next-marked)
-  (define-key simple-call-tree-mode-map (kbd "P") 'simple-call-tree-move-prev-marked)
+  (define-key simple-call-tree-mode-map (kbd "n") 'simple-call-tree-move-next)
+  (define-key simple-call-tree-mode-map (kbd "p") 'simple-call-tree-move-prev)
+  (define-key simple-call-tree-mode-map (kbd "N") 'simple-call-tree-move-next-samelevel)
+  (define-key simple-call-tree-mode-map (kbd "P") 'simple-call-tree-move-prev-samelevel)
+  (define-key simple-call-tree-mode-map (kbd "M-p") 'simple-call-tree-move-prev-todo)
+  (define-key simple-call-tree-mode-map (kbd "M-n") 'simple-call-tree-move-next-todo)
   (define-key simple-call-tree-mode-map (kbd "M-g n") 'simple-call-tree-move-next-marked)
   (define-key simple-call-tree-mode-map (kbd "M-g p") 'simple-call-tree-move-prev-marked)
   (define-key simple-call-tree-mode-map (kbd "M-g M-n") 'simple-call-tree-move-next-marked)
   (define-key simple-call-tree-mode-map (kbd "M-g M-p") 'simple-call-tree-move-prev-marked)
-  (define-key simple-call-tree-mode-map (kbd "M-p") 'simple-call-tree-move-prev-marked)
-  (define-key simple-call-tree-mode-map (kbd "M-n") 'simple-call-tree-move-next-marked)
   (define-key simple-call-tree-mode-map (kbd "<C-up>") 'simple-call-tree-move-prev-samelevel)
   (define-key simple-call-tree-mode-map (kbd "<C-down>") 'simple-call-tree-move-next-samelevel)
   (define-key simple-call-tree-mode-map (kbd "<C-left>") 'outline-up-heading)
@@ -2164,6 +2164,30 @@ When called interactively the name of the function at point is used for FNSTR."
   (interactive)
   (beginning-of-line)
   (re-search-backward "^\\*"))
+
+;; simple-call-tree-info: DONE
+(defun simple-call-tree-move-next-todo nil
+  "Move cursor to the next item with a TODO state that isn't done.
+If called with a prefix arg then move to the next TODO state even
+if it's in not in `simple-call-tree-org-not-done-keywords'."
+  (interactive)
+  (end-of-line)
+  (let ((states (if current-prefix-arg
+		    simple-call-tree-org-todo-keywords
+		  simple-call-tree-org-not-done-keywords)))
+    (re-search-forward (concat "^. " (regexp-opt states) " "))))
+
+;; simple-call-tree-info: DONE
+(defun simple-call-tree-move-prev-todo nil
+  "Move cursor to the next item with a TODO state that isn't done.
+If called with a prefix arg then move to the previous TODO state even
+if it's in not in `simple-call-tree-org-not-done-keywords'."
+  (interactive)
+  (beginning-of-line)
+  (let ((states (if current-prefix-arg
+		    simple-call-tree-org-todo-keywords
+		  simple-call-tree-org-not-done-keywords)))
+    (re-search-backward (concat "^. " (regexp-opt states) " "))))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-buffer-narrowed-p nil
