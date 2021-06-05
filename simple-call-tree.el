@@ -328,7 +328,6 @@
 ;;
 ;; If anyone wants to implement the following ideas, please do:
 ;; More reliable code for building tree (handle duplicate function names properly).
-;; Fix code so that we can have several calls to the same function in the same tree.
 ;; Code for managing refactoring commands (to be applied to marked functions).
 ;; Multiple query replace command for substituting appropriate lisp macros -
 ;; e.g. replace (setq list (remove x list)) with (callf2 remove x list)
@@ -688,18 +687,21 @@ as a flat list."
   (define-key simple-call-tree-mode-map (kbd "o") 'simple-call-tree-visit-function)
   ;; Movement commands
   (define-key simple-call-tree-mode-map (kbd "^") 'simple-call-tree-move-top)
-  (define-key simple-call-tree-mode-map (kbd "n") 'simple-call-tree-move-next)
-  (define-key simple-call-tree-mode-map (kbd "p") 'simple-call-tree-move-prev)
-  (define-key simple-call-tree-mode-map (kbd "C-f") 'simple-call-tree-move-next-samelevel)
-  (define-key simple-call-tree-mode-map (kbd "C-b") 'simple-call-tree-move-prev-samelevel)
-  (define-key simple-call-tree-mode-map (kbd "N") 'simple-call-tree-move-next-samelevel)
-  (define-key simple-call-tree-mode-map (kbd "P") 'simple-call-tree-move-prev-samelevel)
+  (define-key simple-call-tree-mode-map (kbd "n") 'simple-call-tree-move-next-marked)
+  (define-key simple-call-tree-mode-map (kbd "p") 'simple-call-tree-move-prev-marked)
+  (define-key simple-call-tree-mode-map (kbd "N") 'simple-call-tree-move-next-marked)
+  (define-key simple-call-tree-mode-map (kbd "P") 'simple-call-tree-move-prev-marked)
   (define-key simple-call-tree-mode-map (kbd "M-g n") 'simple-call-tree-move-next-marked)
   (define-key simple-call-tree-mode-map (kbd "M-g p") 'simple-call-tree-move-prev-marked)
   (define-key simple-call-tree-mode-map (kbd "M-g M-n") 'simple-call-tree-move-next-marked)
   (define-key simple-call-tree-mode-map (kbd "M-g M-p") 'simple-call-tree-move-prev-marked)
   (define-key simple-call-tree-mode-map (kbd "M-p") 'simple-call-tree-move-prev-marked)
   (define-key simple-call-tree-mode-map (kbd "M-n") 'simple-call-tree-move-next-marked)
+  (define-key simple-call-tree-mode-map (kbd "<C-up>") 'simple-call-tree-move-prev-samelevel)
+  (define-key simple-call-tree-mode-map (kbd "<C-down>") 'simple-call-tree-move-next-samelevel)
+  (define-key simple-call-tree-mode-map (kbd "<C-left>") 'outline-up-heading)
+  (define-key simple-call-tree-mode-map (kbd "<C-right>") 'outline-next-heading)
+  
   ;; Jump ring commands
   (define-key simple-call-tree-mode-map (kbd "j") 'simple-call-tree-jump-to-function)
   (define-key simple-call-tree-mode-map (kbd "J") #'(lambda nil (interactive)
@@ -712,7 +714,7 @@ as a flat list."
   (define-key simple-call-tree-mode-map (kbd "<") 'simple-call-tree-jump-prev)
   (define-key simple-call-tree-mode-map (kbd ">") 'simple-call-tree-jump-next)
   ;; Applying commands
-  (define-key simple-call-tree-mode-map (kbd "b") 'simple-call-tree-bookmark)
+  (define-key simple-call-tree-mode-map (kbd "B") 'simple-call-tree-bookmark)
   (define-key simple-call-tree-mode-map (kbd "%") 'simple-call-tree-query-replace)
   (define-key simple-call-tree-mode-map (kbd "C-%") 'simple-call-tree-query-replace-regexp)
   (define-key simple-call-tree-mode-map (kbd "!") 'simple-call-tree-apply-command)
