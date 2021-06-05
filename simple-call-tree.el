@@ -670,7 +670,7 @@ as a flat list."
   (define-key simple-call-tree-mode-map (kbd "t") 'simple-call-tree-toggle-marks)
   ;; Hide/show commands
   (if (featurep 'outshine)
-      (define-key simple-call-tree-mode-map (kbd "<tab>") 'outline-cycle)
+      (define-key simple-call-tree-mode-map (kbd "<tab>") 'outshine-cycle)
     (define-key simple-call-tree-mode-map (kbd "<tab>") 'outline-toggle-children))
   (define-key simple-call-tree-mode-map (kbd "<right>") 'outline-show-children)
   (define-key simple-call-tree-mode-map (kbd "<left>") 'hide-subtree)
@@ -1911,12 +1911,15 @@ The toplevel functions will be sorted, and the functions in each branch will be 
                   (delete-window)
 		(switch-to-buffer nil))))))
 
-;; simple-call-tree-info: DONE
+;; simple-call-tree-info: TODO  restore location properly
 (defun simple-call-tree-invert-buffer nil
   "Invert the tree in *Simple Call Tree* buffer."
   (interactive)
   (callf not simple-call-tree-inverted)
-  (simple-call-tree-revert 1))
+  ;; TODO: save current caller-callee pair & location
+  (simple-call-tree-revert 1)
+  ;; TODO: restore caller-callee pair & location
+  )
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-change-maxdepth (maxdepth)
