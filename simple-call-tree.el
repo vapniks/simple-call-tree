@@ -1194,8 +1194,7 @@ information. If UPDATESRC is nil then don't bother updating the source code."
     (save-excursion
       (goto-char (point-min))
       (if (simple-call-tree-goto-func func)
-          (let ((hidden (not (= (save-excursion (outline-end-of-heading) (point))
-                                (save-excursion (outline-end-of-subtree) (point)))))
+          (let ((hidden (not (outshine-subheadings-visible-p)))
                 (marked (simple-call-tree-marked-p func)))
             (if hidden (show-children)) ;hack! otherwise it doesn't always work properly
             (read-only-mode -1)
@@ -1213,7 +1212,7 @@ If a prefix arg is used (or REMOVE is non-nil) then remove the TODO state."
   (interactive (list (if current-prefix-arg nil
                        (completing-read "State: " (simple-call-tree-org-todo-keywords) nil))
                      (or simple-call-tree-marked-items
-                         (--if-let (simple-call-tree-get-parent)
+                         (--if-let (simple-call-tree-get-toplevel)
 			     (list it))
                          (--if-let (simple-call-tree-get-function-at-point)
 			     (list it)))))
