@@ -1620,15 +1620,18 @@ We can't do that in this function as it causes other problems with outline mode 
         (if (= arrowlen 0) 1 (1+ (/ (1- arrowlen) 2)))))))
 
 ;; simple-call-tree-info: DONE
-(defun simple-call-tree-get-parent nil
-  "Return the name of the parent of the function at point according to the current tree.
+(defun simple-call-tree-get-chain nil
+  "Return a list of the function at point and it's parents.
 If there is no parent, return nil."
-  (with-current-buffer simple-call-tree-buffer-name
-    (save-excursion
-      (if (condition-case nil
-              (simple-call-tree-move-top)
-            (error nil))
-          (simple-call-tree-get-function-at-point)))))
+  (let ((lst (list (simple-call-tree-get-function-at-point))))
+    (with-current-buffer simple-call-tree-buffer-name
+      (save-excursion
+	(while (condition-case nil
+		   (outline-up-heading 1)
+		 (error nil))
+	  (setq lst (cons (simple-call-tree-get-function-at-point)
+			  lst)))))
+    lst))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-get-toplevel nil
