@@ -1223,7 +1223,7 @@ If a prefix arg is used (or REMOVE is non-nil) then remove the TODO state."
 (defun simple-call-tree-next-todo nil
   "Move to next todo state for current function."
   (interactive)
-  (let* ((func (or (simple-call-tree-get-parent)
+  (let* ((func (or (simple-call-tree-get-toplevel)
                    (simple-call-tree-get-function-at-point)))
          (curtodo (fourth (car (simple-call-tree-get-item func))))
          (states (simple-call-tree-org-todo-keywords))
@@ -1239,7 +1239,7 @@ If a prefix arg is used (or REMOVE is non-nil) then remove the TODO state."
 (defun simple-call-tree-prev-todo nil
   "Move to previous todo state for current function."
   (interactive)
-  (let* ((func (or (simple-call-tree-get-parent)
+  (let* ((func (or (simple-call-tree-get-toplevel)
                    (simple-call-tree-get-function-at-point)))
          (curtodo (fourth (car (simple-call-tree-get-item func))))
          (states (simple-call-tree-org-todo-keywords))
@@ -1259,7 +1259,7 @@ By default FUNCS is set to the list of marked items or the function at point if 
                                simple-call-tree-org-highest-priority simple-call-tree-org-lowest-priority)
                       (list (read-char-exclusive)
                             (or simple-call-tree-marked-items
-                                (list (or (simple-call-tree-get-parent)
+                                (list (or (simple-call-tree-get-toplevel)
                                           (simple-call-tree-get-function-at-point)))))))
   (cond ((not value) t)
         ((equal value ?\ ) (setq value nil))
@@ -1275,7 +1275,7 @@ By default FUNCS is set to the list of marked items or the function at point if 
 (defun simple-call-tree-up-priority nil
   "Change current function to the next priority level."
   (interactive)
-  (let* ((func (or (simple-call-tree-get-parent)
+  (let* ((func (or (simple-call-tree-get-toplevel)
                    (simple-call-tree-get-function-at-point)))
          (curpriority (fifth (car (simple-call-tree-get-item func))))
          (nextpriority (cond ((not curpriority) simple-call-tree-org-lowest-priority)
@@ -1289,7 +1289,7 @@ By default FUNCS is set to the list of marked items or the function at point if 
 (defun simple-call-tree-down-priority nil
   "Change current function to the previous priority level."
   (interactive)
-  (let* ((func (or (simple-call-tree-get-parent)
+  (let* ((func (or (simple-call-tree-get-toplevel)
                    (simple-call-tree-get-function-at-point)))
          (curpriority (fifth (car (simple-call-tree-get-item func))))
          (nextpriority (cond ((not curpriority) simple-call-tree-org-highest-priority)
@@ -1304,7 +1304,7 @@ By default FUNCS is set to the list of marked items or the function at point if 
   "Set the org tags for the function(s) FUNCS.
 By default FUNCS is set to the list of marked items or the function at point if there are no marked items."
   (interactive (let* ((funcs (or simple-call-tree-marked-items
-                                 (list (or (simple-call-tree-get-parent)
+                                 (list (or (simple-call-tree-get-toplevel)
                                            (simple-call-tree-get-function-at-point)))))
                       currenttags)
                  (dolist (func funcs)
@@ -1322,7 +1322,7 @@ By default FUNCS is set to the list of marked items or the function at point if 
 By default FUNCS is set to the list of marked items or the function at point if there are no marked items.
 If REMOVE is non-nil remove the tags instead."
   (interactive (let* ((funcs (or simple-call-tree-marked-items
-                                 (list (or (simple-call-tree-get-parent)
+                                 (list (or (simple-call-tree-get-toplevel)
                                            (simple-call-tree-get-function-at-point)))))
                       currenttags)
                  (dolist (func funcs)
@@ -1990,7 +1990,7 @@ the source buffer to the function."
          (buf (marker-buffer funmark))
          (pos (marker-position funmark))
          (thisfunc (simple-call-tree-get-function-at-point))
-         (parent (simple-call-tree-get-parent))
+         (parent (simple-call-tree-get-toplevel))
          (visitfunc (if simple-call-tree-inverted
                         thisfunc
                       (or parent thisfunc))))
@@ -2052,7 +2052,7 @@ or if called with a prefix arg it will be prompted for.
 Unless optional arg SKIPRING is non-nil (which will be true if called with a negative
 prefix arg) then the function name will be added to `simple-call-tree-jump-ring'"
   (interactive (list (if (or current-prefix-arg
-                             (not (simple-call-tree-get-parent)))
+                             (not (simple-call-tree-get-toplevel)))
                          (ido-completing-read "Jump to function: " (mapcar 'caar simple-call-tree-alist))
                        (simple-call-tree-get-function-at-point))
                      (< (prefix-numeric-value current-prefix-arg) 0)))
@@ -2203,10 +2203,10 @@ When narrowed, the buffer will be narrowed to the subtree at point."
 
 ;; simple-call-tree-info: DONE
 (cl-defun simple-call-tree-apply-command (cmd &optional
-                                            (funcs (or simple-call-tree-marked-items
-                                                       (list (or (unless simple-call-tree-inverted
-                                                                   (simple-call-tree-get-parent))
-                                                                 (simple-call-tree-get-function-at-point))))))
+					      (funcs (or simple-call-tree-marked-items
+							 (list (or (unless simple-call-tree-inverted
+								     (simple-call-tree-get-toplevel))
+								   (simple-call-tree-get-function-at-point))))))
   "Apply command CMD on function(s) FUNCS.
 By default FUNCS is set to the list of marked items or the function at point if there are no marked items.
 The command CMD will be called interactively on each function after switching to the source code buffer,
@@ -2259,7 +2259,7 @@ This just calls `simple-call-tree-apply-command' with the `query-replace-regexp'
 (defun simple-call-tree-mark (func)
   "Mark the item named FUNC.
 If FUNC is nil then mark the current line and add the item to `simple-call-tree-marked-items'."
-  (interactive (list (or (simple-call-tree-get-parent)
+  (interactive (list (or (simple-call-tree-get-toplevel)
                          (simple-call-tree-get-function-at-point))))
   (if (and (or (not func) (simple-call-tree-goto-func func))
            (progn (beginning-of-line)
@@ -2278,7 +2278,7 @@ If FUNC is nil then mark the current line and add the item to `simple-call-tree-
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-unmark (func)
   "Unmark the item named FUNC."
-  (interactive (list (or (simple-call-tree-get-parent)
+  (interactive (list (or (simple-call-tree-get-toplevel)
                          (simple-call-tree-get-function-at-point))))
   (unless (not (simple-call-tree-goto-func func))
     (read-only-mode -1)
