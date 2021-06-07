@@ -1706,7 +1706,8 @@ the chain will be inverted before moving to the appropriate function call."
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-get-toplevel nil
-  "Return the name of the toplevel parent of the subtree at point."
+  "Return the name of the toplevel parent of the subtree at point.
+If point is on a toplevel header return nil."
   (with-current-buffer simple-call-tree-buffer-name
     (save-excursion
       (move-beginning-of-line nil)
@@ -2134,7 +2135,8 @@ Unless optional arg SKIPRING is non-nil (which will be true if called with a neg
 prefix arg) then the function name will be added to `simple-call-tree-jump-ring'"
   (interactive (list (if (or current-prefix-arg
                              (not (simple-call-tree-get-toplevel)))
-                         (ido-completing-read "Jump to function: " (mapcar 'caar simple-call-tree-alist))
+                         (ido-completing-read "Jump to function: "
+					      (mapcar 'caar simple-call-tree-alist))
                        (simple-call-tree-get-function-at-point))
                      (< (prefix-numeric-value current-prefix-arg) 0)))
   (let* ((narrowedp (simple-call-tree-buffer-narrowed-p)))
