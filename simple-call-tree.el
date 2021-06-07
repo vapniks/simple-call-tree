@@ -2190,14 +2190,16 @@ The current index into the ring is `simple-call-tree-jump-ring-index'."
 (defun simple-call-tree-jump-ring-add (chain)
   "Add the call chain at point to the jump-ring.
 Adds the CHAIN to the `simple-call-tree-jump-ring' at the position indicated by
-`simple-call-tree-jump-ring-index', and reset `simple-call-tree-jump-ring-index' to 0.
+`simple-call-tree-jump-ring-index'.
 When called interactively the call chain at point is used for CHAIN."
   (interactive (list (simple-call-tree-get-chain)))
-  (setf (cadr simple-call-tree-jump-ring)
-	(- (ring-length simple-call-tree-jump-ring)
-	   simple-call-tree-jump-ring-index))
-  (setq simple-call-tree-jump-ring-index 0)
-  (ring-insert simple-call-tree-jump-ring chain)
+  (let ((lst))
+    (dotimes (i (- (ring-length simple-call-tree-jump-ring)
+		   simple-call-tree-jump-ring-index))
+      (push (ring-remove simple-call-tree-jump-ring) lst))
+    (ring-insert-at-beginning simple-call-tree-jump-ring chain)
+    (dolist (item lst)
+      (ring-insert-at-beginning simple-call-tree-jump-ring item)))
   (message "Added %s to `simple-call-tree-jump-ring'"
 	   (nth (get-text-property 0 'leaf (car chain)) chain)))
 
