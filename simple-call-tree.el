@@ -1623,11 +1623,10 @@ We can't do that in this function as it causes other problems with outline mode 
 (defun simple-call-tree-get-chain nil
   "Return a list of the function at point and it's parents.
 If there is no parent, return nil.
-If the current tree is inverted the chain will be inverted so that
-the first entry is always the highest caller and the last entry is
-the lowest callee.
-The first element of the list will have a 'leaf property which indicates
-the index in the list of the function at point."
+If the current tree is inverted the chain will be inverted so that the first
+entry is always the highest caller and the last entry is the lowest callee.
+The first element of the list will have a 'leaf property which indicates the index
+in the list of the function at point (this is altered when the chain is reversed)."
   (cl-flet ((getfunc ()
 		     (let* ((str (simple-call-tree-get-function-at-point))
 			    (loc (get-text-property 0 'location str))
@@ -1650,7 +1649,7 @@ the index in the list of the function at point."
 
 ;; simple-call-tree: CHECK  
 (defun simple-call-tree-invert-chain (chain)
-  "Invert a CHAIN of function calls.
+  "Invert a CHAIN of function calls, and update the 'leaf property of the first element.
 CHAIN is a list as returned by `simple-call-tree-get-chain',
 i.e. a list of function names with location properties containing markers."
   (cl-flet ((setprop (str p v) (put-text-property 0 (length str) p v str)))
@@ -1671,7 +1670,7 @@ i.e. a list of function names with location properties containing markers."
 
 ;; simple-call-tree: CHECK
 (defun simple-call-tree-goto-chain (chain)
-  "Goto the header corresponding to the function call in CHAIN with leaf property 1.
+  "Goto the header corresponding to the leaf function call in CHAIN.
 CHAIN is assumed to be in non-inverted order, and if the current tree is inverted
 the chain will be inverted before moving to the appropriate function call."
   (cl-symbol-macrolet ((depth simple-call-tree-current-maxdepth)
@@ -1704,8 +1703,7 @@ the chain will be inverted before moving to the appropriate function call."
 	       do (error "Can't find matching call chain (try simple-call-tree-toggle-duplicates)")
 	       end
 	       if (eq leaf n) do (setq pos (point)))
-      (goto-char pos)
-      )))
+      (goto-char pos))))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-get-toplevel nil
