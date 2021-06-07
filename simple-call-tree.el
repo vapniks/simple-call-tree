@@ -1619,21 +1619,93 @@ We can't do that in this function as it causes other problems with outline mode 
       (let ((arrowlen (length (match-string 1))))
         (if (= arrowlen 0) 1 (1+ (/ (1- arrowlen) 2)))))))
 
-;; simple-call-tree-info: DONE
+;; simple-call-tree-info: CHECK
 (defun simple-call-tree-get-chain nil
   "Return a list of the function at point and it's parents.
-If there is no parent, return nil."
-  (let ((chain (list (simple-call-tree-get-function-at-point))))
+If there is no parent, return nil.
+If the current tree is inverted the chain will be inverted so that
+the first entry is always the highest caller and the last entry is
+the lowest callee.
+The first element of the list will have a 'leaf property which indicates
+the index in the list of the function at point."
+  (cl-flet ((getfunc ()
+		     (let* ((str (simple-call-tree-get-function-at-point))
+			    (loc (get-text-property 0 'location str))
+			    (newstr (substring-no-properties str)))
+		       (put-text-property 0 (length newstr) 'location loc newstr)
+		       newstr)))
     (with-current-buffer simple-call-tree-buffer-name
-      (save-excursion
-	(while (condition-case nil
-		   (outline-up-heading 1)
-		 (error nil))
-	  (setq chain (cons (simple-call-tree-get-function-at-point)
-			    chain)))))
-    (if simple-call-tree-inverted
-	(nreverse chain)
-      chain)))
+      (let ((chain (list (getfunc))))
+	(save-excursion
+	  (while (condition-case nil
+		     (outline-up-heading 1)
+		   (error nil))
+	    (push (getfunc) chain)))
+	(put-text-property 0 (length (car chain))
+			   'leaf (1- (length chain))
+			   (car chain))
+	(if simple-call-tree-inverted
+	    (simple-call-tree-invert-chain chain)
+	  chain)))))
+
+;; simple-call-tree: CHECK  
+(defun simple-call-tree-invert-chain (chain)
+  "Invert a CHAIN of function calls.
+CHAIN is a list as returned by `simple-call-tree-get-chain',
+i.e. a list of function names with location properties containing markers."
+  (cl-flet ((setprop (str p v) (put-text-property 0 (length str) p v str)))
+    (let* ((leafpos (get-text-property 0 'leaf (car chain)))
+	   (prevfunc (substring-no-properties (car chain)))
+	   cdrchain)
+      (cl-loop for func in (cdr chain) 
+	       for mark = (get-text-property 0 'location func)
+	       if prevfunc do (setprop prevfunc 'location mark)
+	       (setq cdrchain (cons prevfunc cdrchain))
+	       end
+	       do (setq prevfunc (substring-no-properties func)))
+      (setprop prevfunc 'location
+	       (cadar (assoc-if (lambda (x) (string= (car x) prevfunc))
+				simple-call-tree-alist)))
+      (setprop prevfunc 'leaf (min (1- (length chain)) (- (length chain) leafpos)))
+      (cons prevfunc cdrchain))))
+
+;; simple-call-tree: CHECK
+(defun simple-call-tree-goto-chain (chain)
+  "Goto the header corresponding to the function call in CHAIN with leaf property 1.
+CHAIN is assumed to be in non-inverted order, and if the current tree is inverted
+the chain will be inverted before moving to the appropriate function call."
+  (cl-symbol-macrolet ((depth simple-call-tree-current-maxdepth)
+		       (inverted simple-call-tree-inverted))
+    (let* ((rx1 (if inverted "^[|*]<-\\{" "^[|*]-\\{"))
+	   (rx2 (if inverted "\\} " "\\}> "))
+	   (len (length chain))
+	   (leaf (get-text-property 0 'leaf (car chain)))
+	   (chain2 (subseq chain (max 0 (- (1+ leaf) depth))
+			   (min len (max depth (1+ leaf)))))
+	   (chain3 (if inverted
+		       (simple-call-tree-invert-chain chain2)
+		     chain2))
+	   pos)
+      (simple-call-tree-goto-func (car chain3))
+      (setq leaf (get-text-property 0 'leaf (car chain3)))
+      (if (eq leaf 0) (setq pos (point)))
+      (cl-loop for hdr in (cdr chain3)
+	       for pos1 = (marker-position
+			   (get-text-property 0 'location hdr))
+	       for n from 1
+	       unless (let* ((lineregex (concat rx1 (number-to-string (* 2 n)) rx2
+						(regexp-opt (list hdr))
+						"\\s-*$")))
+			(cl-loop while (re-search-forward lineregex nil t)
+				 do (backward-word)
+				 if (eq pos1 (marker-position
+					      (get-text-property (point) 'location)))
+				 return 1))
+	       do (error "Can't find matching call chain (try simple-call-tree-toggle-duplicates)")
+	       end
+	       if (eq leaf n) do (setq pos (point)))
+      (goto-char pos)
+      )))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-get-toplevel nil
@@ -1917,15 +1989,14 @@ The toplevel functions will be sorted, and the functions in each branch will be 
                   (delete-window)
 		(switch-to-buffer nil))))))
 
-;; simple-call-tree-info: TODO  restore location properly
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-invert-buffer nil
   "Invert the tree in *Simple Call Tree* buffer."
   (interactive)
-  (callf not simple-call-tree-inverted)
-  ;; TODO: save current caller-callee pair & location
-  (simple-call-tree-revert 1)
-  ;; TODO: restore caller-callee pair & location
-  )
+  (let ((chain (simple-call-tree-get-chain)))
+    (callf not simple-call-tree-inverted)
+    (simple-call-tree-revert 1)
+    (simple-call-tree-goto-chain chain)))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-change-maxdepth (maxdepth)
