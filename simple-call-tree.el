@@ -1663,8 +1663,7 @@ i.e. a list of function names with location properties containing markers."
 	       end
 	       do (setq prevfunc (substring-no-properties func)))
       (setprop prevfunc 'location
-	       (cadar (assoc-if (lambda (x) (string= (car x) prevfunc))
-				simple-call-tree-alist)))
+	       (cadar (simple-call-tree-get-item prevfunc)))
       (setprop prevfunc 'leaf (min (1- (length chain)) (- (length chain) leafpos)))
       (cons prevfunc cdrchain))))
 
@@ -2140,7 +2139,16 @@ prefix arg) then the function name will be added to `simple-call-tree-jump-ring'
                      (< (prefix-numeric-value current-prefix-arg) 0)))
   (let* ((narrowedp (simple-call-tree-buffer-narrowed-p)))
     (simple-call-tree-goto-func fnstr)
-    (unless skipring (simple-call-tree-jump-ring-add fnstr))
+    (unless skipring
+      (add-text-properties 0 (length fnstr)
+			   '(leaf
+			     0
+			     'location
+			     (get-text-property 0
+						'location
+						(cadar (simple-call-tree-get-item fnstr))))
+			   fnstr)
+      (simple-call-tree-jump-ring-add (list fnstr)))
     (if narrowedp (simple-call-tree-toggle-narrowing -1)
       (cl-case simple-call-tree-default-recenter
         (top (recenter 0))
@@ -2157,41 +2165,41 @@ The current index into the ring is `simple-call-tree-jump-ring-index'."
     (let ((len (cadr simple-call-tree-jump-ring)))
       (setq simple-call-tree-jump-ring-index
             (mod (1+ simple-call-tree-jump-ring-index) len))
-      (simple-call-tree-jump-to-function
+      (simple-call-tree-goto-chain
        (ring-ref simple-call-tree-jump-ring
-                 simple-call-tree-jump-ring-index)
-       t)
+                 simple-call-tree-jump-ring-index))
       (message "Position %d in jump ring history"
                simple-call-tree-jump-ring-index))))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-jump-next nil
-  "Jump to the next function in the `simple-call-tree-jump-ring'.
+  "Jump to the next chain in the `simple-call-tree-jump-ring'.
 The current index into the ring is `simple-call-tree-jump-ring-index'."
   (interactive)
   (unless (ring-empty-p simple-call-tree-jump-ring)
     (let ((len (cadr simple-call-tree-jump-ring)))
       (setq simple-call-tree-jump-ring-index
             (mod (1- simple-call-tree-jump-ring-index) len))
-      (simple-call-tree-jump-to-function
+      (simple-call-tree-goto-chain
        (ring-ref simple-call-tree-jump-ring
-                 simple-call-tree-jump-ring-index)
-       t)
+                 simple-call-tree-jump-ring-index))
       (message "Position %d in jump ring history"
                simple-call-tree-jump-ring-index))))
 
 ;; simple-call-tree-info: DONE
-(defun simple-call-tree-jump-ring-add (fnstr)
-  "Add the function at point to the jump-ring.
-Adds the string FNSTR to the `simple-call-tree-jump-ring' at the position indicated by
+(defun simple-call-tree-jump-ring-add (chain)
+  "Add the call chain at point to the jump-ring.
+Adds the CHAIN to the `simple-call-tree-jump-ring' at the position indicated by
 `simple-call-tree-jump-ring-index', and reset `simple-call-tree-jump-ring-index' to 0.
-When called interactively the name of the function at point is used for FNSTR."
-  (interactive (list (simple-call-tree-get-function-at-point)))
-  (setf (cadr simple-call-tree-jump-ring) (- (ring-length simple-call-tree-jump-ring)
-                                             simple-call-tree-jump-ring-index))
+When called interactively the call chain at point is used for CHAIN."
+  (interactive (list (simple-call-tree-get-chain)))
+  (setf (cadr simple-call-tree-jump-ring)
+	(- (ring-length simple-call-tree-jump-ring)
+	   simple-call-tree-jump-ring-index))
   (setq simple-call-tree-jump-ring-index 0)
-  (ring-insert simple-call-tree-jump-ring fnstr)
-  (message "Added %s to `simple-call-tree-jump-ring'" fnstr))
+  (ring-insert simple-call-tree-jump-ring chain)
+  (message "Added %s to `simple-call-tree-jump-ring'"
+	   (nth (get-text-property 0 'leaf (car chain)) chain)))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-move-top nil
