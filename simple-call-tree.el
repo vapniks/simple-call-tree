@@ -1990,11 +1990,11 @@ The toplevel functions will be sorted, and the functions in each branch will be 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-invert-buffer nil
   "Invert the tree in *Simple Call Tree* buffer.
-Point will be moved to a header corresponding to the same function call as 
-before the inversion if possible.
-Note that if you invoke this command twice in a row you don't necessarily end
+Point will be moved to a header corresponding to the same function call as
+before the inversion if possible (it might not be possible if duplicates are hidden).
+Note: if you invoke this command twice in a row you don't necessarily end
 up in the same position since on the second invocation it doesn't know which
-child node should become its parent. To go back to the previous position you 
+child node should become its parent. To go back to the previous position you
 need to move to the appropriate child node before invoking again."
   (interactive)
   (let ((chain (simple-call-tree-get-chain)))
