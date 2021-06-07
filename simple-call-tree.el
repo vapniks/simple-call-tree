@@ -2128,11 +2128,11 @@ Return the position of the start of the item or nil if it couldn't be found."
 
 ;; simple-call-tree-info: DONE
 (cl-defun simple-call-tree-jump-to-function (fnstr &optional skipring)
-  "Move cursor to the line corresponding to the function with name FNSTR.
+  "Move cursor to the line corresponding to the function header with name FNSTR.
 When called interactively FNSTR will be set to the function name under point,
 or if called with a prefix arg it will be prompted for.
 Unless optional arg SKIPRING is non-nil (which will be true if called with a negative
-prefix arg) then the function name will be added to `simple-call-tree-jump-ring'"
+prefix arg) then the header at point, and FNSTR will both be added to `simple-call-tree-jump-ring'"
   (interactive (list (if (or current-prefix-arg
                              (not (simple-call-tree-get-toplevel)))
                          (ido-completing-read "Jump to function: "
@@ -2140,8 +2140,10 @@ prefix arg) then the function name will be added to `simple-call-tree-jump-ring'
                        (simple-call-tree-get-function-at-point))
                      (< (prefix-numeric-value current-prefix-arg) 0)))
   (let* ((narrowedp (simple-call-tree-buffer-narrowed-p)))
-    (simple-call-tree-goto-func fnstr)
+    (unless (string= (buffer-name) simple-call-tree-buffer-name)
+      (switch-to-buffer simple-call-tree-buffer-name))
     (unless skipring
+      (simple-call-tree-jump-ring-add (simple-call-tree-get-chain))
       (add-text-properties 0 (length fnstr)
 			   '(leaf
 			     0
@@ -2151,6 +2153,7 @@ prefix arg) then the function name will be added to `simple-call-tree-jump-ring'
 						(cadar (simple-call-tree-get-item fnstr))))
 			   fnstr)
       (simple-call-tree-jump-ring-add (list fnstr)))
+    (simple-call-tree-goto-func fnstr)
     (if narrowedp (simple-call-tree-toggle-narrowing -1)
       (cl-case simple-call-tree-default-recenter
         (top (recenter 0))
@@ -2195,7 +2198,7 @@ Adds the CHAIN to the `simple-call-tree-jump-ring' at the position indicated by
 `simple-call-tree-jump-ring-index'.
 When called interactively the call chain at point is used for CHAIN."
   (interactive (list (simple-call-tree-get-chain)))
-  (let ((lst))
+  (let (lst)
     (dotimes (i (- (ring-length simple-call-tree-jump-ring)
 		   simple-call-tree-jump-ring-index))
       (push (ring-remove simple-call-tree-jump-ring) lst))
