@@ -667,10 +667,10 @@ as a flat list."
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-tags-to-string (tags)
-  (if (> (length tags) 0)
-      (concat ":" (mapconcat (lambda (x)
-                               (propertize x 'font-lock-face (org-get-tag-face x)))
-                             tags ":") ":") ""))
+  (when (> (length tags) 0)
+    (concat ":" (mapconcat (lambda (x)
+			     (propertize x 'font-lock-face (org-get-tag-face x)))
+			   tags ":") ":")))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-string-to-tags (str)
@@ -1235,7 +1235,7 @@ information. If UPDATESRC is nil then don't bother updating the source code."
                       srcval (concat "\\1 " (if value newval nil) " \\3")
                       (fifth item) value))
       (tags (unless (listp value) (error "Invalid tags value"))
-            (setf newval (simple-call-tree-tags-to-string value)
+            (setf newval (or (simple-call-tree-tags-to-string value) "")
                   srcval (concat "\\1 \\2 " newval)
                   (sixth item) value)))
     (if updatesrc
@@ -1621,9 +1621,12 @@ If optional arg MARKED is non-nil use a * instead of a |."
                        (propertize fname
                                    'font-lock-face (list :inherit (or fnface 'default) :underline t)
                                    'mouse-face 'highlight
-                                   'location pos)))
-         (post (concat (make-string (max 0 (- (/ (window-width) 2) (length pre2))) 32) tags)))
-    (insert pre2 post)))
+                                   'location pos))))
+    (insert pre2)
+    (when tags
+      (insert (concat tags
+		      (make-string (max 0 (- (/ (window-width) 2) (length pre2))) 32)
+		      tags)))))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-insert-org-header (item curdepth &optional inverted marked)
@@ -1640,7 +1643,7 @@ Ignore optional args INVERTED and MARKED; they are just for compatibility with `
                                         'priority 'org-priority
                                         (cdr (assoc it org-priority-faces)))
                                        'org-priority))))
-         (tags (simple-call-tree-tags-to-string (sixth item)))
+         (tags (or (simple-call-tree-tags-to-string (sixth item)) ""))
          (stars (make-string curdepth 42)))
     (if (and (> curdepth 1)
              (eq simple-call-tree-org-link-style 'radio))
@@ -2112,7 +2115,7 @@ If called with a prefix ARG the portion viewed will be the opposite to normal (e
           (middle (recenter))
           (bottom (recenter -1)))))))
 
-;; simple-call-tree-info: DONE
+;; simple-call-tree-info: TODO
 (cl-defun simple-call-tree-visit-function (&optional arg)
   "Visit the source code corresponding to the current header.
 If the current header is a calling or toplevel function then visit that function.
