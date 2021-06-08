@@ -436,7 +436,7 @@ The children of each header will be sorted separately."
                           (goto-char pos)
                           (beginning-of-line)
                           (looking-at "sub"))
-		nil nil nil nil)
+		nil nil "\\(^\\|\\s-\\)" nil)
     (haskell-mode nil (font-lock-function-name-face
                        font-lock-comment-face
                        font-lock-string-face
@@ -459,7 +459,7 @@ The children of each header will be sorted separately."
                          (goto-char pos)
                          (beginning-of-line)
                          (looking-at "sub"))
-               nil nil nil nil)
+               nil nil "\\(^\\|\\s-\\)" nil)
     (python-mode (font-lock-function-name-face
                   font-lock-variable-name-face
                   font-lock-type-face)
