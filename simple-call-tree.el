@@ -2216,9 +2216,13 @@ When called interactively the call chain at point is used for CHAIN."
 
 (defun simple-call-tree-jump-ring-remove (idx)
   "Remove the current item from the jump-ring.
-The item at index IDX will be removed.
-When called interactively a numeric prefix may be used to set IDX,
-otherwise the value of `simple-call-tree-jump-ring-index' will be used."
+If a numeric prefix arg is used or IDX is an integer then the 
+item at that index will be removed, otherwise remove the item 
+at `simple-call-tree-jump-ring-index'.
+
+Note: after removing an item `simple-call-tree-jump-ring-index' 
+will refer to the previous one, so a subsequent call to `simple-call-tree-jump-prev'
+will jump to the 2nd item behind the one removed."
   (interactive "P")
   (let ((chain (ring-remove simple-call-tree-jump-ring
 			    (or idx simple-call-tree-jump-ring-index))))
