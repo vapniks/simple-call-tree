@@ -329,6 +329,13 @@
 ;; Use / key for filtering headers by name (for consistency with other modes such as gnus & dired)
 ;; and use a different key for narrowing to the current header.
 ;;
+;; Keys & commands to scroll code view window from within *Simple Call Tree* buffer
+;; More sophisticated adaptive code view window centering, sizing & orientation:
+;;   make sure current header is always visible ('adaptive option?)
+;;   allow settings to differ depending on major-mode &/or name of code files? e.g. have a function option?
+;;   centering for toplevel headers should be allowed to be different to non toplevel headers
+;; Allow adding headers for arbitrary locations
+
 ;; If anyone wants to implement the following ideas, please do:
 ;; More reliable code for building tree (handle duplicate function names properly).
 ;; Code for managing refactoring commands (to be applied to marked functions).
@@ -379,6 +386,52 @@ This only applies to toplevel headers, see `simple-call-tree-default-recenter' f
   :type '(choice (const :tag "Top" top)
                  (const :tag "Middle" middle)
                  (const :tag "Bottom" bottom)))
+
+;; simple-call-tree-info: TODO
+(defcustom simple-call-tree-window-splits nil
+  "Alist of window split information to use when viewing code (e.g. in follow mode). 
+The car of each element is a positive integer representing a tree depth,
+and the cdr is a list in the form '(TYPE N) where TYPE is either 'vertical or 'horizontal,
+and N is either a float between 0 & 1 or a positive integer, indicating the proportion of 
+window space or number of lines to display respectively.
+Window split info is chosen by selecting the alist entry with the highest car that is not 
+larger than the current tree depth."
+  :group 'simple-call-tree
+  :type '(alist :key-type (integer :tag "Minimum tree depth"
+				   :validate
+				   (lambda (w)
+				     (when (< (widget-value w) 1)
+				       (widget-put
+					w :error
+					"Depth must be greater than 0")
+				       w)))
+		:value-type
+		(choice :tag "Code window display"
+			(list
+			 (choice :tag "Orientation"
+				 (const :tag "Horizontal" 'horizontal)
+				 (const :tag "Vertical" 'vertical))
+			 (choice :tag "Size"
+				 (float :tag "Proportion of frame"
+					:validate
+					(lambda (w)
+					  (when (or (<= (widget-value w) 0)
+						    (>= (widget-value w) 1))
+					    (widget-put
+					     w :error
+					     "Proportion of lines must be between 0 & 1")
+					    w)))
+				 (integer :tag "Number of lines"
+					  :validate
+					  (lambda (w)
+					    (when (< (widget-value w) 1)
+					      (widget-put
+					       w :error
+					       "Number of lines must be greater than 0")
+					      w)))))
+			(function :tag "Function"
+				  :help-echo
+				  "Function takes no args & returns a cons cell in the form (ORIENTATION . SIZE)"))))
 
 ;; simple-call-tree-info: DONE
 (defcustom simple-call-tree-default-valid-fonts
