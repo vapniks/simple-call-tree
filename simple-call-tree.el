@@ -169,6 +169,9 @@
 ;;  `simple-call-tree-jump-ring-add'
 ;;    Add the function at point to the jump-ring.
 ;;    Keybinding: .
+;;  `simple-call-tree-jump-ring-remove'
+;;    Remove the current item from the jump-ring.
+;;    Keybinding: -
 ;;  `simple-call-tree-move-top'
 ;;    Move cursor to the parent of this function.
 ;;    Keybinding: ^
@@ -711,6 +714,7 @@ as a flat list."
 							(setq current-prefix-arg 1)
 							(call-interactively 'simple-call-tree-jump-to-function)))
   (define-key simple-call-tree-mode-map (kbd ".") 'simple-call-tree-jump-ring-add)
+  (define-key simple-call-tree-mode-map (kbd "-") 'simple-call-tree-jump-ring-remove)
   (define-key simple-call-tree-mode-map (kbd "<") 'simple-call-tree-jump-prev)
   (define-key simple-call-tree-mode-map (kbd ">") 'simple-call-tree-jump-next)
   ;; Applying commands
@@ -815,6 +819,8 @@ as a flat list."
        :keys "J"]
       ["Add To Jump Ring" simple-call-tree-jump-ring-add
        :help "Add the function at point to the jump ring"]
+      ["Remove From Jump Ring" simple-call-tree-jump-ring-remove
+       :help "Remove the function at point from the jump ring"]
       ["Previous Jump" simple-call-tree-jump-prev
        :help "Goto previous function in jump ring"]
       ["Next Jump" simple-call-tree-jump-next
@@ -2167,14 +2173,14 @@ prefix arg) then the header at point, and FNSTR will both be added to `simple-ca
 The current index into the ring is `simple-call-tree-jump-ring-index'."
   (interactive)
   (unless (ring-empty-p simple-call-tree-jump-ring)
-    (let ((len (cadr simple-call-tree-jump-ring)))
-      (setq simple-call-tree-jump-ring-index
-            (mod (1+ simple-call-tree-jump-ring-index) len))
-      (simple-call-tree-goto-chain
-       (ring-ref simple-call-tree-jump-ring
-                 simple-call-tree-jump-ring-index))
-      (message "Position %d in jump ring history"
-               simple-call-tree-jump-ring-index))))
+    (setq simple-call-tree-jump-ring-index
+	  (mod (1+ simple-call-tree-jump-ring-index)
+	       (ring-length simple-call-tree-jump-ring)))
+    (simple-call-tree-goto-chain
+     (ring-ref simple-call-tree-jump-ring
+	       simple-call-tree-jump-ring-index))
+    (message "Position %d in jump ring history"
+	     simple-call-tree-jump-ring-index)))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-jump-next nil
@@ -2182,14 +2188,14 @@ The current index into the ring is `simple-call-tree-jump-ring-index'."
 The current index into the ring is `simple-call-tree-jump-ring-index'."
   (interactive)
   (unless (ring-empty-p simple-call-tree-jump-ring)
-    (let ((len (cadr simple-call-tree-jump-ring)))
-      (setq simple-call-tree-jump-ring-index
-            (mod (1- simple-call-tree-jump-ring-index) len))
-      (simple-call-tree-goto-chain
-       (ring-ref simple-call-tree-jump-ring
-                 simple-call-tree-jump-ring-index))
-      (message "Position %d in jump ring history"
-               simple-call-tree-jump-ring-index))))
+    (setq simple-call-tree-jump-ring-index
+	  (mod (1- simple-call-tree-jump-ring-index)
+	       (cadr simple-call-tree-jump-ring)))
+    (simple-call-tree-goto-chain
+     (ring-ref simple-call-tree-jump-ring
+	       simple-call-tree-jump-ring-index))
+    (message "Position %d in jump ring history"
+	     simple-call-tree-jump-ring-index)))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-jump-ring-add (chain)
@@ -2207,6 +2213,20 @@ When called interactively the call chain at point is used for CHAIN."
       (ring-insert-at-beginning simple-call-tree-jump-ring item)))
   (message "Added %s to `simple-call-tree-jump-ring'"
 	   (nth (get-text-property 0 'leaf (car chain)) chain)))
+
+(defun simple-call-tree-jump-ring-remove (idx)
+  "Remove the current item from the jump-ring.
+The item at index IDX will be removed.
+When called interactively a numeric prefix may be used to set IDX,
+otherwise the value of `simple-call-tree-jump-ring-index' will be used."
+  (interactive "P")
+  (let ((chain (ring-remove simple-call-tree-jump-ring
+			    (or idx simple-call-tree-jump-ring-index))))
+    (message "Removed %s from `simple-call-tree-jump-ring'"
+	     (nth (get-text-property 0 'leaf (car chain)) chain)))
+  (setq simple-call-tree-jump-ring-index
+	(mod simple-call-tree-jump-ring-index
+	     (ring-length simple-call-tree-jump-ring))))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-move-top nil
