@@ -126,6 +126,9 @@
    - *simple-call-tree-jump-ring-add* :
     Add the function at point to the jump-ring.\\
     Keybinding: =.=
+   - *simple-call-tree-jump-ring-remove* :
+    Remove the current item from the jump-ring.\\
+    Keybinding: =-=
    - *simple-call-tree-move-top* :
     Move cursor to the parent of this function.\\
     Keybinding: =^=
