@@ -1634,12 +1634,15 @@ If optional arg MARKED is non-nil use a * instead of a |."
                        (propertize fname
                                    'font-lock-face (list :inherit (or fnface 'default) :underline t)
                                    'mouse-face 'highlight
-                                   'location pos))))
-    (insert pre2)
-    (when tags
-      (insert (concat tags
-		      (make-string (max 0 (- (/ (window-width) 2) (length pre2))) 32)
-		      tags)))))
+                                   'location pos)))
+	 (str (concat pre2 (when tags
+			     (concat tags
+				     (make-string (max 0 (- (/ (window-width) 2)
+							    (length pre2)))
+						  32)
+				     tags)))))
+    (insert str)
+    (length str)))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-insert-org-header (item curdepth &optional inverted marked)
