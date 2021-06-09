@@ -388,8 +388,9 @@ This only applies to toplevel headers, see `simple-call-tree-default-recenter' f
                  (const :tag "Bottom" bottom)))
 
 ;; simple-call-tree-info: TODO
-(defcustom simple-call-tree-window-splits nil
-  "Alist of window split information to use when viewing code (e.g. in follow mode). 
+(defcustom simple-call-tree-window-splits '((4 4 0.7) (1 2 0.7))
+  "TODO: finish documentation
+Alist of window split information to use when viewing code (e.g. in follow mode). 
 The car of each element is a positive integer representing a tree depth,
 and the cdr is a list in the form '(TYPE N) where TYPE is either 'vertical or 'horizontal,
 and N is either a float between 0 & 1 or a positive integer, indicating the proportion of 
@@ -397,20 +398,28 @@ window space or number of lines to display respectively.
 Window split info is chosen by selecting the alist entry with the highest car that is not 
 larger than the current tree depth."
   :group 'simple-call-tree
-  :type '(alist :key-type (integer :tag "Minimum tree depth"
-				   :validate
-				   (lambda (w)
-				     (when (< (widget-value w) 1)
-				       (widget-put
-					w :error
-					"Depth must be greater than 0")
-				       w)))
+  :type '(alist :key-type
+		(choice :tag "Condition"
+			(integer :tag "Minimum depth"
+				 :help-echo "Select split if tree depth is at least this number"
+				 :validate
+				 (lambda (w)
+				   (when (< (widget-value w) 1)
+				     (widget-put
+				      w :error
+				      "Depth must be greater than 0")
+				     w)))
+			(sexp
+			 :tag "S-expression"
+			 :help-echo "Select split if sexp evaluates to non-nil"))
 		:value-type
 		(choice :tag "Code window display"
 			(list
 			 (choice :tag "Orientation"
-				 (const :tag "Horizontal" 'horizontal)
-				 (const :tag "Vertical" 'vertical))
+				 (const :tag "Left" 1)
+				 (const :tag "Right" 2)
+				 (const :tag "Above" 3)
+				 (const :tag "Below" 4))
 			 (choice :tag "Size"
 				 (float :tag "Proportion of frame"
 					:validate
@@ -431,7 +440,7 @@ larger than the current tree depth."
 					      w)))))
 			(function :tag "Function"
 				  :help-echo
-				  "Function takes no args & returns a cons cell in the form (ORIENTATION . SIZE)"))))
+				  "Function should take 1 arg (the *Simple Call Tree* buffer) & return a cons cell in the form (ORIENTATION . SIZE)"))))
 
 ;; simple-call-tree-info: DONE
 (defcustom simple-call-tree-default-valid-fonts
@@ -2066,12 +2075,15 @@ need to move to the appropriate child node before invoking again."
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-change-maxdepth (maxdepth)
-  "Alter the maximum tree depth in the *Simple Call Tree* buffer."
+  "Alter the maximum tree depth (MAXDEPTH) in the *Simple Call Tree* buffer."
   (interactive "P")
   (setq simple-call-tree-current-maxdepth
         (if current-prefix-arg (prefix-numeric-value current-prefix-arg)
           (floor (abs (read-number "Maximum depth to display: " 2)))))
-  (simple-call-tree-revert 1))
+  (let ((fm fm-working))
+    (when fm (simple-call-tree-delete-other-windows))
+    (simple-call-tree-revert 1)
+    (when fm (fm-toggle))))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-change-default-view (view1 view2)
@@ -2116,6 +2128,38 @@ If called with a prefix ARG the portion viewed will be the opposite to normal (e
           (bottom (recenter -1)))))))
 
 ;; simple-call-tree-info: TODO
+(cl-defun simple-call-tree-split-window (win)
+  "Split the *Simple Call Tree* buffer to accomodate the code buffer.
+Use the values in `simple-call-tree-window-splits' to determine the split."
+  (if (not (eq (window-buffer win)
+	       (get-buffer simple-call-tree-buffer-name)))
+      (funcall old-split-window-function win)
+    (cl-labels ((err (x) (error "Invalid entry in simple-call-tree-window-splits: %s" x))
+		(choosesplit (c) (cond
+				  ((integerp c) (>= simple-call-tree-current-maxdepth c))
+				  ((consp c) (eval c))
+				  (t (err x)))))
+      (let ((specs (cdr (assoc-if #'choosesplit simple-call-tree-window-splits)))
+	    orientation size n)
+	(when (functionp specs)
+	  (setq specs (funcall specs (get-buffer simple-call-tree-buffer-name))))
+	(setq orientation (car specs) size (cadr specs))
+	(split-window win
+		      (- (cond ((integerp size) size)
+			       ((floatp size)
+				(floor (* size
+					  (cl-case orientation
+					    ((1 2) (window-width))
+					    ((3 4) (window-height))
+					    (t (err x))))))
+			       (t (err x))))
+		      (cl-case orientation
+			(1 'left)
+			(2 'right)
+			(3 'up)
+			(4 'below)))))))
+
+;; simple-call-tree-info: TODO
 (cl-defun simple-call-tree-visit-function (&optional arg)
   "Visit the source code corresponding to the current header.
 If the current header is a calling or toplevel function then visit that function.
@@ -2137,7 +2181,10 @@ the source buffer to the function."
          (parent (simple-call-tree-get-toplevel))
          (visitfunc (if simple-call-tree-inverted
                         thisfunc
-                      (or parent thisfunc))))
+                      (or parent thisfunc)))
+	 (even-window-heights nil)
+	 (old-split-window-function split-window-preferred-function)
+	 (split-window-preferred-function 'simple-call-tree-split-window))
     (pop-to-buffer buf)
     (goto-char pos)
     (unless (not (featurep 'fm))
