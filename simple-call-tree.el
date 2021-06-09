@@ -388,7 +388,7 @@ This only applies to toplevel headers, see `simple-call-tree-default-recenter' f
                  (const :tag "Bottom" bottom)))
 
 ;; simple-call-tree-info: TODO
-(defcustom simple-call-tree-window-splits '((4 4 0.7) (1 2 0.7))
+(defcustom simple-call-tree-window-splits '((4 below 0.7) (1 right 0.7))
   "TODO: finish documentation
 Alist of window split information to use when viewing code (e.g. in follow mode). 
 The car of each element is a positive integer representing a tree depth,
@@ -416,10 +416,10 @@ larger than the current tree depth."
 		(choice :tag "Code window display"
 			(list
 			 (choice :tag "Orientation"
-				 (const :tag "Left" 1)
-				 (const :tag "Right" 2)
-				 (const :tag "Above" 3)
-				 (const :tag "Below" 4))
+				 (const :tag "Left" 'left)
+				 (const :tag "Right" 'right)
+				 (const :tag "Above" 'above)
+				 (const :tag "Below" 'below))
 			 (choice :tag "Size"
 				 (float :tag "Proportion of frame"
 					:validate
@@ -2149,15 +2149,11 @@ Use the values in `simple-call-tree-window-splits' to determine the split."
 			       ((floatp size)
 				(floor (* size
 					  (cl-case orientation
-					    ((1 2) (window-width))
-					    ((3 4) (window-height))
+					    ((left right) (window-width))
+					    ((above below) (window-height))
 					    (t (err x))))))
 			       (t (err x))))
-		      (cl-case orientation
-			(1 'left)
-			(2 'right)
-			(3 'up)
-			(4 'below)))))))
+		      orientation)))))
 
 ;; simple-call-tree-info: TODO
 (cl-defun simple-call-tree-visit-function (&optional arg)
