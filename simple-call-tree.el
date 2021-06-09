@@ -1642,7 +1642,8 @@ If optional arg MARKED is non-nil use a * instead of a |."
 						  32)
 				     tags)))))
     (insert str)
-    (length str)))
+    (list (length pre2)
+	  (length str))))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-insert-org-header (item curdepth &optional inverted marked)
