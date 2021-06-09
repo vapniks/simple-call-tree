@@ -1583,11 +1583,11 @@ The style of links used for child headers is controlled by `simple-call-tree-org
 
 ;; simple-call-tree-info: DONE
 (cl-defun simple-call-tree-list-callees-recursively (item &optional (maxdepth 2)
-                                                        (curdepth 1)
-                                                        (funclist simple-call-tree-alist)
-                                                        (inverted simple-call-tree-inverted)
-                                                        (displayfunc 'simple-call-tree-insert-item)
-                                                        (marked simple-call-tree-marked-items))
+							  (curdepth 1)
+							  (funclist simple-call-tree-alist)
+							  (inverted simple-call-tree-inverted)
+							  (displayfunc 'simple-call-tree-insert-item)
+							  (marked simple-call-tree-marked-items))
   "Insert a call tree for the item, to depth MAXDEPTH.
 item must be the car of one of the elements of FUNCLIST which is set to `simple-call-tree-alist' by default.
 The optional arguments MAXDEPTH and CURDEPTH specify the maximum and current depth of the tree respectively.
@@ -1597,14 +1597,18 @@ MARKED is a list of marked items (default `simple-call-tree-marked-items', which
 This is a recursive function, and you should not need to set CURDEPTH."
   (let* ((fname (first item))
          (callees (cdr (simple-call-tree-get-item fname funclist)))
+	 (maxwidth (funcall displayfunc item curdepth inverted (simple-call-tree-marked-p fname marked)))
          done)
-    (funcall displayfunc item curdepth inverted (simple-call-tree-marked-p fname marked))
     (insert "\n")
     (if (< curdepth maxdepth)
         (dolist (callee callees)
           (unless (and simple-call-tree-nodups (member (car callee) done))
-            (simple-call-tree-list-callees-recursively callee maxdepth (1+ curdepth) funclist inverted displayfunc))
-          (add-to-list 'done (car callee))))))
+            (setq maxwidth
+		  (max (simple-call-tree-list-callees-recursively
+			callee maxdepth (1+ curdepth) funclist inverted displayfunc)
+		       maxwidth)))
+          (add-to-list 'done (car callee))))
+    maxwidth))
 
 ;; Propertize todo, priority & tags appropriately
 ;; Add invisibility property to text so that `simple-call-tree-hide-marked' works
