@@ -387,7 +387,7 @@ This only applies to toplevel headers, see `simple-call-tree-default-recenter' f
                  (const :tag "Middle" middle)
                  (const :tag "Bottom" bottom)))
 
-;; simple-call-tree-info: TODO
+;; simple-call-tree-info: TODO  allow option to show code in separate frame
 (defcustom simple-call-tree-window-splits '((4 below 0.7) (1 right 0.7))
   "TODO: finish documentation
 Alist of window split information to use when viewing code (e.g. in follow mode). 
@@ -2127,7 +2127,7 @@ If called with a prefix ARG the portion viewed will be the opposite to normal (e
           (middle (recenter))
           (bottom (recenter -1)))))))
 
-;; simple-call-tree-info: TODO
+;; simple-call-tree-info: TODO  handle option to show code in separate frame
 (cl-defun simple-call-tree-split-window (win)
   "Split the *Simple Call Tree* buffer to accomodate the code buffer.
 Use the values in `simple-call-tree-window-splits' to determine the split."
@@ -2155,7 +2155,7 @@ Use the values in `simple-call-tree-window-splits' to determine the split."
 			       (t (err x))))
 		      orientation)))))
 
-;; simple-call-tree-info: TODO
+;; simple-call-tree-info: TODO  handle option to show code in separate frame
 (cl-defun simple-call-tree-visit-function (&optional arg)
   "Visit the source code corresponding to the current header.
 If the current header is a calling or toplevel function then visit that function.
