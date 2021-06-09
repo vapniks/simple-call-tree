@@ -991,9 +991,13 @@ If non-nil then children correspond to callers of parents in the outline tree.
 Otherwise it's the other way around.")
 
 ;; simple-call-tree-info: DONE
-(defvar simple-call-tree-current-maxdepth nil
+(defvar-local simple-call-tree-current-maxdepth nil
   "The current maximum depth of the tree in the *Simple Call Tree* buffer.
 The minimum value is 0 which means show top level functions only.")
+
+;; simple-call-tree-info: DONE
+(defvar-local simple-call-tree-max-linewidth 1
+  "The maximum length of the lines in the *Simple Call Tree* buffer.")
 
 ;; simple-call-tree-info: DONE
 (defcustom simple-call-tree-jump-ring-max 20
