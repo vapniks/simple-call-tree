@@ -995,8 +995,8 @@ Otherwise it's the other way around.")
   "The current maximum depth of the tree in the *Simple Call Tree* buffer.
 The minimum value is 0 which means show top level functions only.")
 
-;; simple-call-tree-info: DONE
-(defvar-local simple-call-tree-max-linewidth 1
+;; simple-call-tree-info: DONE set this variable whenever lines in *Simple Call Tree* buffer are altered
+(defvar-local simple-call-tree-max-linewidth '(1 . 1)
   "The maximum length of the lines in the *Simple Call Tree* buffer.")
 
 ;; simple-call-tree-info: DONE
@@ -1269,14 +1269,21 @@ information. If UPDATESRC is nil then don't bother updating the source code."
       (goto-char (point-min))
       (if (simple-call-tree-goto-func func)
           (let ((hidden (not (outshine-subheadings-visible-p)))
-                (marked (simple-call-tree-marked-p func)))
+                (marked (simple-call-tree-marked-p func))
+		width)
             (if hidden (show-children)) ;hack! otherwise it doesn't always work properly
             (read-only-mode -1)
             (beginning-of-line)
             (kill-line)
-            (simple-call-tree-insert-item item 1 nil marked)
-            (read-only-mode 1)
-            (if hidden (outline-hide-subtree)))))))
+            (setf width (simple-call-tree-insert-item item 1 nil marked)
+		  (car simple-call-tree-max-linewidth)
+		  (max (car width)
+		       (car simple-call-tree-max-linewidth))
+		  (cdr simple-call-tree-max-linewidth)
+		  (max (cdr width)
+		       (car simple-call-tree-max-linewidth)))
+	    (read-only-mode 1)
+	    (if hidden (outline-hide-subtree)))))))
 
 ;; simple-call-tree-info: DONE
 (cl-defun simple-call-tree-set-todo (value funcs &optional remove)
@@ -1494,7 +1501,7 @@ otherwise it will be narrowed around FUNC."
   (if wide (simple-call-tree-toggle-narrowing 1)
     (simple-call-tree-toggle-narrowing -1)))
 
-;; simple-call-tree-info: DONE
+;; simple-call-tree-info: CHECK  
 (cl-defun simple-call-tree-list-callers-and-functions (&optional (maxdepth simple-call-tree-default-maxdepth)
 								 (funclist simple-call-tree-alist))
   "List callers and functions in FUNCLIST to depth MAXDEPTH.
@@ -1504,12 +1511,17 @@ By default FUNCLIST is set to `simple-call-tree-alist'."
       (simple-call-tree-mode))
   (read-only-mode -1)
   (erase-buffer)
-  (let ((maxdepth (max maxdepth 1)))
+  (let ((maxdepth (max maxdepth 1))
+	(maxwidth1 (or (car simple-call-tree-max-linewidth) 1))
+	(maxwidth2 (or (cdr simple-call-tree-max-linewidth) 1)))
     (dolist (item funclist)
-      (simple-call-tree-list-callees-recursively
-       (car item)
-       maxdepth 1 funclist))
-    (setq simple-call-tree-current-maxdepth (max maxdepth 1))
+      (aprog1 (simple-call-tree-list-callees-recursively
+	       (car item)
+	       maxdepth 1 funclist)
+	(setq maxwidth1 (max maxwidth1 (car it))
+	      maxwidth2 (max maxwidth2 (cdr it)))))
+    (setq simple-call-tree-current-maxdepth (max maxdepth 1)
+	  simple-call-tree-max-linewidth (cons maxwidth1 maxwidth2))
     ;; remove the empty line at the end
     (delete-char -1)
     (read-only-mode 1)))
@@ -1581,7 +1593,7 @@ The style of links used for child headers is controlled by `simple-call-tree-org
           (insert text))))
     (if display (switch-to-buffer exportbuf))))
 
-;; simple-call-tree-info: DONE
+;; simple-call-tree-info: CHECK  
 (cl-defun simple-call-tree-list-callees-recursively (item &optional (maxdepth 2)
 							  (curdepth 1)
 							  (funclist simple-call-tree-alist)
@@ -1597,26 +1609,31 @@ MARKED is a list of marked items (default `simple-call-tree-marked-items', which
 This is a recursive function, and you should not need to set CURDEPTH."
   (let* ((fname (first item))
          (callees (cdr (simple-call-tree-get-item fname funclist)))
-	 (maxwidth (funcall displayfunc item curdepth inverted (simple-call-tree-marked-p fname marked)))
+	 (widths (funcall displayfunc item curdepth inverted (simple-call-tree-marked-p fname marked)))
+	 (max1 (car widths))
+	 (max2 (cdr widths))
          done)
     (insert "\n")
     (if (< curdepth maxdepth)
         (dolist (callee callees)
           (unless (and simple-call-tree-nodups (member (car callee) done))
-            (setq maxwidth
-		  (max (simple-call-tree-list-callees-recursively
-			callee maxdepth (1+ curdepth) funclist inverted displayfunc)
-		       maxwidth)))
+            (setq widths
+		  (simple-call-tree-list-callees-recursively
+		   callee maxdepth (1+ curdepth) funclist inverted displayfunc)
+		  max1 (max max1 (car widths))
+		  max2 (max max2 (car widths))))
           (add-to-list 'done (car callee))))
-    maxwidth))
+    (cons max1 max2)))
 
 ;; Propertize todo, priority & tags appropriately
 ;; Add invisibility property to text so that `simple-call-tree-hide-marked' works
-;; simple-call-tree-info: DONE
+;; simple-call-tree-info: CHECK  
 (defun simple-call-tree-insert-item (item curdepth &optional inverted marked)
   "Display ITEM at depth CURDEPTH in the call tree.
 If optional arg INVERTED is non-nil reverse the arrow for the item.
-If optional arg MARKED is non-nil use a * instead of a |."
+If optional arg MARKED is non-nil use a * instead of a |.
+Return a cons cell whose car contains the length of the line excluding tags,
+and whose cdr contains the length including tags."
   (let* ((fname (first item))
          (pos (second item))
          (todo (fourth item))
@@ -1646,8 +1663,7 @@ If optional arg MARKED is non-nil use a * instead of a |."
 						  32)
 				     tags)))))
     (insert str)
-    (list (length pre2)
-	  (length str))))
+    (cons (length pre2) (length str))))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-insert-org-header (item curdepth &optional inverted marked)
