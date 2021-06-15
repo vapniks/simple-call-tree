@@ -139,10 +139,10 @@
     Move cursor to the previous item.\\
     Keybinding: =M-x simple-call-tree-move-prev=
    - *simple-call-tree-move-next-samelevel* :
-    Move cursor to the next item at the same level as the current one.\\
+    Move cursor to the next item at the same level as the current one, and recenter window.\\
     Keybinding: =C-f=
    - *simple-call-tree-move-prev-samelevel* :
-    Move cursor to the previous item at the same level as the current one.\\
+    Move cursor to the previous item at the same level as the current one, and recenter window.\\
     Keybinding: =C-b=
    - *simple-call-tree-move-next-marked* :
     Move cursor to the next marked item.\\
