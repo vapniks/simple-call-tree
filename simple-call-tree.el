@@ -2385,17 +2385,21 @@ will jump to the 2nd item behind the one removed."
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-move-next-samelevel nil
-  "Move cursor to the next item at the same level as the current one."
+  "Move cursor to the next item at the same level as the current one, and recenter.
+The window will be recentered to ensure the cursor is at the top of the window."
   (interactive)
   (outline-forward-same-level 1)
-  (goto-char (next-single-property-change (point) 'face)))
+  (goto-char (next-single-property-change (point) 'face))
+  (recenter 0))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-move-prev-samelevel nil
-  "Move cursor to the previous item at the same level as the current one."
+  "Move cursor to the previous item at the same level as the current one, and recenter.
+The window will be recentered to ensure the cursor is at the top of the window."
   (interactive)
   (outline-backward-same-level 1)
-  (goto-char (next-single-property-change (point) 'face)))
+  (goto-char (next-single-property-change (point) 'face))
+  (recenter 0))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-move-next-marked nil
