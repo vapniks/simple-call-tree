@@ -387,16 +387,85 @@ This only applies to toplevel headers, see `simple-call-tree-default-recenter' f
                  (const :tag "Middle" middle)
                  (const :tag "Bottom" bottom)))
 
+;; simple-call-tree-info: CHECK
+(define-widget 'window-split 'lazy
+  "Window split location; either an integer number of rows/columns or a proportion of the existing window size.
+The value is used as an argument to the `split-window' function.
+If the value is positive it indicates the size of the existing window after splitting, if negative then its
+absolute value indicates the size of the new window created after splitting."
+  :tag "Window split location"
+  :type '(choice (integer :tag "Rows/columns"
+			  :help-echo "Number of rows/columns for existing window (+ve) / new window (-ve)"
+			  :validate
+			  (lambda (w)
+			    (let ((v (widget-value w)))
+			      (unless (and (integerp v)
+					   (not (= v 0)))
+				(widget-put w :error
+					    "Value must be non-zero")
+				w))))
+		 (float :tag "Proportion"
+			:help-echo "Proportion of window to use for existing window (+ve) / new window (-ve)"
+			:validate
+			(lambda (w)
+			  (let ((v (widget-value w)))
+			    (unless (and (<= v 1.0) (>= v -1.0))
+			      (widget-put w :error
+					  "Value must be between -1.0 & 1.0")
+			      w))))))
+
+(define-widget 'positive-float 'float
+  "Positive floating point number."
+  :tag "Float"
+  :validate (lambda (w)
+	      (when (<= (widget-value w) 0)
+		(widget-put w :error "Value must be positive")
+		w)))
+
 ;; simple-call-tree-info: TODO  allow option to show code in separate frame
-(defcustom simple-call-tree-window-splits '((4 below 0.7) (1 right 0.7))
-  "TODO: finish documentation
-Alist of window split information to use when viewing code (e.g. in follow mode). 
-The car of each element is a positive integer representing a tree depth,
-and the cdr is a list in the form '(TYPE N) where TYPE is either 'vertical or 'horizontal,
-and N is either a float between 0 & 1 or a positive integer, indicating the proportion of 
-window space or number of lines to display respectively.
-Window split info is chosen by selecting the alist entry with the highest car that is not 
-larger than the current tree depth."
+(defcustom simple-call-tree-window-splits '((1 . (0.8 0.7 0.5 0.5 0.28)))
+  "Alist of items containing info about how to split the window when viewing code (e.g. in follow mode). 
+The item used to determing the split is the first item with a car that is either an integer less 
+than or equal to the current depth, or an s-expression that evaluates to non-nil.
+
+The cdr is used to determing the size and orientation of the split, which are then fed into the
+`split-window' function. It can be either a list of size & orientation values for fixed splitting,
+or a list of 5 parameters for adaptive splitting.
+In the case of adaptive splitting the first two parameters are used to calculate horizontal & vertical 
+split locations respectively. The exact interpretation of these numbers depends on their sign & type:
+
+ positive integer - number of columns/rows to use for the *Simple Call Tree* window
+ negative integer - number of columns/rows to use for the code window
+ float in range (0,1) - for horizonal splits this is the proportion of the maximum line
+                    length (excluding tags) to use as the width of the *Simple Call Tree*
+                    window after the split,
+                    for vertical splits it's the proportion of complete trees (i.e. a header
+                    and all its children) that will fit in the *Simple Call Tree* window after 
+                    the split
+ float in range (-1,0) - proportion of columns/rows to use for the code window
+                         (the rest will be used for the *Simple Call Tree* window)
+
+The third & fourth parameters indicate how columns/rows (respectively) in the *Simple Call Tree* 
+window should be valued relative to columns/rows in the code window. They correspond to 
+cval1/cval2 and rval1/rval2 in the description below. 
+The final fifth parameter is a threshold used to decide between horizontal & vertical splitting
+and corresponds to cval2/rval2 in the description below. It can be interpreted as the relative value 
+of columns to rows in the code window (e.g. a value of 3 indicates that columns are three times 
+more valuable than rows in the code window).
+
+These parameters are used to assign values to horizontal & vertical splits, and then select the
+one with the highest value. The values are calculated from the following formulas:
+
+ value of horizontal split: c1*cval1 + c2*cval2 + (r1+r2)*(rval1+rval2)
+ value of vertical split:   (c1+c2)*(cval1+cval2) + r1*rval1 + r2*rval2
+
+So: value of horizontal split > value of vertical split 
+     <=> (r1+r2*(rval1/rval2))/(c1+c2*(cval1/cval2)) > cval2/rval2 (= threshold)
+
+where: c1 & c2 = number of columns in *Simple Call Tree* & code windows respectively
+       r1 & r2 = number of rows in *Simple Call Tree* & code windows respectively
+ cval1 & cval2 = values assigned to columns in *Simple Call Tree* & code windows respectively
+ rval1 & rval2 = values assigned to rows in *Simple Call Tree* & code windows respectively"
   :group 'simple-call-tree
   :type '(alist :key-type
 		(choice :tag "Condition"
@@ -405,42 +474,26 @@ larger than the current tree depth."
 				 :validate
 				 (lambda (w)
 				   (when (< (widget-value w) 1)
-				     (widget-put
-				      w :error
-				      "Depth must be greater than 0")
+				     (widget-put w :error "Depth must be greater than 0")
 				     w)))
 			(sexp
 			 :tag "S-expression"
 			 :help-echo "Select split if sexp evaluates to non-nil"))
 		:value-type
 		(choice :tag "Code window display"
-			(list
-			 (choice :tag "Orientation"
-				 (const :tag "Left" 'left)
-				 (const :tag "Right" 'right)
-				 (const :tag "Above" 'above)
-				 (const :tag "Below" 'below))
-			 (choice :tag "Size"
-				 (float :tag "Proportion of frame"
-					:validate
-					(lambda (w)
-					  (when (or (<= (widget-value w) 0)
-						    (>= (widget-value w) 1))
-					    (widget-put
-					     w :error
-					     "Proportion of lines must be between 0 & 1")
-					    w)))
-				 (integer :tag "Number of lines"
-					  :validate
-					  (lambda (w)
-					    (when (< (widget-value w) 1)
-					      (widget-put
-					       w :error
-					       "Number of lines must be greater than 0")
-					      w)))))
-			(function :tag "Function"
-				  :help-echo
-				  "Function should take 1 arg (the *Simple Call Tree* buffer) & return a cons cell in the form (ORIENTATION . SIZE)"))))
+			(list :tag "Fixed"
+			      (window-split :tag "Size")
+			      (choice :tag "Orientation"
+				      (const :tag "Left" 'left)
+				      (const :tag "Right" 'right)
+				      (const :tag "Above" 'above)
+				      (const :tag "Below" 'below)))
+			(list :tag "Adaptive"
+			      (window-split :tag "Horizontal split")
+			      (window-split :tag "Vertical split")
+			      (positive-float :tag "Ratio of column values")
+			      (positive-float :tag "Ratio of row values")
+			      (positive-float :tag "Orientation threshold")))))
 
 ;; simple-call-tree-info: DONE
 (defcustom simple-call-tree-default-valid-fonts
@@ -626,7 +679,7 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
                  (const :tag "Use org-todo-keywords" nil)))
 
 ;; simple-call-tree-info: DONE
-(defcustom simple-call-tree-org-not-done-keywords '("TODO" "STARTED" "WAITING" "CHECK")
+(defcustom simple-call-tree-org-not-done-keywords '("TODO" "STARTED" "WAITING" "CHECK" "BROKEN")
   "List of TODO keywords representing not done states."
   :group 'simple-call-tree
   :type '(repeat :tag "Choose keywords" (string :tag "Keyword")))
@@ -996,8 +1049,14 @@ Otherwise it's the other way around.")
 The minimum value is 0 which means show top level functions only.")
 
 ;; simple-call-tree-info: DONE set this variable whenever lines in *Simple Call Tree* buffer are altered
-(defvar-local simple-call-tree-max-linewidth '(1 . 1)
-  "The maximum length of the lines in the *Simple Call Tree* buffer.")
+(defvar-local simple-call-tree-max-linewidth 1
+  "The maximum length of the lines in the current *Simple Call Tree* buffer.
+First number is without tags, second number is with tags.")
+
+;; simple-call-tree-info: CHECK
+(defvar-local simple-call-tree-header-sizes nil
+  "A list of the sizes (number of branches) of the subtrees in the current *Simple Call Tree* buffer.
+The sizes are sorted from largest to smallest.")
 
 ;; simple-call-tree-info: DONE
 (defcustom simple-call-tree-jump-ring-max 20
@@ -1040,7 +1099,7 @@ be shown in the tree.")
 (defvar-local simple-call-tree-marked-items nil
   "List of names of items in the *Simple Call Tree* buffer that are or should be marked.")
 
-;; simple-call-tree-info: TODO
+;; simple-call-tree-info: TODO 
 (defvar-local simple-call-tree-killed-items nil
   "List of names of items in the *Simple Call Tree* buffer that have been killed.")
 
@@ -1269,19 +1328,14 @@ information. If UPDATESRC is nil then don't bother updating the source code."
       (goto-char (point-min))
       (if (simple-call-tree-goto-func func)
           (let ((hidden (not (outshine-subheadings-visible-p)))
-                (marked (simple-call-tree-marked-p func))
-		width)
+                (marked (simple-call-tree-marked-p func)))
             (if hidden (show-children)) ;hack! otherwise it doesn't always work properly
             (read-only-mode -1)
             (beginning-of-line)
             (kill-line)
-            (setf width (simple-call-tree-insert-item item 1 nil marked)
-		  (car simple-call-tree-max-linewidth)
-		  (max (car width)
-		       (car simple-call-tree-max-linewidth))
-		  (cdr simple-call-tree-max-linewidth)
-		  (max (cdr width)
-		       (car simple-call-tree-max-linewidth)))
+	    (setq simple-call-tree-max-linewidth
+		  (max (simple-call-tree-insert-item item 1 nil marked)
+		       simple-call-tree-max-linewidth))
 	    (read-only-mode 1)
 	    (if hidden (outline-hide-subtree)))))))
 
@@ -1380,7 +1434,7 @@ By default FUNCS is set to the list of marked items or the function at point if 
                              ((= curpriority simple-call-tree-org-lowest-priority) nil))))
     (simple-call-tree-set-attribute 'priority nextpriority func t)))
 
-;; simple-call-tree-info: DONE
+;; simple-call-tree-info: BROKEN  
 (cl-defun simple-call-tree-set-tags (value funcs)
   "Set the org tags for the function(s) FUNCS.
 By default FUNCS is set to the list of marked items or the function at point if there are no marked items."
@@ -1512,16 +1566,17 @@ By default FUNCLIST is set to `simple-call-tree-alist'."
   (read-only-mode -1)
   (erase-buffer)
   (let ((maxdepth (max maxdepth 1))
-	(maxwidth1 (or (car simple-call-tree-max-linewidth) 1))
-	(maxwidth2 (or (cdr simple-call-tree-max-linewidth) 1)))
+	(maxwidth (or simple-call-tree-max-linewidth 1))
+	(sizes nil))
     (dolist (item funclist)
       (aprog1 (simple-call-tree-list-callees-recursively
 	       (car item)
 	       maxdepth 1 funclist)
-	(setq maxwidth1 (max maxwidth1 (car it))
-	      maxwidth2 (max maxwidth2 (cdr it)))))
+	(setq maxwidth (max maxwidth (car it)))
+	(push (cadr it) sizes)))
     (setq simple-call-tree-current-maxdepth (max maxdepth 1)
-	  simple-call-tree-max-linewidth (cons maxwidth1 maxwidth2))
+	  simple-call-tree-max-linewidth maxwidth
+	  simple-call-tree-header-sizes (sort sizes #'>))
     ;; remove the empty line at the end
     (delete-char -1)
     (read-only-mode 1)))
@@ -1606,13 +1661,13 @@ The optional arguments MAXDEPTH and CURDEPTH specify the maximum and current dep
 If INVERTED is non-nil then the tree will be displayed inverted (default `simple-call-tree-inverted').
 DISPLAYFUNC is used to display each item (default `simple-call-tree-insert-item', which see).
 MARKED is a list of marked items (default `simple-call-tree-marked-items', which see).
-This is a recursive function, and you should not need to set CURDEPTH."
+This is a recursive function, and you should not need to set CURDEPTH.
+The return value is a list containing the length of the longest line including tags,
+the length of the longest line excluding tags, and the total number of lines printed."
   (let* ((fname (first item))
          (callees (cdr (simple-call-tree-get-item fname funclist)))
-	 (widths (funcall displayfunc item curdepth inverted (simple-call-tree-marked-p fname marked)))
-	 (max1 (car widths))
-	 (max2 (cdr widths))
-         done)
+	 (max1 (funcall displayfunc item curdepth inverted (simple-call-tree-marked-p fname marked)))
+	 (nlines 1) widths done)
     (insert "\n")
     (if (< curdepth maxdepth)
         (dolist (callee callees)
@@ -1621,9 +1676,9 @@ This is a recursive function, and you should not need to set CURDEPTH."
 		  (simple-call-tree-list-callees-recursively
 		   callee maxdepth (1+ curdepth) funclist inverted displayfunc)
 		  max1 (max max1 (car widths))
-		  max2 (max max2 (car widths))))
+		  nlines (+ nlines (cadr widths))))
           (add-to-list 'done (car callee))))
-    (cons max1 max2)))
+    (list max1 nlines)))
 
 ;; Propertize todo, priority & tags appropriately
 ;; Add invisibility property to text so that `simple-call-tree-hide-marked' works
@@ -1632,30 +1687,30 @@ This is a recursive function, and you should not need to set CURDEPTH."
   "Display ITEM at depth CURDEPTH in the call tree.
 If optional arg INVERTED is non-nil reverse the arrow for the item.
 If optional arg MARKED is non-nil use a * instead of a |.
-Return a cons cell whose car contains the length of the line excluding tags,
-and whose cdr contains the length including tags."
+Return a list containing the length of the line excluding tags,
+and the length including tags."
   (let* ((fname (first item))
-         (pos (second item))
-         (todo (fourth item))
-         (priority (fifth item))
-         (tags (simple-call-tree-tags-to-string (sixth item)))
-         (pre (concat (if todo (concat " " (propertize todo 'font-lock-face
-                                                       (org-get-todo-face todo))))
-                      (if priority (propertize (concat " [#" (char-to-string priority) "]")
-                                               'font-lock-face
-                                               (or (org-face-from-face-or-color
-                                                    'priority 'org-priority
-                                                    (cdr (assoc priority org-priority-faces)))
-                                                   'org-priority)))))
-         (arrowtail (make-string (* 2 (1- curdepth)) 45))
-         (arrow (if inverted (concat (if (> curdepth 1) "<" pre) arrowtail " ")
-                  (concat arrowtail (if (> curdepth 1) ">" pre) " ")))
-         (fnface (get-text-property 0 'face fname))
-         (pre2 (concat (if marked "*" "|") arrow
-                       (propertize fname
-                                   'font-lock-face (list :inherit (or fnface 'default) :underline t)
-                                   'mouse-face 'highlight
-                                   'location pos)))
+	 (pos (second item))
+	 (todo (fourth item))
+	 (priority (fifth item))
+	 (tags (simple-call-tree-tags-to-string (sixth item)))
+	 (pre (concat (if todo (concat " " (propertize todo 'font-lock-face
+						       (org-get-todo-face todo))))
+		      (if priority (propertize (concat " [#" (char-to-string priority) "]")
+					       'font-lock-face
+					       (or (org-face-from-face-or-color
+						    'priority 'org-priority
+						    (cdr (assoc priority org-priority-faces)))
+						   'org-priority)))))
+	 (arrowtail (make-string (* 2 (1- curdepth)) 45))
+	 (arrow (if inverted (concat (if (> curdepth 1) "<" pre) arrowtail " ")
+		  (concat arrowtail (if (> curdepth 1) ">" pre) " ")))
+	 (fnface (get-text-property 0 'face fname))
+	 (pre2 (concat (if marked "*" "|") arrow
+		       (propertize fname
+				   'font-lock-face (list :inherit (or fnface 'default) :underline t)
+				   'mouse-face 'highlight
+				   'location pos)))
 	 (str (concat pre2 (when tags
 			     (concat tags
 				     (make-string (max 0 (- (/ (window-width) 2)
@@ -1663,7 +1718,7 @@ and whose cdr contains the length including tags."
 						  32)
 				     tags)))))
     (insert str)
-    (cons (length pre2) (length str))))
+    (length pre2)))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-insert-org-header (item curdepth &optional inverted marked)
@@ -2155,9 +2210,54 @@ If called with a prefix ARG the portion viewed will be the opposite to normal (e
           (middle (recenter))
           (bottom (recenter -1)))))))
 
+;; simple-call-tree-info: TODO
+(defun simple-call-tree-adaptive-split (hval vval cratio rratio thresh)
+  "Return values for split size & orientation, based on call tree statistics.
+HVAL 
+The split is determined according to parameters defined in `simple-call-tree-adaptive-split-params'.
+See documentation of that option for details on the algorithm used to determine the split."
+  (let* ((maxwidth simple-call-tree-max-linewidth)
+	 (win (get-buffer-window buf))
+	 (height (window-height win))
+	 (width (window-width win))
+	 (slen (length simple-call-tree-header-sizes))
+	 (errmsg "Invalid value for simple-call-tree-adaptive-split-params")
+	 hsplit vsplit rval)
+    (setq hsplit
+	  (max 10 (cond ((floatp hval)
+			 (floor (if (> (abs hval) 1.0)
+				    (error errmsg)
+				  (if (< hval 0)
+				      (* width (1+ hval))
+				    (* hval maxwidth)))))
+			((integerp hval)
+			 (if (< hval 0)
+			     (+ width hval)
+			   hval))
+			(t (error errmsg))))
+	  vsplit
+	  (max 10 (cond ((floatp vval)
+			 (floor (if (> (abs vval) 1.0)
+				    (error errmsg)
+				  (if (< vval 0)
+				      (* height (1+ vval))
+				    (nth (1- (ceiling (* (- 1.0 vval) slen)))
+					 simple-call-tree-header-sizes)))))
+			((integerp vval)
+			 (if (< vval 0)
+			     (+ height vval)
+			   vval))
+			(t (error errmsg))))
+	  rval (/ (+ vsplit (* (- height vsplit) rratio))
+		  (+ hsplit (* (- width hsplit) cratio))))
+    (message "simple-call-tree-adaptive-split: rval = %.3f, thresh = %.3f" rval thresh) 
+    (if (> rval thresh)
+	(list hsplit 'right)
+      (list vsplit 'below))))
+
 ;; simple-call-tree-info: TODO  handle option to show code in separate frame
 (cl-defun simple-call-tree-split-window (win)
-  "Split the *Simple Call Tree* buffer to accomodate the code buffer.
+  "Split the *Simple Call Tree* window (WIN) to accomodate the code buffer.
 Use the values in `simple-call-tree-window-splits' to determine the split."
   (if (not (eq (window-buffer win)
 	       (get-buffer simple-call-tree-buffer-name)))
@@ -2167,21 +2267,10 @@ Use the values in `simple-call-tree-window-splits' to determine the split."
 				  ((integerp c) (>= simple-call-tree-current-maxdepth c))
 				  ((consp c) (eval c))
 				  (t (err x)))))
-      (let ((specs (cdr (assoc-if #'choosesplit simple-call-tree-window-splits)))
-	    orientation size n)
-	(when (functionp specs)
-	  (setq specs (funcall specs (get-buffer simple-call-tree-buffer-name))))
-	(setq orientation (car specs) size (cadr specs))
-	(split-window win
-		      (- (cond ((integerp size) size)
-			       ((floatp size)
-				(floor (* size
-					  (cl-case orientation
-					    ((left right) (window-width))
-					    ((above below) (window-height))
-					    (t (err x))))))
-			       (t (err x))))
-		      orientation)))))
+      (let ((specs (cdr (assoc-if #'choosesplit simple-call-tree-window-splits))))
+	(when (> (length specs) 2)
+	  (setq specs (apply 'simple-call-tree-adaptive-split specs)))
+	(apply 'split-window win specs)))))
 
 ;; simple-call-tree-info: TODO  handle option to show code in separate frame
 (cl-defun simple-call-tree-visit-function (&optional arg)
