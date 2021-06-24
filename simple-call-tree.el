@@ -751,15 +751,6 @@ as a flat list."
                                     (equal x "|")))
                     (cl-mapcan 'identity org-todo-keywords))))
 
-;; Saves a little typing
-;; simple-call-tree-info: TODO  remove this - its only used once
-(defmacro whilelast (&rest forms)
-  `(while (progn ,@forms)))
-
-;; simple-call-tree-info: TODO  remove this - it isnt used
-(defmacro whilenotlast (&rest forms)
-  `(while (not (progn ,@forms))))
-
 ;; simple-call-tree-info: DONE
 (cl-defun simple-call-tree-get-item (func &optional (alist simple-call-tree-alist))
   "Return the item in `simple-call-tree-alist' corresponding with function named FUNC."
@@ -1519,14 +1510,14 @@ functions to display in the tree. When called interactively with a prefix arg,
 files will be prompted for and only functions in the current buffer will be used."
   (interactive (if current-prefix-arg
 		   (let (dir regexp files)
-		     (whilelast
-		      (setq dir (read-directory-name "Dir containing files to add: "))
-		      (list-directory dir)
-		      (setq regexp (read-regexp "Regexp matching filenames (RET to finish)"))
-		      (unless (string= regexp "")
-			(mapc (lambda (name) (if (string-match regexp name)
-						 (add-to-list 'files (concat dir name))))
-			      (directory-files dir))))
+		     (while (progn
+			      (setq dir (read-directory-name "Dir containing files to add: "))
+			      (list-directory dir)
+			      (setq regexp (read-regexp "Regexp matching filenames (RET to finish)"))
+			      (unless (string= regexp "")
+				(mapc (lambda (name) (if (string-match regexp name)
+							 (add-to-list 'files (concat dir name))))
+				      (directory-files dir)))))
 		     files)))
   (let ((buffers (save-excursion
 		   (cl-loop for file in files
