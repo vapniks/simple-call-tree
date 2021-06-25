@@ -1574,8 +1574,9 @@ unless a prefix arg is used in which case the function returned by `which-functi
 will be used.
 Note: `which-function' may give incorrect results if `imenu' has not been used in
 the current buffer.
-If a call tree containing FUNC has not already been created then the user is prompted
-for which files to build the tree from.
+If a call tree containing FUNC has not already been created then it will be created
+from the current buffer, unless a prefix arg is supplied in which case the user is 
+prompted for which files to build the tree from.
 
 If optional arg WIDE is non-nil then the *Simple Call Tree* buffer will be widened,
 otherwise it will be narrowed around FUNC."
@@ -1591,6 +1592,8 @@ otherwise it will be narrowed around FUNC."
 	(if (get-buffer simple-call-tree-buffer-name)
 	    (switch-to-buffer simple-call-tree-buffer-name)
 	  (simple-call-tree-list-callers-and-functions))
+      (when (get-buffer simple-call-tree-buffer-name) ;in case buffer contains different call-tree
+	(kill-buffer simple-call-tree-buffer-name))
       (simple-call-tree-display-buffer))
     (simple-call-tree-toggle-narrowing 1)
     (goto-char (point-min))
