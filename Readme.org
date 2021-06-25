@@ -7,14 +7,17 @@
  call tree, displaying the code in another window, and apply query-replace 
  or other commands to individual functions.
 
- When the command `simple-call-tree-display-buffer' is executed
- a call tree for the functions in the current buffer will be created.
- The user is also prompted for other files to include in the call tree.
+ When the command `simple-call-tree-display-buffer' or `simple-call-tree-current-function'
+ is executed a call tree for the functions in the current buffer will be created,
+ and in the latter case the point in the call tree is placed on the header
+ closest to its position in the original buffer.
+ If called with a prefix arg the user is also prompted for other files to include
+ in the call tree.
  The call tree is displayed in a buffer called *Simple Call Tree*,
  which has a dedicated menu in the menu-bar showing various commands
  and their keybindings. Most of these commands are self explanatory
  so try them out.
-
+ 
 ** Navigation
  You can navigate the call tree either by moving through consecutive
  headers (n/p or N/P keys) or by jumping to main branches (j for branch
@@ -69,6 +72,8 @@
    - *simple-call-tree-build-tree* :
     Build the simple-call-tree and display it in the "*Simple Call Tree*" buffer.\\
     Keybinding: =R=
+   - *simple-call-tree-current-function* :
+    Display call tree at location for for function at point.
    - *simple-call-tree-export-org-tree* :
     Create an org-tree from the currently visible items, and put it in an org buffer.\\
     Keybinding: =M-x simple-call-tree-export-org-tree=
@@ -129,6 +134,9 @@
    - *simple-call-tree-jump-ring-remove* :
     Remove the current item from the jump-ring.\\
     Keybinding: =-=
+   - *simple-call-tree-jump-to-function* :
+    Move cursor to the line corresponding to the function header with name FNSTR.\\
+    Keybinding: =j=
    - *simple-call-tree-move-top* :
     Move cursor to the parent of this function.\\
     Keybinding: =^=
@@ -156,6 +164,9 @@
    - *simple-call-tree-toggle-duplicates* :
     Toggle the inclusion of duplicate sub-branches in the call tree.\\
     Keybinding: =D=
+   - *simple-call-tree-apply-command* :
+    Apply command CMD on function(s) FUNCS.\\
+    Keybinding: =!=
    - *simple-call-tree-query-replace* :
     Perform query-replace on the marked items or the item at point in the *Simple Call Tree* buffer.\\
     Keybinding: =%=
@@ -216,8 +227,10 @@
     How to recenter the window after moving to another function in the "*Simple Call Tree*" buffer.\\
     default value: =(quote middle)=
    - *simple-call-tree-default-view*
-    How to recenter the window after viewing a toplevel header.
+    How to recenter the window after viewing a toplevel header.\\
     default = =(quote middle)=
+   - *simple-call-tree-window-splits*
+    Alist of items containing info about how to split the window when viewing code (e.g. in follow mode). 
    - *simple-call-tree-default-valid-fonts* :
     List of fonts to use for finding objects to include in the call tree.\\
     default value: =(quote (font-lock-function-name-face font-lock-variable-name-face))=
@@ -271,7 +284,7 @@ Add the following to your ~/.emacs startup file.
 You might also want to define a key for creating the call tree, 
 e.g. like this:
 
-(global-set-key (kbd "C-c S") 'simple-call-tree-display-buffer)
+(global-set-key (kbd "C-c S") 'simple-call-tree-current-function)
 
 
 

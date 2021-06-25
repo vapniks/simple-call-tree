@@ -50,9 +50,12 @@
 ;; the code in another window, and apply query-replace or other commands
 ;; to individual functions.
 
-;; When the command `simple-call-tree-display-buffer' is executed
-;; a call tree for the functions in the current buffer will be created.
-;; The user is also prompted for other files to include in the call tree.
+;; When the command `simple-call-tree-display-buffer' or `simple-call-tree-current-function'
+;; is executed a call tree for the functions in the current buffer will be created,
+;; and in the latter case the point in the call tree is placed on the header
+;; closest to its position in the original buffer.
+;; If called with a prefix arg the user is also prompted for other files to include
+;; in the call tree.
 ;; The call tree is displayed in a buffer called *Simple Call Tree*,
 ;; which has a dedicated menu in the menu-bar showing various commands
 ;; and their keybindings. Most of these commands are self explanatory
@@ -112,12 +115,17 @@
 ;;  `simple-call-tree-build-tree'
 ;;    Build the simple-call-tree and display it in the "*Simple Call Tree*" buffer.
 ;;    Keybinding: R
+;;  `simple-call-tree-current-function'
+;;    Display call tree at location for for function at point.
 ;;  `simple-call-tree-export-org-tree'
 ;;    Create an org-tree from the currently visible items, and put it in an org buffer.
 ;;    Keybinding: M-x simple-call-tree-export-org-tree
 ;;  `simple-call-tree-export-items'
 ;;    Export the currently visible items into a buffer.
 ;;    Keybinding: M-x simple-call-tree-export-items
+;;  `simple-call-tree-save'
+;;    Save the file corresponding to header at point.
+;;    Keybinding: C-x C-s
 ;;  `simple-call-tree-reverse'
 ;;    Reverse the order of the branches & sub-branches in `simple-call-tree-alist' and `simple-call-tree-inverted-alist'.
 ;;    Keybinding: r
@@ -152,7 +160,7 @@
 ;;    Invert the tree in *Simple Call Tree* buffer.
 ;;    Keybinding: i
 ;;  `simple-call-tree-change-maxdepth'
-;;    Alter the maximum tree depth in the *Simple Call Tree* buffer.
+;;    Alter the maximum tree depth (MAXDEPTH) in the *Simple Call Tree* buffer.
 ;;    Keybinding: M-x simple-call-tree-change-maxdepth
 ;;  `simple-call-tree-change-default-view'
 ;;    Change the values of `simple-call-tree-default-view' and `simple-call-tree-default-recenter'.
@@ -164,16 +172,19 @@
 ;;    Jump to the previous function in the `simple-call-tree-jump-ring'.
 ;;    Keybinding: <
 ;;  `simple-call-tree-jump-next'
-;;    Jump to the next function in the `simple-call-tree-jump-ring'.
+;;    Jump to the next chain in the `simple-call-tree-jump-ring'.
 ;;    Keybinding: >
 ;;  `simple-call-tree-jump-ring-add'
-;;    Add the function at point to the jump-ring.
+;;    Add the call chain at point to the jump-ring.
 ;;    Keybinding: .
 ;;  `simple-call-tree-jump-ring-remove'
 ;;    Remove the current item from the jump-ring.
 ;;    Keybinding: -
+;;  `simple-call-tree-jump-to-function'
+;;    Move cursor to the line corresponding to the function header with name FNSTR
+;;    Keybinding: j
 ;;  `simple-call-tree-move-top'
-;;    Move cursor to the parent of this function.
+;;    Move cursor to the toplevel parent of this function.
 ;;    Keybinding: ^
 ;;  `simple-call-tree-move-next'
 ;;    Move cursor to the next item.
@@ -182,16 +193,22 @@
 ;;    Move cursor to the previous item.
 ;;    Keybinding: M-x simple-call-tree-move-prev
 ;;  `simple-call-tree-move-next-samelevel'
-;;    Move cursor to the next item at the same level as the current one.
-;;    Keybinding: C-f
+;;    Move cursor to the next item at the same level as the current one, and recenter.
+;;    Keybinding: N
 ;;  `simple-call-tree-move-prev-samelevel'
-;;    Move cursor to the previous item at the same level as the current one.
-;;    Keybinding: C-b
+;;    Move cursor to the previous item at the same level as the current one, and recenter.
+;;    Keybinding: <C-up>
 ;;  `simple-call-tree-move-next-marked'
 ;;    Move cursor to the next marked item.
-;;    Keybinding: M-n
+;;    Keybinding: M-g n
 ;;  `simple-call-tree-move-prev-marked'
 ;;    Move cursor to the next marked item.
+;;    Keybinding: M-g p
+;;  `simple-call-tree-move-next-todo'
+;;    Move cursor to the next item with a TODO state that isn't done.
+;;    Keybinding: M-n
+;;  `simple-call-tree-move-prev-todo'
+;;    Move cursor to the next item with a TODO state that isn't done.
 ;;    Keybinding: M-p
 ;;  `simple-call-tree-toggle-narrowing'
 ;;    Toggle narrowing of *Simple Call Tree* buffer.
@@ -199,6 +216,9 @@
 ;;  `simple-call-tree-toggle-duplicates'
 ;;    Toggle the inclusion of duplicate sub-branches in the call tree.
 ;;    Keybinding: D
+;;  `simple-call-tree-apply-command'
+;;    Apply command CMD on function(s) FUNCS.
+;;    Keybinding: !
 ;;  `simple-call-tree-query-replace'
 ;;    Perform query-replace on the marked items or the item at point in the *Simple Call Tree* buffer.
 ;;    Keybinding: %
@@ -207,7 +227,7 @@
 ;;    Keybinding: C-%
 ;;  `simple-call-tree-bookmark'
 ;;    Set bookmarks the marked items or the item at point in the *Simple Call Tree* buffer.
-;;    Keybinding: M-x simple-call-tree-bookmark
+;;    Keybinding: B
 ;;  `simple-call-tree-delete-other-windows'
 ;;    Make the *Simple Call Tree* buffer fill the frame.
 ;;    Keybinding: 1
@@ -260,7 +280,10 @@
 ;;    default = (quote middle)
 ;;  `simple-call-tree-default-view'
 ;;    How to recenter the window after viewing a toplevel header.
-;;    default = (quote middle)
+;;    default = (quote top)
+;;  `simple-call-tree-window-splits'
+;;    Alist of items containing info about how to split the window when viewing code (e.g. in follow mode). 
+;;    default = (quote ((2 1.5 5.0 right below ...) (1 5 below)))
 ;;  `simple-call-tree-default-valid-fonts'
 ;;    List of fonts to use for finding objects to include in the call tree.
 ;;    default = (quote (font-lock-function-name-face font-lock-variable-name-face))
@@ -284,7 +307,7 @@
 ;;    default = nil
 ;;  `simple-call-tree-org-not-done-keywords'
 ;;    List of TODO keywords representing not done states.
-;;    default = (quote ("TODO" "STARTED" "WAITING" "CHECK"))
+;;    default = (quote ("TODO" "STARTED" "WAITING" "CHECK" "BROKEN"))
 ;;  `simple-call-tree-org-highest-priority'
 ;;    See `org-highest-priority'.
 ;;    default = org-highest-priority
@@ -316,7 +339,7 @@
 ;; You might also want to define a key for creating the call tree,
 ;; e.g. like this:
 ;;
-;; (global-set-key (kbd "C-c S") 'simple-call-tree-display-buffer)
+;; (global-set-key (kbd "C-c S") 'simple-call-tree-current-function)
 
 ;;; Acknowledgements:
 ;;
@@ -329,11 +352,6 @@
 ;; Use / key for filtering headers by name (for consistency with other modes such as gnus & dired)
 ;; and use a different key for narrowing to the current header.
 ;;
-;; Keys & commands to scroll code view window from within *Simple Call Tree* buffer
-;; More sophisticated adaptive code view window centering, sizing & orientation:
-;;   make sure current header is always visible ('adaptive option?)
-;;   allow settings to differ depending on major-mode &/or name of code files? e.g. have a function option?
-;;   centering for toplevel headers should be allowed to be different to non toplevel headers
 ;; Allow adding headers for arbitrary locations
 
 ;; If anyone wants to implement the following ideas, please do:
@@ -1568,7 +1586,7 @@ listed in `simple-call-tree-buffers' will be used."
 ;;;###autoload
 ;; simple-call-tree-info: DONE
 (cl-defun simple-call-tree-current-function (func &optional wide)
-  "Display call tree for function FUNC.
+  "Display call tree at location for for function FUNC.
 If called interactively FUNC will be set to the symbol nearest point,
 unless a prefix arg is used in which case the function returned by `which-function'
 will be used.
