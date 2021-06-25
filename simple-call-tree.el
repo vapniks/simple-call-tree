@@ -1585,9 +1585,13 @@ otherwise it will be narrowed around FUNC."
 		     current-prefix-arg))
   (let ((buf (current-buffer))
 	(pos (point)))
-    (if (get-buffer simple-call-tree-buffer-name)
-	(switch-to-buffer simple-call-tree-buffer-name)
-      (simple-call-tree-list-callers-and-functions 2))
+    (if (memq buf
+	      (mapcar (lambda (x) (marker-buffer (nth 1 (car x))))
+		      simple-call-tree-alist))
+	(if (get-buffer simple-call-tree-buffer-name)
+	    (switch-to-buffer simple-call-tree-buffer-name)
+	  (simple-call-tree-list-callers-and-functions))
+      (simple-call-tree-display-buffer))
     (simple-call-tree-toggle-narrowing 1)
     (goto-char (point-min))
     (let ((bestmarker (get-text-property
@@ -2904,8 +2908,7 @@ killed items will stay killed."
   (add-hook 'simple-call-tree-mode-hook 'fm-start))
 (unless (not (featurep 'hl-line))
   (add-hook 'simple-call-tree-mode-hook
-            (lambda nil
-              (hl-line-mode 1))))
+            (lambda nil (hl-line-mode 1))))
 
 (provide 'simple-call-tree)
 
