@@ -433,7 +433,7 @@ absolute value indicates the size of the new window created after splitting."
 		(widget-put w :error "Value must be positive")
 		w)))
 
-;; simple-call-tree-info: TODO  allow option to show code in separate frame
+;; simple-call-tree-info: CHANGE  option to show code in separate frame
 (defcustom simple-call-tree-window-splits '((2 1.5 5.0 right below 5 2) (1 5 below))
   "Alist of items containing info about how to split the window when viewing code (e.g. in follow mode). 
 The item used to determine the split is the first item with a car that is either an integer less 
@@ -1592,7 +1592,7 @@ otherwise it will be narrowed around FUNC."
   (if wide (simple-call-tree-toggle-narrowing 1)
     (simple-call-tree-toggle-narrowing -1)))
 
-;; simple-call-tree-info: CHECK  
+;; simple-call-tree-info: DONE  
 (cl-defun simple-call-tree-list-callers-and-functions (&optional (maxdepth simple-call-tree-default-maxdepth)
 								 (funclist simple-call-tree-alist))
   "List callers and functions in FUNCLIST to depth MAXDEPTH.
@@ -1687,7 +1687,7 @@ The style of links used for child headers is controlled by `simple-call-tree-org
           (insert text))))
     (if display (switch-to-buffer exportbuf))))
 
-;; simple-call-tree-info: CHECK  
+;; simple-call-tree-info: DONE  
 (cl-defun simple-call-tree-list-callees-recursively (item &optional (maxdepth 2)
 							  (curdepth 1)
 							  (funclist simple-call-tree-alist)
@@ -1721,7 +1721,7 @@ the length of the longest line excluding tags, and the total number of lines pri
 
 ;; Propertize todo, priority & tags appropriately
 ;; Add invisibility property to text so that `simple-call-tree-hide-marked' works
-;; simple-call-tree-info: CHECK  
+;; simple-call-tree-info: DONE  
 (defun simple-call-tree-insert-item (item curdepth &optional inverted marked)
   "Display ITEM at depth CURDEPTH in the call tree.
 If optional arg INVERTED is non-nil reverse the arrow for the item.
@@ -1812,7 +1812,7 @@ We can't do that in this function as it causes other problems with outline mode 
       (let ((arrowlen (length (match-string 1))))
         (if (= arrowlen 0) 1 (1+ (/ (1- arrowlen) 2)))))))
 
-;; simple-call-tree-info: CHECK
+;; simple-call-tree-info: DONE  
 (defun simple-call-tree-get-chain nil
   "Return a list of the function at point and it's parents.
 If there is no parent, return nil.
