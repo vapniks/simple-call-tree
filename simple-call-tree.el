@@ -2411,7 +2411,7 @@ prefix arg) then the header at point, and FNSTR will both be added to `simple-ca
         (top (recenter 0))
         (middle (recenter))
         (bottom (recenter -1))
-        (t (recenter arg))))))
+        (t (error "Invalid value for simple-call-tree-default-recenter"))))))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-jump-prev nil
