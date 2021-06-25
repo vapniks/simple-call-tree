@@ -434,7 +434,7 @@ absolute value indicates the size of the new window created after splitting."
 		w)))
 
 ;; simple-call-tree-info: TODO  allow option to show code in separate frame
-(defcustom simple-call-tree-window-splits '((2 1.5 5.0 right below 5 2) (1 3 below))
+(defcustom simple-call-tree-window-splits '((2 1.5 5.0 right below 5 2) (1 5 below))
   "Alist of items containing info about how to split the window when viewing code (e.g. in follow mode). 
 The item used to determine the split is the first item with a car that is either an integer less 
 than or equal to the current depth, or an s-expression that evaluates to non-nil.
