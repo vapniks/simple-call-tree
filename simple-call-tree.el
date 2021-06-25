@@ -1135,6 +1135,10 @@ be shown in the tree.")
 (defvar simple-call-tree-regex-maxlen 10000
   "Maximum allowed length for regular expressions.")
 
+;; simple-call-tree-info: DONE  
+(defvar simple-call-tree-apply-command-history nil
+  "History list for `simple-call-tree-apply-command'.")
+
 ;; simple-call-tree-info: DONE
 (cl-defun simple-call-tree-analyze (&optional (buffers (list (current-buffer))))
   "Analyze the current buffer, or the buffers in list BUFFERS.
@@ -1533,7 +1537,10 @@ files will be prompted for and only functions in the current buffer will be used
 	(switch-to-buffer simple-call-tree-buffer-name)
       (simple-call-tree-build-tree buffers)
       (setq simple-call-tree-jump-ring (make-ring simple-call-tree-jump-ring-max)
-	    simple-call-tree-jump-ring-index 0))))
+	    simple-call-tree-jump-ring-index 0)
+      (if (with-current-buffer (car buffers)
+	    (eq major-mode 'emacs-lisp-mode))
+	  (add-to-list 'simple-call-tree-apply-command-history "edebug-eval-defun")))))
 
 ;;;###autoload
 ;; simple-call-tree-info: DONE
@@ -2596,7 +2603,7 @@ When narrowed, the buffer will be narrowed to the subtree at point."
   (with-current-buffer simple-call-tree-buffer-name
     (simple-call-tree-revert 1)))
 
-;; simple-call-tree-info: TODO  use completing-read with a history list that includes edebug-eval-defun 
+;; simple-call-tree-info: DONE  
 (cl-defun simple-call-tree-apply-command (cmd &optional
 					      (funcs (or simple-call-tree-marked-items
 							 (list (or (unless simple-call-tree-inverted
@@ -2606,7 +2613,10 @@ When narrowed, the buffer will be narrowed to the subtree at point."
 By default FUNCS is set to the list of marked items or the function at point if there are no marked items.
 The command CMD will be called interactively on each function after switching to the source code buffer,
 and narrowing the buffer around the function."
-  (interactive (list (read-command "Command: ")))
+  (interactive (list (completing-read
+		      "Command: "
+		      obarray 'commandp t nil
+		      'simple-call-tree-apply-command-history)))
   (dolist (func funcs)
     (let ((buf (marker-buffer
                 (second (car (simple-call-tree-get-item func))))))
