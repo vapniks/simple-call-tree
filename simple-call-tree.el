@@ -376,7 +376,7 @@ and by `simple-call-tree-visit-function' and `simple-call-tree-view-function' (f
                  (const :tag "Bottom" bottom)))
 
 ;; simple-call-tree-info: DONE
-(defcustom simple-call-tree-default-view 'middle
+(defcustom simple-call-tree-default-view 'top
   "How to recenter the window after viewing a toplevel header.
 This applied to viewing with `simple-call-tree-view-function', and with `simple-call-tree-visit-function'
 in follow-mode. It can be one of the following symbols: 'top 'middle 'bottom. 
