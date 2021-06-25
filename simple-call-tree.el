@@ -1001,6 +1001,10 @@ as a flat list."
       ["Previous Branch Same Level" simple-call-tree-move-prev-samelevel
        :help "Goto the previous branch at the same level as this one"
        :key "P"]
+      ["Next TODO header" simple-call-tree-move-next-todo
+       :help "Goto next header with a TODO state"]
+      ["Previous TODO header" simple-call-tree-move-prev-todo
+       :help "Goto previous header with a TODO state"]
       ["---" "---"]
       ["Cycle Tree Visibility" outline-cycle
        :help "Cycle through different tree visibility states"
