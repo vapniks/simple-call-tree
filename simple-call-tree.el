@@ -387,7 +387,7 @@ This only applies to toplevel headers, see `simple-call-tree-default-recenter' f
                  (const :tag "Middle" middle)
                  (const :tag "Bottom" bottom)))
 
-;; simple-call-tree-info: CHECK
+;; simple-call-tree-info: DONE  
 (define-widget 'window-split 'lazy
   "Window split location; either an integer number of rows/columns or a proportion of the existing window size.
 The value is used as an argument to the `split-window' function.
@@ -780,6 +780,7 @@ as a flat list."
         outline-level 'simple-call-tree-outline-level)
   ;; Define keys
   (define-key simple-call-tree-mode-map (kbd "q") 'simple-call-tree-quit)
+  (define-key simple-call-tree-mode-map (kbd "C-x C-s") 'simple-call-tree-save)
   ;; Sorting commands
   (define-prefix-command 'simple-call-tree-sort-map)
   (define-key simple-call-tree-mode-map (kbd "s") 'simple-call-tree-sort-map)
@@ -1082,7 +1083,7 @@ The minimum value is 0 which means show top level functions only.")
   "The maximum length of the lines in the current *Simple Call Tree* buffer.
 First number is without tags, second number is with tags.")
 
-;; simple-call-tree-info: CHECK
+;; simple-call-tree-info: DONE  
 (defvar-local simple-call-tree-max-header-size 0
   "The most number of branches of any subtree in the current *Simple Call Tree* buffer.")
 
@@ -1127,7 +1128,7 @@ be shown in the tree.")
 (defvar-local simple-call-tree-marked-items nil
   "List of names of items in the *Simple Call Tree* buffer that are or should be marked.")
 
-;; simple-call-tree-info: TODO 
+;; simple-call-tree-info: DONE  
 (defvar-local simple-call-tree-killed-items nil
   "List of names of items in the *Simple Call Tree* buffer that have been killed.")
 
@@ -1936,6 +1937,20 @@ and when sorting the branches of those items the items in the cdr are passed."
     (callf sort simple-call-tree-inverted-alist
       (lambda (a b)
         (funcall predicate (car a) (car b))))))
+
+;; simple-call-tree-info: DONE  
+(defun simple-call-tree-save nil
+  "Save the file corresponding to header at point."
+  (interactive)
+  (save-excursion
+    (beginning-of-line)
+    (re-search-forward outline-regexp)
+    (with-current-buffer
+	(marker-buffer (get-text-property
+			(next-single-property-change
+			 (line-beginning-position)
+			 'location) 'location))
+      (save-buffer))))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-reverse nil
