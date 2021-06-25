@@ -1255,11 +1255,11 @@ If there is no function on this line of the *Simple Call Tree* buffer, return ni
     (if (equal buf simple-call-tree-buffer-name)
         (save-excursion
           (move-beginning-of-line nil)
-          (if (re-search-forward (concat outline-regexp "\\(\\S-+\\)")
+          (if (re-search-forward (concat outline-regexp "\\([^ \t:]+\\)")
                                  (line-end-position) t)
               (match-string 6)
             (previous-line) ;;dont be tempted to replace with (forward-line -1) which moves to BEGINNING of previous line
-            (re-search-forward (concat outline-regexp "\\(\\S-+\\)")
+            (re-search-forward (concat outline-regexp "\\([^ \t:]+\\)")
                                (line-end-position) t)
             (match-string 6)))
       (symbol-name (if (functionp 'symbol-nearest-point)
@@ -1453,7 +1453,7 @@ By default FUNCS is set to the list of marked items or the function at point if 
                              ((= curpriority simple-call-tree-org-highest-priority) nil))))
     (simple-call-tree-set-attribute 'priority nextpriority func t)))
 
-;; simple-call-tree-info: DONE
+;; simple-call-tree-info: DONE  
 (defun simple-call-tree-down-priority nil
   "Change current function to the previous priority level."
   (interactive)
@@ -1467,7 +1467,7 @@ By default FUNCS is set to the list of marked items or the function at point if 
                              ((= curpriority simple-call-tree-org-lowest-priority) nil))))
     (simple-call-tree-set-attribute 'priority nextpriority func t)))
 
-;; simple-call-tree-info: BROKEN  
+;; simple-call-tree-info: DONE  
 (cl-defun simple-call-tree-set-tags (value funcs)
   "Set the org tags for the function(s) FUNCS.
 By default FUNCS is set to the list of marked items or the function at point if there are no marked items."
@@ -1484,7 +1484,7 @@ By default FUNCS is set to the list of marked items or the function at point if 
   (dolist (func funcs)
     (simple-call-tree-set-attribute 'tags value func t)))
 
-;; simple-call-tree-info: DONE
+;; simple-call-tree-info: DONE  
 (defun simple-call-tree-add-tags (value funcs &optional remove)
   "Add tags in VALUE to the function(s) FUNCS.
 By default FUNCS is set to the list of marked items or the function at point if there are no marked items.
