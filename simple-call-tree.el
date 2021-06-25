@@ -2254,9 +2254,9 @@ If called with a prefix ARG the portion viewed will be the opposite to normal (e
       (if (featurep 'fm) (fm-highlight 1 (line-beginning-position) (line-end-position)))
       (if (eq level 1)
 	  (cl-case simple-call-tree-default-view
-	    (top (recenter (if arg -1 0)))
+	    (top (recenter (if arg -1 1)))
 	    (middle (recenter (if arg -1)))
-	    (bottom (recenter (if arg 0 -1))))
+	    (bottom (recenter (if arg 1 -1))))
         (cl-case simple-call-tree-default-recenter
           (top (recenter 0))
           (middle (recenter))
@@ -2343,9 +2343,9 @@ the source buffer to the function."
     (if arg (simple-call-tree-narrow-to-function visitfunc pos))
     (if (eq level 1)
 	(cl-case simple-call-tree-default-view
-	  (top (recenter (if arg -1 0)))
+	  (top (recenter (if arg -1 1)))
 	  (middle (recenter (if arg -1)))
-	  (bottom (recenter (if arg 0 -1))))
+	  (bottom (recenter (if arg 1 -1))))
       (cl-case simple-call-tree-default-recenter
 	(top (recenter 0))
 	(middle (recenter))
