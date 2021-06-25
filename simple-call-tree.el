@@ -973,38 +973,39 @@ as a flat list."
                        :help "Export source code of displayed items")
                (org menu-item "Export as org tree..." simple-call-tree-export-org-tree
                     :help "Export displayed items to an org-mode buffer"))]
-      ["---" "---"]
-      ["Jump To Branch At Point" simple-call-tree-jump-to-function
-       :help "Goto the toplevel branch for the function at point"]
-      ["Jump To Branch..." ,(lambda nil (interactive) (setq current-prefix-arg 1)
-                              (call-interactively 'simple-call-tree-jump-to-function))
-       :help "Prompt for a toplevel branch to jump to"
-       :keys "J"]
-      ["Add To Jump Ring" simple-call-tree-jump-ring-add
-       :help "Add the function at point to the jump ring"]
-      ["Remove From Jump Ring" simple-call-tree-jump-ring-remove
-       :help "Remove the function at point from the jump ring"]
-      ["Previous Jump" simple-call-tree-jump-prev
-       :help "Goto previous function in jump ring"]
-      ["Next Jump" simple-call-tree-jump-next
-       :help "Goto next function in jump ring"]
-      ["---" "---"]
-      ["Move to Top" simple-call-tree-move-top
-       :help "Goto the top header of this subtree"]
-      ["Next Branch" simple-call-tree-move-next
-       :help "Goto the next branch"]
-      ["Previous Branch" simple-call-tree-move-prev
-       :help "Goto the previous branch"]
-      ["Next Branch Same Level" simple-call-tree-move-next-samelevel
-       :help "Goto the next branch at the same level as this one"
-       :key "N"]
-      ["Previous Branch Same Level" simple-call-tree-move-prev-samelevel
-       :help "Goto the previous branch at the same level as this one"
-       :key "P"]
-      ["Next TODO header" simple-call-tree-move-next-todo
-       :help "Goto next header with a TODO state"]
-      ["Previous TODO header" simple-call-tree-move-prev-todo
-       :help "Goto previous header with a TODO state"]
+      ["Movement..."
+       (keymap "Movement"
+	       (jump1 menu-item "Jump To Branch At Point" simple-call-tree-jump-to-function
+		      :help "Goto the toplevel branch for the function at point")
+	       (jump2 menu-item"Jump To Branch..." ,(lambda nil (interactive) (setq current-prefix-arg 1)
+						      (call-interactively 'simple-call-tree-jump-to-function))
+		      :help "Prompt for a toplevel branch to jump to"
+		      :keys "J")
+	       (addjring menu-item "Add To Jump Ring" simple-call-tree-jump-ring-add
+			 :help "Add the function at point to the jump ring")
+	       (removejring menu-item "Remove From Jump Ring" simple-call-tree-jump-ring-remove
+			    :help "Remove the function at point from the jump ring")
+	       (prevjump menu-item "Previous Jump" simple-call-tree-jump-prev
+			 :help "Goto previous function in jump ring")
+	       (nextjump menu-item "Next Jump" simple-call-tree-jump-next
+			 :help "Goto next function in jump ring")
+	       (movetop menu-item "Move to Top" simple-call-tree-move-top
+			:help "Goto the top header of this subtree")
+	       (movenext1 menu-item "Next Branch" simple-call-tree-move-next
+			  :help "Goto the next branch")
+	       (moveprev1 menu-item "Previous Branch" simple-call-tree-move-prev
+			  :help "Goto the previous branch")
+	       (movenext2 menu-item"Next Branch Same Level" simple-call-tree-move-next-samelevel
+			  :help "Goto the next branch at the same level as this one"
+			  :key "N")
+	       (moveprev2 menu-item"Previous Branch Same Level" simple-call-tree-move-prev-samelevel
+			  :help "Goto the previous branch at the same level as this one"
+			  :key "P")
+	       (movenext3 menu-item "Next TODO header" simple-call-tree-move-next-todo
+			  :help "Goto next header with a TODO state")
+	       (moveprev3 menu-item "Previous TODO header" simple-call-tree-move-prev-todo
+			  :help "Goto previous header with a TODO state")
+	       )]
       ["---" "---"]
       ["Cycle Tree Visibility" outline-cycle
        :help "Cycle through different tree visibility states"
