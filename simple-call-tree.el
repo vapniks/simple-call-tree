@@ -1513,23 +1513,23 @@ If REMOVE is non-nil remove the tags instead."
 If optional arg FILES is supplied it specifies a list of files to search for 
 functions to display in the tree. When called interactively with a prefix arg, 
 files will be prompted for and only functions in the current buffer will be used."
-  (interactive (if current-prefix-arg
-		   (let (dir regexp files)
-		     (while (progn
-			      (setq dir (read-directory-name "Dir containing files to add: "))
-			      (list-directory dir)
-			      (setq regexp (read-regexp "Regexp matching filenames (RET to finish)"))
-			      (unless (string= regexp "")
-				(mapc (lambda (name) (if (string-match regexp name)
-							 (add-to-list 'files (concat dir name))))
-				      (directory-files dir)))))
-		     files)))
+  (interactive (when current-prefix-arg
+		 (let (dir regexp files)
+		   (while (progn
+			    (setq dir (read-directory-name "Dir containing files to add: "))
+			    (list-directory dir)
+			    (setq regexp (read-regexp "Regexp matching filenames (RET to finish)"))
+			    (unless (string= regexp "")
+			      (mapc (lambda (name) (if (string-match regexp name)
+						       (add-to-list 'files (concat dir name))))
+				    (directory-files dir)))))
+		   files)))
   (let ((buffers (save-excursion
 		   (cl-loop for file in files
 			    collect (find-file file)))))
-    (if (or (not files)
-	    (called-interactively-p 'any))
-        (add-to-list 'buffers (current-buffer)))
+    (when (or (not files)
+	      (called-interactively-p 'any))
+      (add-to-list 'buffers (current-buffer)))
     ;; If we already have a call tree for those buffers, just redisplay it
     (if (and (get-buffer simple-call-tree-buffer-name)
 	     (not (cl-set-exclusive-or
@@ -1581,7 +1581,8 @@ If optional arg WIDE is non-nil then the *Simple Call Tree* buffer will be widen
 otherwise it will be narrowed around FUNC."
   (interactive (list (if current-prefix-arg
                          (which-function)
-                       (simple-call-tree-get-function-at-point (current-buffer)))))
+                       (simple-call-tree-get-function-at-point (current-buffer)))
+		     current-prefix-arg))
   (if (simple-call-tree-get-item func)
       (if (get-buffer simple-call-tree-buffer-name)
           (switch-to-buffer simple-call-tree-buffer-name)
