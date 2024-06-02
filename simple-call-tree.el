@@ -2260,10 +2260,10 @@ need to move to the appropriate child node before invoking again."
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-change-maxdepth (maxdepth)
   "Alter the maximum tree depth (MAXDEPTH) in the *Simple Call Tree* buffer."
-  (interactive "P")
-  (setq simple-call-tree-current-maxdepth
-        (if current-prefix-arg (prefix-numeric-value current-prefix-arg)
-          (floor (abs (read-number "Maximum depth to display: " 2)))))
+  (interactive (list
+		(if current-prefix-arg (prefix-numeric-value current-prefix-arg)
+		  (floor (abs (read-number "Maximum depth to display: " 2))))))
+  (setq simple-call-tree-current-maxdepth maxdepth)
   (let ((fm fm-working))
     (when fm (simple-call-tree-delete-other-windows))
     (simple-call-tree-revert 1)
@@ -2311,7 +2311,7 @@ If called with a prefix ARG the portion viewed will be the opposite to normal (e
           (middle (recenter))
           (bottom (recenter -1)))))))
 
-;; simple-call-tree-info: CHECK
+;; simple-call-tree-info: CHECK  
 (cl-defun simple-call-tree-adaptive-split (c2t v2h hside vside &optional (minh 5) (minv 2))
   "Return values for split size & orientation, based on call tree statistics.
 The split is determined according to parameters defined in `simple-call-tree-window-splits'.
