@@ -1546,7 +1546,7 @@ files will be prompted for and only functions in the current buffer will be used
 			      (mapc (lambda (name) (if (string-match regexp name)
 						       (add-to-list 'files (concat dir name))))
 				    (directory-files dir)))))
-		   files)))
+		   (list files))))
   (let ((buffers (save-excursion
 		   (cl-loop for file in files
 			    collect (find-file file)))))
