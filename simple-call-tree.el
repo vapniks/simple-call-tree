@@ -1571,6 +1571,21 @@ will be prompted for and only functions in the current buffer will be used."
   (when maxdepth (simple-call-tree-change-maxdepth maxdepth)))
 
 ;;;###autoload
+;; simple-call-tree-info: CHECK
+(defun simple-call-tree-display-buffer-other-window (&optional files maxdepth)
+  (interactive)
+  "Display call tree for current buffer in other window.
+FILES & MAXDEPTH args are same as for `simple-call-tree-display-buffer'."
+  (let ((curbuf (current-buffer))
+	(pos (point)))
+    (if (called-interactively-p 'any)
+	(call-interactively 'simple-call-tree-display-buffer)
+      (simple-call-tree-display-buffer files maxdepth))
+    (switch-to-buffer curbuf)
+    (goto-char pos)
+    (display-buffer simple-call-tree-buffer-name)))
+
+;;;###autoload
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-build-tree (&optional buffers)
   "Build the simple-call-tree and display it in the \"*Simple Call Tree*\" buffer.
