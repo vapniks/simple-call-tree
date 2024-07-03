@@ -859,6 +859,8 @@ as a flat list."
   (define-key simple-call-tree-mode-map (kbd "P") 'simple-call-tree-move-prev-samelevel)
   (define-key simple-call-tree-mode-map (kbd "M-p") 'simple-call-tree-move-prev-todo)
   (define-key simple-call-tree-mode-map (kbd "M-n") 'simple-call-tree-move-next-todo)
+  (define-key simple-call-tree-mode-map (kbd "C->") 'simple-call-tree-move-next-marked)
+  (define-key simple-call-tree-mode-map (kbd "C-<") 'simple-call-tree-move-prev-marked)
   (define-key simple-call-tree-mode-map (kbd "M-g n") 'simple-call-tree-move-next-marked)
   (define-key simple-call-tree-mode-map (kbd "M-g p") 'simple-call-tree-move-prev-marked)
   (define-key simple-call-tree-mode-map (kbd "M-g M-n") 'simple-call-tree-move-next-marked)
@@ -995,17 +997,20 @@ as a flat list."
 			  :help "Goto the next branch")
 	       (moveprev1 menu-item "Previous Branch" simple-call-tree-move-prev
 			  :help "Goto the previous branch")
-	       (movenext2 menu-item"Next Branch Same Level" simple-call-tree-move-next-samelevel
+	       (movenext2 menu-item "Next Branch Same Level" simple-call-tree-move-next-samelevel
 			  :help "Goto the next branch at the same level as this one"
 			  :key "N")
-	       (moveprev2 menu-item"Previous Branch Same Level" simple-call-tree-move-prev-samelevel
+	       (moveprev2 menu-item "Previous Branch Same Level" simple-call-tree-move-prev-samelevel
 			  :help "Goto the previous branch at the same level as this one"
 			  :key "P")
 	       (movenext3 menu-item "Next TODO header" simple-call-tree-move-next-todo
 			  :help "Goto next header with a TODO state")
 	       (moveprev3 menu-item "Previous TODO header" simple-call-tree-move-prev-todo
 			  :help "Goto previous header with a TODO state")
-	       )]
+	       (movenext4 menu-item "Next marked item" simple-call-tree-move-next-marked
+			  :help "Goto next marked item")
+	       (moveprev4 menu-item "Previous marked item" simple-call-tree-move-prev-marked
+			  :help "Goto previous marked item"))]
       ["---" "---"]
       ["Cycle Tree Visibility" outline-cycle
        :help "Cycle through different tree visibility states"
@@ -2536,6 +2541,7 @@ When called interactively the call chain at point is used for CHAIN."
   (message "Added %s to `simple-call-tree-jump-ring'"
 	   (nth (get-text-property 0 'leaf (car chain)) chain)))
 
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-jump-ring-remove (idx)
   "Remove the current item from the jump-ring.
 If a numeric prefix arg is used or IDX is an integer then the 
