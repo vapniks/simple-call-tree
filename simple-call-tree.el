@@ -1538,11 +1538,12 @@ If REMOVE is non-nil remove the tags instead."
 ;; simple-call-tree-info: DONE
 (cl-defun simple-call-tree-display-buffer (&optional files maxdepth)
   "Display call tree for current buffer.
-If optional arg FILES is supplied it specifies a list of files to search for 
-functions to display in the tree, and optional arg MAXDEPTH is the maximum depth
-to display initially. When called interactively with a numeric prefix arg, that
-will be used for maxdepth, when called with \\<universal-argument> FILES & MAXDEPTH
-will be prompted for and only functions in the current buffer will be used."
+If optional arg FILES is supplied it specifies a list containing filenames &/or (DIR . REGEXP) 
+pairs which are passed as arguments to `directory-files-recursively'.
+The resulting files are used to search for functions to display in the tree.
+The optional arg MAXDEPTH is the maximum depth to display initially. When called interactively 
+with a numeric prefix arg, that will be used for maxdepth, when called with \\<universal-argument> 
+FILES & MAXDEPTH will be prompted for and only functions in the current buffer will be used."
   (interactive (when current-prefix-arg
 		 (if (listp current-prefix-arg)
 		     (let (dir regexp files)
@@ -1558,7 +1559,9 @@ will be prompted for and only functions in the current buffer will be used."
 		   (list nil (abs (prefix-numeric-value current-prefix-arg))))))
   (let ((buffers (save-excursion
 		   (cl-loop for file in files
-			    collect (find-file file)))))
+			    if (stringp file) collect (find-file file)
+			    else append (mapcar 'find-file
+						(directory-files-recursively (car file) (cdr file)))))))
     (when (or (not files)
 	      (called-interactively-p 'any))
       (add-to-list 'buffers (current-buffer)))
