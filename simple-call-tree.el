@@ -2451,7 +2451,7 @@ If either string has no face then they are assumed to be the same item."
 If available the 'face property of FNSTR is checked to make sure we have the correct item
 for cases where there are two different types of object with the same name.
 Return the position of the start of the item or nil if it couldn't be found."
-  (let* ((fnregex (regexp-opt (list fnstr)))
+  (let* ((fnregex (concat "\\_<" (regexp-opt (list fnstr)) "\\_>"))
          (lineregex (concat "^[|*]\\( \\w+\\)?\\( \\[#.\\]\\)? \\("
                             fnregex "\\)\\s-*\\(:.*:\\)?"))
          found)
