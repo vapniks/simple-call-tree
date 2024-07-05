@@ -759,6 +759,17 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
   :type '(alist :key-type (string :tag "Tag name")
                 :value-type (character :tag "Access char")))
 
+;; simple-call-tree-info: CHECK
+(defcustom simple-call-tree-notes-functions
+  '(("TODO notes" . simple-call-tree-get-todo-notes)
+    ("Docstring" . simple-call-tree-get-docstring)
+    ("None" . ""))
+  "Alist of (DESCRIPTION . NOTES) used for selecting the NOTES arg of `simple-call-tree-display-notes'."
+  :group 'simple-call-tree
+  :type '(alist :key-type (string :tag "Description")
+		:value-type (function :tag "Function"
+				      :help-echo "Function takes function name as arg and returns a string")))
+
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-org-todo-keywords nil
   "Return list of all TODO states.
@@ -2738,36 +2749,40 @@ This just calls `simple-call-tree-apply-command' with the `query-replace-regexp'
     (setq fm-working nil))
   (delete-other-windows))
 
-;; simple-call-tree-info: TODO
+;; simple-call-tree-info: CHECK
 (defun simple-call-tree-display-notes (func notes)
   "Append NOTES to FUNC in *Simple Call Tree* buffer.
-If notes is a function then call it with argument FUNC to obtain notes to be appended."
+NOTES can be a string, or a function to be called with argument FUNC to obtain notes to be appended."
   (interactive (list (or (simple-call-tree-get-toplevel)
 			 (simple-call-tree-get-function-at-point))
-		     'simple-call-tree-get-todo-notes))
+		     (alist-get (completing-read "Append text to call tree items: "
+						 simple-call-tree-notes-functions)
+				simple-call-tree-notes-functions)))
   (let ((fmp fm-working))
     (when (simple-call-tree-goto-func func)
-      (if fmp (fm-toggle))
-      (forward-line 0)
-      (if (re-search-forward "^[|*]\\(?: +\\w+\\)?\\(?: \\[#.\\]\\)? \\(?:\\S-+\\)"
-			     (line-end-position) t)
-	  (let* ((matchstr (match-string 0))
-		 (notes1 (replace-regexp-in-string
-			  "\n" " " (cl-typecase notes
-				     (string notes)
-				     (function (funcall notes func))
-				     (t (error "Invalid NOTES arg")))))
-		 (notesface (get-text-property 0 'face notes1))
-		 (notes2 (propertize (substring notes1 0 (min (length notes1)
-							      (- (frame-width) (length matchstr))))
-				     'font-lock-face (list :inherit (or notesface 'default) :underline nil)))
-		 (show-trailing-whitespace t))
-	    (read-only-mode -1)
-	    (if (looking-at ".") (kill-line))
-	    (insert (concat "	" notes2))
-	    (read-only-mode 1)
-	    (if (called-interactively-p 'any)
-		(simple-call-tree-move-next-samelevel))))
+      (save-excursion
+	(if fmp (fm-toggle))
+	(forward-line 0)
+	(if (re-search-forward "^[|*]\\(?: +\\w+\\)?\\(?: \\[#.\\]\\)? \\(?:\\S-+\\)"
+			       (line-end-position) t)
+	    (let* ((matchstr (match-string 0))
+		   (notes1 (replace-regexp-in-string
+			    "\n" " " (cl-typecase notes
+				       (string notes)
+				       (function (funcall notes func))
+				       (t (error "Invalid NOTES arg")))))
+		   (notesface (get-text-property 0 'face notes1))
+		   (notes2 (propertize (substring notes1 0 (min (length notes1)
+								(- (frame-width) (length matchstr))))
+				       'font-lock-face (list :inherit (or notesface 'default) :underline nil)))
+		   (show-trailing-whitespace t))
+	      (read-only-mode -1)
+	      (if (looking-at ".") (kill-line))
+	      (insert (concat "	" notes2))
+	      (read-only-mode 1)
+	      ;; (if (called-interactively-p 'any)
+	      ;; 	(simple-call-tree-move-next-samelevel))
+	      )))
       (if fmp (fm-toggle)))))
 
 ;; simple-call-tree-info: DONE
