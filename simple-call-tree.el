@@ -1144,6 +1144,7 @@ be shown in the tree.")
 (defvar simple-call-tree-buffers nil
   "Buffers analyzed to create the simple-call-tree.")
 
+;; simple-call-tree-info: DONE
 (defvar simple-call-tree-buffer-name "*Simple Call Tree*"
   "Name for the simple call tree buffer.")
 
@@ -2452,7 +2453,7 @@ for cases where there are two different types of object with the same name.
 Return the position of the start of the item or nil if it couldn't be found."
   (let* ((fnregex (regexp-opt (list fnstr)))
          (lineregex (concat "^[|*]\\( \\w+\\)?\\( \\[#.\\]\\)? \\("
-                            fnregex "\\)\\s-*\\(:.*:\\)?$"))
+                            fnregex "\\)\\s-*\\(:.*:\\)?"))
          found)
     (with-current-buffer simple-call-tree-buffer-name
       (widen)
@@ -2737,26 +2738,71 @@ This just calls `simple-call-tree-apply-command' with the `query-replace-regexp'
     (setq fm-working nil))
   (delete-other-windows))
 
-;; Change so that it only marks visible items
-;; simple-call-tree-info: DONE
+;; simple-call-tree-info: TODO
+(defun simple-call-tree-display-notes (func notes)
+  "Append NOTES to FUNC in *Simple Call Tree* buffer.
+If notes is a function then call it with argument FUNC to obtain notes to be appended."
+  (interactive (list (or (simple-call-tree-get-toplevel)
+			 (simple-call-tree-get-function-at-point))
+		     'simple-call-tree-get-todo-notes))
+  (let ((fmp fm-working))
+    (when (simple-call-tree-goto-func func)
+      (if fmp (fm-toggle))
+      (forward-line 0)
+      (if (re-search-forward "^[|*]\\(?: +\\w+\\)?\\(?: \\[#.\\]\\)? \\(?:\\S-+\\)"
+			     (line-end-position) t)
+	  (let* ((matchstr (match-string 0))
+		 (notes1 (replace-regexp-in-string
+			  "\n" " " (cl-typecase notes
+				     (string notes)
+				     (function (funcall notes func))
+				     (t (error "Invalid NOTES arg")))))
+		 (notesface (get-text-property 0 'face notes1))
+		 (notes2 (propertize (substring notes1 0 (min (length notes1)
+							      (- (frame-width) (length matchstr))))
+				     'font-lock-face (list :inherit (or notesface 'default) :underline nil)))
+		 (show-trailing-whitespace t))
+	    (read-only-mode -1)
+	    (if (looking-at ".") (kill-line))
+	    (insert (concat "	" notes2))
+	    (read-only-mode 1)
+	    (if (called-interactively-p 'any)
+		(simple-call-tree-move-next-samelevel))))
+      (if fmp (fm-toggle)))))
+
+;; simple-call-tree-info: CHECK
+(defun simple-call-tree-get-todo-notes (func)
+  "Get any notes following simple-call-tree TODO state in the source code for FUNC."
+  (let* ((marker (cadar (simple-call-tree-get-item func)))
+	 (buf (marker-buffer marker))
+	 (pos (marker-position marker)))
+    (with-current-buffer buf
+      (save-excursion
+	(goto-char pos)
+	(forward-line -2)
+	(if (re-search-forward
+	     "simple-call-tree-info:\\s-*\\(?:\\w+\\)?\\s-*\\(?:\\[#[A-Z]\\]\\)?\\s-*\\(?::[a-zA-Z0-9:,;-_]+:\\)?"
+	     pos t)
+	    (buffer-substring (point) (line-end-position)))))))
+
+;; simple-call-tree-info: TODO  Change so that it only marks visible items
 (defun simple-call-tree-mark (func)
   "Mark the item named FUNC.
 If FUNC is nil then mark the current line and add the item to `simple-call-tree-marked-items'."
   (interactive (list (or (simple-call-tree-get-toplevel)
                          (simple-call-tree-get-function-at-point))))
-  (if (and (or (not func) (simple-call-tree-goto-func func))
-           (progn (beginning-of-line)
-                  (re-search-forward "^\\([|*]\\)\\( +\\w+\\)?\\( \\[#.\\]\\)? \\(\\S-+\\)"
-                                     (line-end-position) t)))
-      (progn
-        (read-only-mode -1)
-        (replace-match "*" nil t nil 1)
-        (read-only-mode 1)
-        (add-to-list 'simple-call-tree-marked-items
-                     (or func (match-string 4))
-                     nil 'simple-call-tree-compare-items)
-        (if (called-interactively-p 'any)
-            (simple-call-tree-move-next-samelevel)))))
+  (when (and (or (not func) (simple-call-tree-goto-func func))
+	     (progn (beginning-of-line)
+		    (re-search-forward "^\\([|*]\\)\\( +\\w+\\)?\\( \\[#.\\]\\)? \\(\\S-+\\)"
+				       (line-end-position) t)))
+    (read-only-mode -1)
+    (replace-match "*" nil t nil 1)
+    (read-only-mode 1)
+    (add-to-list 'simple-call-tree-marked-items
+		 (or func (match-string 4))
+		 nil 'simple-call-tree-compare-items)
+    (if (called-interactively-p 'any)
+	(simple-call-tree-move-next-samelevel))))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-unmark (func)
