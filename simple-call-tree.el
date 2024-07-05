@@ -2770,7 +2770,7 @@ If notes is a function then call it with argument FUNC to obtain notes to be app
 		(simple-call-tree-move-next-samelevel))))
       (if fmp (fm-toggle)))))
 
-;; simple-call-tree-info: CHECK
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-get-todo-notes (func)
   "Get any notes following simple-call-tree TODO state in the source code for FUNC."
   (let* ((marker (cadar (simple-call-tree-get-item func)))
@@ -2784,6 +2784,25 @@ If notes is a function then call it with argument FUNC to obtain notes to be app
 	     "simple-call-tree-info:\\s-*\\(?:\\w+\\)?\\s-*\\(?:\\[#[A-Z]\\]\\)?\\s-*\\(?::[a-zA-Z0-9:,;-_]+:\\)?"
 	     pos t)
 	    (buffer-substring (point) (line-end-position)))))))
+
+;; simple-call-tree-info: CHECK
+(defun simple-call-tree-get-docstring (func)
+  "Get the first line of the docstring for function FUNC.
+Currently this only works for elisp functions."
+  (let* ((marker (cadar (simple-call-tree-get-item func)))
+	 (buf (marker-buffer marker))
+	 (pos (marker-position marker)))
+    (with-current-buffer buf
+      (save-excursion
+	(goto-char pos)
+	(cl-case major-mode
+	  (emacs-lisp-mode
+	   (forward-sexp 1)
+	   (forward-line 1)
+	   (if (looking-at "^\\s-*\".*")
+	       (replace-regexp-in-string
+		"\\s-*\"\\(.*?\\)\\(\"\\)?\\s-*$" "\\1"
+		(buffer-substring (point) (line-end-position))))))))))
 
 ;; simple-call-tree-info: TODO  Change so that it only marks visible items
 (defun simple-call-tree-mark (func)
