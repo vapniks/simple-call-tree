@@ -1194,9 +1194,11 @@ The value of `simple-call-tree-buffer-name' will be changed for all buffers in `
 		(read-string "New name: "
 			     (concat "*Simple Call Tree: "
 				     (buffer-name (car simple-call-tree-buffers)) "*"))))
+  
   (dolist (buf (cons simple-call-tree-buffer-name simple-call-tree-buffers))
     (with-current-buffer buf
-      (setq-local simple-call-tree-buffer-name name))))
+      (setq-local simple-call-tree-buffer-name name)))
+  (rename-buffer name))
 
 ;; simple-call-tree-info: DONE
 (cl-defun simple-call-tree-analyze (&optional (buffers (list (current-buffer))))
@@ -1605,10 +1607,9 @@ FILES & MAXDEPTH will be prompted for and only functions in the current buffer w
 	(switch-to-buffer simple-call-tree-buffer-name)
       (let ((bufname (concat "*Simple Call Tree: "
 			     (buffer-name (car buffers)) "*")))
-	(dolist (buf buffers)
-	  (with-current-buffer buf
-	    (setq-local simple-call-tree-buffer-name bufname))))
-      (simple-call-tree-build-tree buffers)
+	(simple-call-tree-build-tree buffers)
+	(setq-local simple-call-tree-buffers buffers)
+	(simple-call-tree-rename-buffer bufname))
       (setq simple-call-tree-jump-ring (make-ring simple-call-tree-jump-ring-max)
 	    simple-call-tree-jump-ring-index 0)
       (if (with-current-buffer (car buffers)
@@ -1680,9 +1681,12 @@ otherwise it will be narrowed around FUNC."
 		      simple-call-tree-alist))
 	(if (get-buffer simple-call-tree-buffer-name)
 	    (switch-to-buffer simple-call-tree-buffer-name)
+	  (unless (member (current-buffer) simple-call-tree-buffers)
+	    (setq-local simple-call-tree-buffers (list (current-buffer))))
 	  (setq-local simple-call-tree-buffer-name
 		      (concat "*Simple Call Tree: "
-			      (buffer-name (car simple-call-tree-buffers)) "*"))
+			      (buffer-name (car simple-call-tree-buffers))
+			      "*"))
 	  (simple-call-tree-list-callers-and-functions))
       (when (get-buffer simple-call-tree-buffer-name) ;in case buffer contains different call-tree
 	(kill-buffer simple-call-tree-buffer-name))
