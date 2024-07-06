@@ -1601,10 +1601,14 @@ FILES & MAXDEPTH will be prompted for and only functions in the current buffer w
 	      (called-interactively-p 'any))
       (add-to-list 'buffers (current-buffer)))
     ;; If we already have a call tree for those buffers, just redisplay it
-    (if (and (get-buffer simple-call-tree-buffer-name)
-	     (not (cl-set-exclusive-or
-		   buffers simple-call-tree-buffers)))
-	(switch-to-buffer simple-call-tree-buffer-name)
+    ;; (need to search all buffers in case `simple-call-tree-display-buffer' was called from
+    ;;  a buffer not included in its args).
+    (aif (cl-find-if (lambda (b)
+		       (with-current-buffer b
+			 (and (eq major-mode 'simple-call-tree-mode)
+			      (cl-subsetp buffers simple-call-tree-buffers))))
+		     (buffer-list))
+	(switch-to-buffer it)
       (let ((bufname (concat "*Simple Call Tree: "
 			     (buffer-name (car buffers)) "*")))
 	(simple-call-tree-build-tree buffers)
