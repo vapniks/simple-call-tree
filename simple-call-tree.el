@@ -1719,6 +1719,7 @@ By default FUNCLIST is set to `simple-call-tree-alist'."
     (if (not (eq major-mode 'simple-call-tree-mode))
 	(simple-call-tree-mode))
     (setq-local simple-call-tree-buffer-name bufname)
+    (setq-local simple-call-tree-alist funclist)
     (read-only-mode -1)
     (erase-buffer)
     (let ((maxdepth (max maxdepth 1))
