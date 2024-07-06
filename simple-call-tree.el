@@ -1184,6 +1184,18 @@ be shown in the tree.")
 (defvar simple-call-tree-apply-command-history nil
   "History list for `simple-call-tree-apply-command'.")
 
+;; simple-call-tree-info: CHECK
+(defun simple-call-tree-rename-buffer (name)
+  "Rename the *Simple Call Tree* buffer to NAME.
+The value of `simple-call-tree-buffer-name' will be changed for all buffers in `simple-call-tree-buffers'."
+  (interactive (list
+		(read-string "New name: "
+			     (concat "*Simple Call Tree: "
+				     (buffer-name (car simple-call-tree-buffers)) "*"))))
+  (dolist (buf (cons simple-call-tree-buffer-name simple-call-tree-buffers))
+    (with-current-buffer buf
+      (setq-local simple-call-tree-buffer-name name))))
+
 ;; simple-call-tree-info: DONE
 (cl-defun simple-call-tree-analyze (&optional (buffers (list (current-buffer))))
   "Analyze the current buffer, or the buffers in list BUFFERS.
@@ -1690,28 +1702,30 @@ otherwise it will be narrowed around FUNC."
 								 (funclist simple-call-tree-alist))
   "List callers and functions in FUNCLIST to depth MAXDEPTH.
 By default FUNCLIST is set to `simple-call-tree-alist'."
-  (switch-to-buffer (get-buffer-create simple-call-tree-buffer-name))
-  (setq simple-call-tree-max-linewidth 0
-	simple-call-tree-max-header-size 1)
-  (if (not (eq major-mode 'simple-call-tree-mode))
-      (simple-call-tree-mode))
-  (read-only-mode -1)
-  (erase-buffer)
-  (let ((maxdepth (max maxdepth 1))
-	(maxwidth simple-call-tree-max-linewidth)
-	(maxsize 0))
-    (dolist (item funclist)
-      (aprog1 (simple-call-tree-list-callees-recursively
-	       (car item)
-	       maxdepth 1 funclist)
-	(setq maxwidth (max maxwidth (car it))
-	      maxsize (max maxsize (cadr it)))))
-    (setq simple-call-tree-current-maxdepth (max maxdepth 1)
-	  simple-call-tree-max-linewidth maxwidth
-	  simple-call-tree-max-header-size maxsize)
-    ;; remove the empty line at the end
-    (delete-char -1)
-    (read-only-mode 1)))
+  (let ((bufname simple-call-tree-buffer-name))
+    (switch-to-buffer (get-buffer-create bufname))
+    (setq simple-call-tree-max-linewidth 0
+	  simple-call-tree-max-header-size 1)
+    (if (not (eq major-mode 'simple-call-tree-mode))
+	(simple-call-tree-mode))
+    (setq-local simple-call-tree-buffer-name bufname)
+    (read-only-mode -1)
+    (erase-buffer)
+    (let ((maxdepth (max maxdepth 1))
+	  (maxwidth simple-call-tree-max-linewidth)
+	  (maxsize 0))
+      (dolist (item funclist)
+	(aprog1 (simple-call-tree-list-callees-recursively
+		 (car item)
+		 maxdepth 1 funclist)
+	  (setq maxwidth (max maxwidth (car it))
+		maxsize (max maxsize (cadr it)))))
+      (setq simple-call-tree-current-maxdepth (max maxdepth 1)
+	    simple-call-tree-max-linewidth maxwidth
+	    simple-call-tree-max-header-size maxsize)
+      ;; remove the empty line at the end
+      (delete-char -1)
+      (read-only-mode 1))))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-listed-items nil
