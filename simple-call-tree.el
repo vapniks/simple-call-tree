@@ -1097,7 +1097,7 @@ as a flat list."
   :type 'face)
 
 ;; simple-call-tree-info: DONE
-(defvar simple-call-tree-alist nil
+(defvar-local simple-call-tree-alist nil
   "Alist of functions and the functions they call, and markers for their locations.
 Each element is a list of lists. The first list in each element is in the form
  (FUNC START END) where FUNC is the function name and START & END are markers for the
@@ -1106,7 +1106,7 @@ for functions called by FUNC, and are in the form (FUNC2 POS) where FUNC2 is the
 of the called function and POS is the position of the call.")
 
 ;; simple-call-tree-info: DONE
-(defvar simple-call-tree-inverted-alist nil
+(defvar-local simple-call-tree-inverted-alist nil
   "Alist of functions and the functions that call them, and markers for their locations.
 This is an inverted version of `simple-call-tree-alist'.")
 
@@ -1156,11 +1156,11 @@ I.e. if a function makes multiple calls to the same function then only one of th
 be shown in the tree.")
 
 ;; simple-call-tree-info: DONE
-(defvar simple-call-tree-buffers nil
+(defvar-local simple-call-tree-buffers nil
   "Buffers analyzed to create the simple-call-tree.")
 
 ;; simple-call-tree-info: DONE
-(defvar simple-call-tree-buffer-name "*Simple Call Tree*"
+(defvar-local simple-call-tree-buffer-name "*Simple Call Tree*"
   "Name for the simple call tree buffer.")
 
 ;; simple-call-tree-info: DONE
