@@ -2465,6 +2465,12 @@ the source buffer to the function."
 	 (old-split-window-function split-window-preferred-function)
 	 (split-window-preferred-function 'simple-call-tree-split-window))
     (pop-to-buffer buf)
+    ;; pop-to-buffer doesn't always work if the call-tree covers multiple buffers
+    ;; and a different one is currently displayed. In this case reuse the window displaying that buffer.
+    (if (not (get-buffer-window buf))
+	(awhen (cl-find-if 'get-buffer-window simple-call-tree-buffers)
+	  (select-window it)
+	  (switch-to-buffer buf)))
     (goto-char pos)
     (unless (not (featurep 'fm))
       (fm-unhighlight 0)
