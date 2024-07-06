@@ -761,7 +761,7 @@ END-REGEXP a regular expression to match the end of a token, by default this is 
 
 ;; simple-call-tree-info: CHECK
 (defcustom simple-call-tree-notes-functions
-  '(("TODO notes" . simple-call-tree-get-todo-notes)
+  '(("TODO notes" . simple-call-tree-get-todo-note)
     ("Docstring" . simple-call-tree-get-docstring)
     ("None" . ""))
   "Alist of (DESCRIPTION . NOTES) used for selecting the NOTES arg of `simple-call-tree-display-notes'."
@@ -803,7 +803,8 @@ as a flat list."
   :group 'simple-call-tree
   (setq simple-call-tree-mode-map (make-keymap)
         buffer-read-only nil
-	comment-start ";")
+	comment-start ";"
+	truncate-lines t)
   (outline-minor-mode 1)
   (setq outline-regexp "^[|*]\\([-<>]*\\)\\(\\( +\\w+\\)?\\)\\(\\( \\[#.\\]\\)?\\) "
         outline-level 'simple-call-tree-outline-level)
@@ -908,6 +909,7 @@ as a flat list."
   (define-key simple-call-tree-mode-map (kbd "C-c C-q") 'simple-call-tree-set-tags)
   (define-key simple-call-tree-mode-map (kbd "C-c C-a") 'simple-call-tree-add-tags)
   (define-key simple-call-tree-mode-map (kbd "C-c C-t") 'simple-call-tree-set-todo)
+  (define-key simple-call-tree-mode-map (kbd "C-c C-n") 'simple-call-tree-display-notes)
   (define-key simple-call-tree-mode-map (kbd "C-c C-v") 'simple-call-tree-change-default-view)
   (define-key simple-call-tree-mode-map (kbd "C-c ,") 'simple-call-tree-set-priority)
   ;; Set the keymap
@@ -972,6 +974,8 @@ as a flat list."
                      :help "Set tags for current/marked items")
                (addtags menu-item "Add tags..." simple-call-tree-add-tags
                         :help "Add tags to current/marked items (with prefix arg remove tags)")
+	       (addnotes menu-item "Display notes..." simple-call-tree-display-notes
+			 :help "Display notes/docstring after function/variable names...")
                (queryreplace menu-item "Replace String..." simple-call-tree-query-replace
                              :help "Perform query-replace on the function at point")
                (queryreplaceregex menu-item "Replace Regexp..." simple-call-tree-query-replace-regexp
@@ -1172,6 +1176,7 @@ be shown in the tree.")
 (defvar-local simple-call-tree-killed-items nil
   "List of names of items in the *Simple Call Tree* buffer that have been killed.")
 
+;; simple-call-tree-info: DONE
 (defvar simple-call-tree-regex-maxlen 10000
   "Maximum allowed length for regular expressions.")
 
@@ -1928,7 +1933,7 @@ in the list of the function at point (this is altered when the chain is reversed
 	    (simple-call-tree-invert-chain chain)
 	  chain)))))
 
-;; simple-call-tree: CHECK  
+;; simple-call-tree-info: CHECK
 (defun simple-call-tree-invert-chain (chain)
   "Invert a CHAIN of function calls, and update the 'leaf property of the first element.
 CHAIN is a list as returned by `simple-call-tree-get-chain',
@@ -1948,7 +1953,7 @@ i.e. a list of function names with location properties containing markers."
       (setprop prevfunc 'leaf (min (1- (length chain)) (- (length chain) leafpos)))
       (cons prevfunc cdrchain))))
 
-;; simple-call-tree: CHECK
+;; simple-call-tree-info: CHECK
 (defun simple-call-tree-goto-chain (chain)
   "Goto the header corresponding to the leaf function call in CHAIN.
 CHAIN is assumed to be in non-inverted order, and if the current tree is inverted
@@ -2750,44 +2755,44 @@ This just calls `simple-call-tree-apply-command' with the `query-replace-regexp'
   (delete-other-windows))
 
 ;; simple-call-tree-info: CHECK
-(defun simple-call-tree-display-notes (func notes)
-  "Append NOTES to FUNC in *Simple Call Tree* buffer.
-NOTES can be a string, or a function to be called with argument FUNC to obtain notes to be appended."
-  (interactive (list (or (simple-call-tree-get-toplevel)
-			 (simple-call-tree-get-function-at-point))
+(defun simple-call-tree-display-notes (funcs notes)
+  "Append NOTES to FUNCS in *Simple Call Tree* buffer.
+NOTES can be a string, or a function to be called with argument FUNCS to obtain notes to be appended."
+  (interactive (list (or simple-call-tree-marked-items
+			 (list (or (simple-call-tree-get-toplevel)
+				   (simple-call-tree-get-function-at-point))))
 		     (alist-get (completing-read "Append text to call tree items: "
 						 simple-call-tree-notes-functions)
 				simple-call-tree-notes-functions)))
   (let ((fmp fm-working))
-    (when (simple-call-tree-goto-func func)
-      (save-excursion
-	(if fmp (fm-toggle))
-	(forward-line 0)
-	(if (re-search-forward "^[|*]\\(?: +\\w+\\)?\\(?: \\[#.\\]\\)? \\(?:\\S-+\\)"
-			       (line-end-position) t)
-	    (let* ((matchstr (match-string 0))
-		   (notes1 (replace-regexp-in-string
-			    "\n" " " (cl-typecase notes
-				       (string notes)
-				       (function (funcall notes func))
-				       (t (error "Invalid NOTES arg")))))
-		   (notesface (get-text-property 0 'face notes1))
-		   (notes2 (propertize (substring notes1 0 (min (length notes1)
-								(- (frame-width) (length matchstr))))
-				       'font-lock-face (list :inherit (or notesface 'default) :underline nil)))
-		   (show-trailing-whitespace t))
-	      (read-only-mode -1)
-	      (if (looking-at ".") (kill-line))
-	      (insert (concat "	" notes2))
-	      (read-only-mode 1)
-	      ;; (if (called-interactively-p 'any)
-	      ;; 	(simple-call-tree-move-next-samelevel))
-	      )))
-      (if fmp (fm-toggle)))))
+    (dolist (func funcs)
+      (when (simple-call-tree-goto-func func)
+	(save-excursion
+	  (if fmp (fm-toggle))
+	  (forward-line 0)
+	  (if (re-search-forward "^[|*]\\(?: +\\w+\\)?\\(?: \\[#.\\]\\)? \\(?:\\S-+\\)"
+				 (line-end-position) t)
+	      (let* ((matchstr (match-string 0))
+		     (notes1 (replace-regexp-in-string
+			      "\n" " " (or (cl-typecase notes
+					     (string notes)
+					     (function (funcall notes func))
+					     (t (error "Invalid NOTES arg")))
+					   "")))
+		     (notesface (get-text-property 0 'face notes1))
+		     (notes2 (propertize (substring notes1 0 (min (length notes1)
+								  (- (frame-width) (length matchstr) 1)))
+					 'font-lock-face (list :inherit (or notesface 'default) :underline nil)))
+		     (show-trailing-whitespace t))
+		(read-only-mode -1)
+		(if (looking-at ".") (kill-line))
+		(insert (concat " " notes2))
+		(read-only-mode 1))))
+	(if fmp (fm-toggle))))))
 
 ;; simple-call-tree-info: DONE
-(defun simple-call-tree-get-todo-notes (func)
-  "Get any notes following simple-call-tree TODO state in the source code for FUNC."
+(defun simple-call-tree-get-todo-note (func)
+  "Get any note following simple-call-tree TODO state in the source code for FUNC."
   (let* ((marker (cadar (simple-call-tree-get-item func)))
 	 (buf (marker-buffer marker))
 	 (pos (marker-position marker)))
@@ -3008,6 +3013,7 @@ If UNMARK is non-nil unmark the items instead."
                       (if (stringp buf) buf (buffer-name buf))))
    unmark))
 
+;; simple-call-tree-info: DONE
 (defun simple-call-tree-kill (func)
   "Remove FUNC from the *Simple Call Tree* buffer.
 Note: you should make sure buffer is not read-only before calling this function."
