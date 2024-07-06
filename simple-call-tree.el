@@ -921,6 +921,8 @@ as a flat list."
        :help "Quit and bury this buffer"]
       ["Rebuild tree" simple-call-tree-build-tree
        :help "Rebuild the call tree"]
+      ["Rename buffer" simple-call-tree-rename-buffer
+       :help "Rename the buffer"]
       ["View Function At Point" simple-call-tree-view-function
        :help "View the function at point"
        :key "v"]
