@@ -2780,9 +2780,9 @@ NOTES can be a string, or a function to be called with argument FUNCS to obtain 
 					     (t (error "Invalid NOTES arg")))
 					   "")))
 		     (notesface (get-text-property 0 'face notes1))
-		     (notes2 (propertize (substring notes1 0 (min (length notes1)
-								  (- (frame-width) (length matchstr) 1)))
-					 'font-lock-face (list :inherit (or notesface 'default) :underline nil)))
+		     (notes2 (propertize notes1
+					 'font-lock-face
+					 (list :inherit (or notesface 'default) :underline nil)))
 		     (show-trailing-whitespace t))
 		(read-only-mode -1)
 		(if (looking-at ".") (kill-line))
