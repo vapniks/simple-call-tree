@@ -1205,9 +1205,9 @@ The result is stored in `simple-call-tree-alist'.
 Optional arg BUFFERS is a list of buffers to analyze together.
 By default it is set to a list containing the current buffer."
   (interactive)
-  (setq simple-call-tree-alist nil)
   ;; First add all the functions defined in the buffers to simple-call-tree-alist.
-  (let (pos oldpos count1 pair nextfunc item endtest oldpos startmark endmark attribs)
+  (let (pos oldpos count1 pair nextfunc item endtest oldpos startmark endmark attribs
+	    tree-alist)
     (dolist (buf buffers)
       (with-current-buffer buf
         (font-lock-default-fontify-buffer)
@@ -1227,10 +1227,10 @@ By default it is set to a list containing the current buffer."
                    (goto-char (- (car pair) (length (cdr pair)))))
                   (t (goto-char (point-max))))
             (setq endmark (point-marker))
-            (add-to-list 'simple-call-tree-alist (list (list nextfunc startmark endmark
-                                                             (car attribs)
-                                                             (second attribs)
-                                                             (third attribs))))
+            (add-to-list 'tree-alist (list (list nextfunc startmark endmark
+						 (car attribs)
+						 (second attribs)
+						 (third attribs))))
             (setq count1 (1+ count1))))))
     ;; Now find functions called
     ;; This is still not exactly right: it will match both abc & abc' on abc'
@@ -1238,7 +1238,7 @@ By default it is set to a list containing the current buffer."
     ;; This happens in haskell mode for example when you have defined two functions
     ;; named func and func' for example.
     (let* ((mode (with-current-buffer
-                     (marker-buffer (second (caar simple-call-tree-alist)))
+                     (marker-buffer (second (caar tree-alist)))
                    major-mode))
            (modevals (assoc major-mode simple-call-tree-major-mode-alist))
            (symstart (or (seventh modevals) "\\_<"))
@@ -1247,7 +1247,7 @@ By default it is set to a list containing the current buffer."
 			 (setq end (match-end 0) i (1+ i)))
 		       i)))
            (symend (or (eighth modevals) "\\_>"))
-           (names (mapcar 'caar simple-call-tree-alist))
+           (names (mapcar 'caar tree-alist))
            ;; May need to make several regexps if there are many names
            ;; (there is a limit on the size of regexp allowed by `re-search-forward')
            (lengths (mapcar 'length names))
@@ -1265,7 +1265,7 @@ By default it is set to a list containing the current buffer."
 				     and do (setq start i sum (nth i lengths)))))
            (invalidfonts (or (third (assoc mode simple-call-tree-major-mode-alist))
                              simple-call-tree-default-invalid-fonts)))
-      (cl-loop for item in simple-call-tree-alist
+      (cl-loop for item in tree-alist
 	       for count2 from 1
 	       for buf = (marker-buffer (second (car item)))
 	       for startpos = (marker-position (second (car item)))
@@ -1286,6 +1286,8 @@ By default it is set to a list containing the current buffer."
 			    (if (not (member face invalidfonts))
 				(push (list (match-string mgrp) (point-marker)) (cdr item)))))
 			(forward-word))))))
+    (setq simple-call-tree-alist tree-alist)
+    (dolist (buf buffers) (with-current-buffer buf (setq simple-call-tree-alist tree-alist)))
     (setq simple-call-tree-inverted-alist (simple-call-tree-invert))
     (message "simple-call-tree done")))
 
