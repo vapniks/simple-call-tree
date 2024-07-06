@@ -2356,7 +2356,7 @@ If called with a prefix ARG the portion viewed will be the opposite to normal (e
           (middle (recenter))
           (bottom (recenter -1)))))))
 
-;; simple-call-tree-info: CHECK  
+;; simple-call-tree-info: TODO this is too complex and doesn't work well
 (cl-defun simple-call-tree-adaptive-split (c2t v2h hside vside &optional (minh 5) (minv 2))
   "Return values for split size & orientation, based on call tree statistics.
 The split is determined according to parameters defined in `simple-call-tree-window-splits'.
