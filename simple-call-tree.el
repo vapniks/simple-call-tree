@@ -2397,10 +2397,10 @@ Use the values in `simple-call-tree-window-splits' to determine the split."
 	  (setq specs (apply 'simple-call-tree-adaptive-split specs)))
 	(when (floatp (car specs))
 	  (setf (car specs)
-		(* (car specs)
-		   (case (cadr specs)
-		     ((above below) (window-height win))
-		     ((left right) (window-width win))))))
+		(round (* (car specs)
+			  (case (cadr specs)
+			    ((above below) (window-height win))
+			    ((left right) (window-width win)))))))
 	(apply 'split-window win specs)))))
 
 ;; simple-call-tree-info: TODO  handle option to show code in separate frame
