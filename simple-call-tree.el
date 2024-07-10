@@ -1139,7 +1139,7 @@ First number is without tags, second number is with tags.")
   :type 'integer)
 
 ;; simple-call-tree-info: DONE
-(defvar simple-call-tree-jump-ring (make-ring simple-call-tree-jump-ring-max)
+(defvar-local simple-call-tree-jump-ring (make-ring simple-call-tree-jump-ring-max)
   "Ring to hold history of functions jumped to in *Simple Call Tree* buffer.")
 
 ;; simple-call-tree-info: DONE
@@ -1611,14 +1611,16 @@ FILES & MAXDEPTH will be prompted for and only functions in the current buffer w
 	(switch-to-buffer it)
       (let ((bufname (concat "*Simple Call Tree: "
 			     (buffer-name (car buffers)) "*")))
-	(simple-call-tree-build-tree buffers)
-	(setq-local simple-call-tree-buffers buffers)
-	(simple-call-tree-rename-buffer bufname))
-      (setq simple-call-tree-jump-ring (make-ring simple-call-tree-jump-ring-max)
-	    simple-call-tree-jump-ring-index 0)
-      (if (with-current-buffer (car buffers)
-	    (eq major-mode 'emacs-lisp-mode))
-	  (add-to-list 'simple-call-tree-apply-command-history "edebug-eval-defun"))))
+	(with-current-buffer (get-buffer-create bufname)
+	  (setq-local simple-call-tree-buffers buffers)
+	  (setq-local simple-call-tree-buffer-name bufname)
+	  (simple-call-tree-rename-buffer bufname)
+	  (simple-call-tree-build-tree buffers)
+	  (setq simple-call-tree-jump-ring (make-ring simple-call-tree-jump-ring-max)
+		simple-call-tree-jump-ring-index 0)
+	  (if (with-current-buffer (car buffers)
+		(eq major-mode 'emacs-lisp-mode))
+	      (add-to-list 'simple-call-tree-apply-command-history "edebug-eval-defun"))))))
   (when maxdepth (simple-call-tree-change-maxdepth maxdepth)))
 
 ;;;###autoload
@@ -1650,7 +1652,7 @@ listed in `simple-call-tree-buffers' will be used."
         simple-call-tree-buffers buffers
 	simple-call-tree-killed-items nil)
   (cl-case simple-call-tree-default-sort-method
-    (position (simple-call-tree-reverse))
+    (position (simple-call-tree-reverse)) ;; this will display the simple-call-tree buffer
     (name (simple-call-tree-sort-by-name))
     (numdescend (simple-call-tree-sort-by-num-descendants 1))
     (face (simple-call-tree-sort-by-face))
@@ -2263,22 +2265,24 @@ The toplevel functions will be sorted, and the functions in each branch will be 
 (defun simple-call-tree-store-state nil
   "Store the current state of the displayed call tree, and return as an alist."
   (move-beginning-of-line nil)
-  (or (re-search-forward outline-regexp nil t)
-      (progn (simple-call-tree-move-prev)
-             (re-search-forward outline-regexp nil t)))
-  (list 'narrowed (if (get-buffer simple-call-tree-buffer-name)
-                      (simple-call-tree-buffer-narrowed-p))
-        'depth simple-call-tree-current-maxdepth
-        'level (if (get-buffer simple-call-tree-buffer-name)
-                   (simple-call-tree-outline-level))
-        'tree (if simple-call-tree-inverted
-                  simple-call-tree-inverted-alist
-                simple-call-tree-alist)
-        'thisfunc (if (get-buffer simple-call-tree-buffer-name)
-                      (simple-call-tree-get-function-at-point))
-        'topfunc (if (get-buffer simple-call-tree-buffer-name)
-                     (simple-call-tree-get-toplevel))
-        'nodups simple-call-tree-nodups))
+  (if (or (re-search-forward outline-regexp nil t)
+	  (progn (simple-call-tree-move-prev)
+		 (re-search-forward outline-regexp nil t)))
+      (list 'narrowed (if (get-buffer simple-call-tree-buffer-name)
+			  (simple-call-tree-buffer-narrowed-p))
+	    'depth simple-call-tree-current-maxdepth
+	    'level (if (get-buffer simple-call-tree-buffer-name)
+		       (simple-call-tree-outline-level))
+	    'tree (if simple-call-tree-inverted
+		      simple-call-tree-inverted-alist
+		    simple-call-tree-alist)
+	    'thisfunc (if (get-buffer simple-call-tree-buffer-name)
+			  (simple-call-tree-get-function-at-point))
+	    'topfunc (if (get-buffer simple-call-tree-buffer-name)
+			 (simple-call-tree-get-toplevel))
+	    'nodups simple-call-tree-nodups)
+    (list 'narrowed nil 'depth nil 'level nil 'tree simple-call-tree-alist
+	  'thisfunc nil 'topfunc nil 'nodups nil)))
 ;; Restore hidden/unhidden state after sorting
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-restore-state (state)
@@ -2643,7 +2647,8 @@ will jump to the 2nd item behind the one removed."
   "Move cursor to the previous item."
   (interactive)
   (outline-previous-visible-heading 1)
-  (goto-char (next-single-property-change (point) 'face)))
+  (aif (next-single-property-change (point) 'face)
+      (goto-char it)))
 
 ;; simple-call-tree-info: DONE
 (defun simple-call-tree-move-next-samelevel nil
