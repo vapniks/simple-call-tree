@@ -2863,12 +2863,12 @@ Currently this only works for elisp functions."
 	(goto-char pos)
 	(cl-case major-mode
 	  (emacs-lisp-mode
-	   (forward-sexp 1)
-	   (forward-line 1)
-	   (if (looking-at "^\\s-*\".*")
-	       (replace-regexp-in-string
-		"\\s-*\"\\(.*?\\)\\(\"\\)?\\s-*$" "\\1"
-		(buffer-substring (point) (line-end-position))))))))))
+	   (when (ignore-errors (or (forward-sexp 1) t))
+	     (forward-line 1)
+	     (if (looking-at "^\\s-*\".*")
+		 (replace-regexp-in-string
+		  "\\s-*\"\\(.*?\\)\\(\"\\)?\\s-*$" "\\1"
+		  (buffer-substring (point) (line-end-position)))))))))))
 
 ;; simple-call-tree-info: TODO  Change so that it only marks visible items
 (defun simple-call-tree-mark (func)
