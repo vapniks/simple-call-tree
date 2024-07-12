@@ -1728,14 +1728,15 @@ otherwise it will be narrowed around FUNC."
   "List callers and functions in FUNCLIST to depth MAXDEPTH.
 By default FUNCLIST is set to `simple-call-tree-alist'."
   (let ((bufname simple-call-tree-buffer-name)
-	(tree-inverted-alist simple-call-tree-inverted-alist))
+	(tree-inverted-alist simple-call-tree-inverted-alist)
+	(tree-alist simple-call-tree-alist))
     (switch-to-buffer (get-buffer-create bufname))
     (setq simple-call-tree-max-linewidth 0
 	  simple-call-tree-max-header-size 1)
     (if (not (eq major-mode 'simple-call-tree-mode))
 	(simple-call-tree-mode))
     (setq-local simple-call-tree-buffer-name bufname)
-    (setq-local simple-call-tree-alist funclist)
+    (setq-local simple-call-tree-alist tree-alist)
     (setq-local simple-call-tree-inverted-alist tree-inverted-alist)
     (read-only-mode -1)
     (erase-buffer)
