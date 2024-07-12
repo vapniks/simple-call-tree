@@ -2831,6 +2831,7 @@ NOTES can be a string, or a function to be called with argument FUNCS to obtain 
 		     (notes1 (replace-regexp-in-string
 			      "\n" " " (or (cl-typecase notes
 					     (string notes)
+					     (null "")
 					     (function (funcall notes func))
 					     (t (error "Invalid NOTES arg")))
 					   "")))
