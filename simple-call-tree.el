@@ -1729,15 +1729,17 @@ otherwise it will be narrowed around FUNC."
 By default FUNCLIST is set to `simple-call-tree-alist'."
   (let ((bufname simple-call-tree-buffer-name)
 	(tree-inverted-alist simple-call-tree-inverted-alist)
-	(tree-alist simple-call-tree-alist))
+	(tree-alist simple-call-tree-alist)
+	(buffers simple-call-tree-buffers))
     (switch-to-buffer (get-buffer-create bufname))
     (setq simple-call-tree-max-linewidth 0
 	  simple-call-tree-max-header-size 1)
     (if (not (eq major-mode 'simple-call-tree-mode))
 	(simple-call-tree-mode))
-    (setq-local simple-call-tree-buffer-name bufname)
-    (setq-local simple-call-tree-alist tree-alist)
-    (setq-local simple-call-tree-inverted-alist tree-inverted-alist)
+    (setq simple-call-tree-buffer-name bufname
+	  simple-call-tree-alist tree-alist
+	  simple-call-tree-inverted-alist tree-inverted-alist
+	  simple-call-tree-buffers buffers)
     (read-only-mode -1)
     (erase-buffer)
     (let ((maxdepth (max maxdepth 1))
@@ -1870,7 +1872,7 @@ and the length including tags."
 	 (todo (fourth item))
 	 (priority (fifth item))
 	 (tags (simple-call-tree-tags-to-string (sixth item)))
-	 ;;(notes (seventh item))
+	 (notes (seventh item))
 	 (pre (concat (if todo (concat " " (propertize todo 'font-lock-face
 						       (org-get-todo-face todo))))
 		      (if priority (propertize (concat " [#" (char-to-string priority) "]")
@@ -1893,8 +1895,7 @@ and the length including tags."
 				     (make-string (max 0 (- (/ (window-width) 2)
 							    (length pre2)))
 						  32)
-				     ;;notes
-				     )))))
+				     notes)))))
     (insert str)
     (length pre2)))
 
