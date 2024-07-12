@@ -1209,7 +1209,7 @@ By default it is set to a list containing the current buffer."
   (interactive)
   ;; First add all the functions defined in the buffers to simple-call-tree-alist.
   (let (pos oldpos count1 pair nextfunc item endtest oldpos startmark endmark attribs
-	    tree-alist)
+	    tree-alist tree-inverted-alist)
     (dolist (buf buffers)
       (with-current-buffer buf
         (font-lock-default-fontify-buffer)
@@ -1242,7 +1242,7 @@ By default it is set to a list containing the current buffer."
     (let* ((mode (with-current-buffer
                      (marker-buffer (second (caar tree-alist)))
                    major-mode))
-           (modevals (assoc major-mode simple-call-tree-major-mode-alist))
+           (modevals (assoc mode simple-call-tree-major-mode-alist))
            (symstart (or (seventh modevals) "\\_<"))
 	   (mgrp (1+ (let ((i 0) (end nil))
 		       (while (string-match "\\\\(" symstart end)
@@ -1289,8 +1289,11 @@ By default it is set to a list containing the current buffer."
 				(push (list (match-string mgrp) (point-marker)) (cdr item)))))
 			(forward-word))))))
     (setq simple-call-tree-alist tree-alist)
-    (dolist (buf buffers) (with-current-buffer buf (setq simple-call-tree-alist tree-alist)))
-    (setq simple-call-tree-inverted-alist (simple-call-tree-invert))
+    (setq tree-inverted-alist (simple-call-tree-invert)
+	  simple-call-tree-inverted-alist tree-inverted-alist)
+    (dolist (buf buffers)
+      (with-current-buffer buf (setq simple-call-tree-alist tree-alist
+				     simple-call-tree-inverted-alist tree-inverted-alist)))
     (message "simple-call-tree done")))
 
 ;; Unable to get this to go significantly faster
@@ -1724,7 +1727,8 @@ otherwise it will be narrowed around FUNC."
 								 (funclist simple-call-tree-alist))
   "List callers and functions in FUNCLIST to depth MAXDEPTH.
 By default FUNCLIST is set to `simple-call-tree-alist'."
-  (let ((bufname simple-call-tree-buffer-name))
+  (let ((bufname simple-call-tree-buffer-name)
+	(tree-inverted-alist simple-call-tree-inverted-alist))
     (switch-to-buffer (get-buffer-create bufname))
     (setq simple-call-tree-max-linewidth 0
 	  simple-call-tree-max-header-size 1)
@@ -1732,6 +1736,7 @@ By default FUNCLIST is set to `simple-call-tree-alist'."
 	(simple-call-tree-mode))
     (setq-local simple-call-tree-buffer-name bufname)
     (setq-local simple-call-tree-alist funclist)
+    (setq-local simple-call-tree-inverted-alist tree-inverted-alist)
     (read-only-mode -1)
     (erase-buffer)
     (let ((maxdepth (max maxdepth 1))
@@ -1863,6 +1868,7 @@ and the length including tags."
 	 (todo (fourth item))
 	 (priority (fifth item))
 	 (tags (simple-call-tree-tags-to-string (sixth item)))
+	 ;;(notes (seventh item))
 	 (pre (concat (if todo (concat " " (propertize todo 'font-lock-face
 						       (org-get-todo-face todo))))
 		      (if priority (propertize (concat " [#" (char-to-string priority) "]")
@@ -1885,7 +1891,8 @@ and the length including tags."
 				     (make-string (max 0 (- (/ (window-width) 2)
 							    (length pre2)))
 						  32)
-				     tags)))))
+				     ;;notes
+				     )))))
     (insert str)
     (length pre2)))
 
