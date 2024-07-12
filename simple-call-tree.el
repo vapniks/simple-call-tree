@@ -1823,12 +1823,13 @@ The style of links used for child headers is controlled by `simple-call-tree-org
     (if display (switch-to-buffer exportbuf))))
 
 ;; simple-call-tree-info: DONE  
-(cl-defun simple-call-tree-list-callees-recursively (item &optional (maxdepth 2)
-							  (curdepth 1)
-							  (funclist simple-call-tree-alist)
-							  (inverted simple-call-tree-inverted)
-							  (displayfunc 'simple-call-tree-insert-item)
-							  (marked simple-call-tree-marked-items))
+(cl-defun simple-call-tree-list-callees-recursively
+    (item &optional (maxdepth 2)
+	  (curdepth 1)
+	  (funclist simple-call-tree-alist)
+	  (inverted simple-call-tree-inverted)
+	  (displayfunc 'simple-call-tree-insert-item)
+	  (marked simple-call-tree-marked-items))
   "Insert a call tree for the item, to depth MAXDEPTH.
 item must be the car of one of the elements of FUNCLIST which is set to `simple-call-tree-alist' by default.
 The optional arguments MAXDEPTH and CURDEPTH specify the maximum and current depth of the tree respectively.
