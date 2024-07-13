@@ -1885,7 +1885,7 @@ and the length including tags."
 	 (arrow (if inverted (concat (if (> curdepth 1) "<" pre) arrowtail " ")
 		  (concat arrowtail (if (> curdepth 1) ">" pre) " ")))
 	 (fnface (get-text-property 0 'face fname))
-	 (pre2 (concat (if marked "*" "|") arrow
+	 (pre2 (concat (if (and marked (< curdepth 2)) "*" "|") arrow
 		       (propertize fname
 				   'font-lock-face (list :inherit (or fnface 'default) :underline t)
 				   'mouse-face 'highlight
