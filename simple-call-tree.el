@@ -56,8 +56,9 @@
 ;; closest to its position in the original buffer.
 ;; If called with a prefix arg the user is also prompted for other files to include
 ;; in the call tree.
-;; The call tree is displayed in a buffer called *Simple Call Tree*,
-;; which has a dedicated menu in the menu-bar showing various commands
+;; By default the call tree is displayed in a buffer called *Simple Call Tree: <BUFNAME>*,
+;; where <BUFNAME> is the name of the buffer that the call tree was created from.
+;; There is a dedicated menu in the menu-bar showing various commands
 ;; and their keybindings. Most of these commands are self explanatory
 ;; so try them out.
 
@@ -78,7 +79,10 @@
 ;; branch. However, if you invert the tree by pressing i then the child branches
 ;; will correspond to functions that call the parent branch.
 ;; You can sort the tree in various different ways, and change the depth of the tree.
-;; You can also narrow the tree to the function at point by pressing /
+;; You can narrow the tree to the function at point by pressing /
+;; You can display extra information such as docstrings next to each item in the tree
+;; by pressing C-c C-n, and customize the types of information that can be displayed
+;; (see `simple-call-tree-notes-functions').
 
 ;;;; Exporting:
 ;; The tree can be exported in its current state with the `simple-call-tree-export-org-tree'
@@ -213,6 +217,9 @@
 ;;  `simple-call-tree-toggle-narrowing'
 ;;    Toggle narrowing of *Simple Call Tree* buffer.
 ;;    Keybinding: /
+;;  `simple-call-tree-display-notes'
+;;    Append NOTES to FUNCS in *Simple Call Tree* buffer.
+;;    Keybinding: C-c C-n
 ;;  `simple-call-tree-toggle-duplicates'
 ;;    Toggle the inclusion of duplicate sub-branches in the call tree.
 ;;    Keybinding: D
@@ -317,6 +324,8 @@
 ;;  `simple-call-tree-org-tag-alist'
 ;;    See `org-tag-alist'.
 ;;    default = org-tag-alist
+;;  `simple-call-tree-notes-functions'
+;;    Alist of (DESCRIPTION . NOTES) used for selecting the NOTES arg of ‘simple-call-tree-display-notes’.
 ;;  `simple-call-tree-mark-face'
 ;;    Face to use for marked items in the *Simple Call Tree* buffer.
 ;;    default = (if (featurep (quote dired+)) diredp-flag-mark-line (quote highlight))
