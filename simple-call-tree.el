@@ -1232,7 +1232,8 @@ By default it is set to a list containing the current buffer."
             (add-to-list 'tree-alist (list (list nextfunc startmark endmark
 						 (car attribs)
 						 (second attribs)
-						 (third attribs))))
+						 (third attribs)
+						 nil)))
             (setq count1 (1+ count1))))))
     ;; Now find functions called
     ;; This is still not exactly right: it will match both abc & abc' on abc'
@@ -1894,8 +1895,8 @@ and the length including tags."
 			     (concat tags
 				     (make-string (max 0 (- (/ (window-width) 2)
 							    (length pre2)))
-						  32)
-				     notes)))))
+						  32)))
+		      " " notes)))
     (insert str)
     (length pre2)))
 
@@ -2840,11 +2841,13 @@ NOTES can be a string, or a function to be called with argument FUNCS to obtain 
 		     (notes2 (propertize notes1
 					 'font-lock-face
 					 (list :inherit (or notesface 'default) :underline nil)))
-		     (show-trailing-whitespace t))
+		     (show-trailing-whitespace t)
+		     (item (simple-call-tree-get-item func)))
 		(read-only-mode -1)
 		(if (looking-at ".") (kill-line))
 		(insert (concat " " notes2))
-		(read-only-mode 1))))
+		(read-only-mode 1)
+		(setf (seventh (car item)) notes2))))
 	(if fmp (fm-toggle))))))
 
 ;; simple-call-tree-info: DONE
